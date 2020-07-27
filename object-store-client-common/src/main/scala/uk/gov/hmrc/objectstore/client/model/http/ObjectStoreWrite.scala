@@ -21,28 +21,30 @@ import scala.concurrent.Future
 
 trait ObjectStoreWrite[BODY] {
 
-  def write(body: BODY): Future[Option[ObjectStoreWriteData]]
+  def write(body: BODY): Future[ObjectStoreWriteData]
 }
 
 object Empty
 
 object ObjectStoreWrite {
   implicit val emptyWrite = new ObjectStoreWrite[Empty.type] {
-    override def write(body: Empty.type): Future[Option[ObjectStoreWriteData]] =
-      Future.successful(None)
+    override def write(body: Empty.type): Future[ObjectStoreWriteData] =
+      Future.successful(ObjectStoreWriteData.Empty)
   }
 }
 
-case class ObjectStoreWriteData(
-  md5Hash      : String,
-  contentLength: Long,
-  body         : ObjectStoreWriteDataBody,
-  cleanup      : Unit => Unit
-)
+sealed trait ObjectStoreWriteData
+object ObjectStoreWriteData {
+  case object Empty extends ObjectStoreWriteData
 
-sealed trait ObjectStoreWriteDataBody
-object ObjectStoreWriteDataBody {
-  case object Empty extends ObjectStoreWriteDataBody
-  case class InMemory(getBytes: Array[Byte]) extends ObjectStoreWriteDataBody
-  case class Stream(stream: java.util.stream.Stream[Array[Byte]], length: Long, md5Hash: String) extends ObjectStoreWriteDataBody
+  case class InMemory(
+    bytes: Array[Byte]
+  ) extends ObjectStoreWriteData
+
+  case class Stream(
+    stream       : java.util.stream.Stream[Array[Byte]],
+    contentLength: Long,
+    md5Hash      : String,
+    release      : () => Unit
+  ) extends ObjectStoreWriteData
 }

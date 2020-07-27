@@ -20,7 +20,7 @@ import akka.stream.scaladsl.StreamConverters
 import javax.inject.Inject
 import play.api.Logger
 import play.api.libs.ws.{EmptyBody, WSClient, WSRequest, WSResponse}
-import uk.gov.hmrc.objectstore.client.model.http.{HttpClient, Empty, ObjectStoreWrite, ObjectStoreWriteDataBody}
+import uk.gov.hmrc.objectstore.client.model.http.{HttpClient, Empty, ObjectStoreWrite, ObjectStoreWriteData}
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ExecutionContext, Future}
@@ -58,6 +58,12 @@ class PlayWSHttpClient @Inject()(wsClient: WSClient)(implicit ec: ExecutionConte
     body = Empty
   )
 
+  private case class Data(
+    optLengthAndMd5Hash: Option[(Long, String)],
+    writeBody          : WSRequest => WSRequest,
+    release            : () => Unit
+  )
+
   private def invoke[BODY : ObjectStoreWrite, T](
                          url: String,
                          method: String,
@@ -68,35 +74,32 @@ class PlayWSHttpClient @Inject()(wsClient: WSClient)(implicit ec: ExecutionConte
                        ): Future[T] = {
 
     logger.info(s"Request: Url: $url")
-    val write = implicitly[ObjectStoreWrite[BODY]]
-    write.write(body)
-      .flatMap { optData =>
-        val hdrs = optData.foldLeft(headers)((headers, data) =>
-          headers ++ List(
-              "Content-Length" -> data.contentLength.toString,
-              "Content-MD5"    -> data.md5Hash
-            )
+    implicitly[ObjectStoreWrite[BODY]].write(body).map {
+      case ObjectStoreWriteData.Empty =>
+        Data(None, _.withBody(EmptyBody), () => ())
+      case ObjectStoreWriteData.InMemory(bytes) =>
+        Data(Some((bytes.length, bytes.length.toString/* TODO implement*/)), _.withBody(bytes), () => ())
+      case ObjectStoreWriteData.Stream(stream, length, md5Hash, release) =>
+        Data(Some((length, md5Hash)), _.withBody(StreamConverters.fromJavaStream(() => stream.map[akka.util.ByteString](akka.util.ByteString(_)))), release)
+    }.flatMap { data =>
+        val hdrs = data.optLengthAndMd5Hash.fold(headers){ case (length, md5Hash) => headers ++ List(
+            "Content-Length" -> length.toString,
+            "Content-MD5"    -> md5Hash
+          )}
+
+        data.writeBody(
+          wsClient
+            .url(url)
+            .withFollowRedirects(false)
+            .withMethod(method)
+            .withHttpHeaders(hdrs: _*)
+            .withQueryStringParameters(queryParameters: _*)
+            .withRequestTimeout(Duration.Inf)
         )
-
-        val request = wsClient
-          .url(url)
-          .withFollowRedirects(false)
-          .withMethod(method)
-          .withHttpHeaders(hdrs: _*)
-          .withQueryStringParameters(queryParameters: _*)
-          .withRequestTimeout(Duration.Inf)
-
-        def writeBody(request: WSRequest, body: ObjectStoreWriteDataBody) = body match {
-          case ObjectStoreWriteDataBody.Empty                           => request.withBody(EmptyBody)
-          case ObjectStoreWriteDataBody.InMemory(bytes)                 => request.withBody(bytes)
-          case ObjectStoreWriteDataBody.Stream(stream, length, md5Hash) => request.withBody(StreamConverters.fromJavaStream(() => stream.map[akka.util.ByteString](akka.util.ByteString(_))))
-        }
-
-        optData.fold(request.withBody(EmptyBody))(data => writeBody(request, data.body))
           .execute(method)
           .map(logResponse)
           .map(processResponse)
-          .andThen { case _ => optData.map(_.cleanup(())) }
+          .andThen { case _ => data.release() }
       }
   }
 

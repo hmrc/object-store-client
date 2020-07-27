@@ -21,7 +21,7 @@ import akka.util.ByteString
 import play.api.http.Status
 import play.api.libs.json._
 import play.api.libs.ws.WSResponse
-import uk.gov.hmrc.objectstore.client.model.http.{ObjectStoreRead, ObjectStoreWrite, ObjectStoreWriteData, ObjectStoreWriteDataBody}
+import uk.gov.hmrc.objectstore.client.model.http.{ObjectStoreRead, ObjectStoreWrite, ObjectStoreWriteData}
 import uk.gov.hmrc.objectstore.client.model.objectstore
 import uk.gov.hmrc.objectstore.client.model.objectstore.ObjectListing
 
@@ -53,34 +53,24 @@ object ObjectStoreWrites {
     import play.api.libs.Files.SingletonTemporaryFileCreator
     import akka.stream.scaladsl.{FileIO, Source, StreamConverters}
 
-    override def write(body: Source[ByteString, akka.NotUsed]): Future[Option[ObjectStoreWriteData]] = {
+    override def write(body: Source[ByteString, akka.NotUsed]): Future[ObjectStoreWriteData] = {
       val tempFile = SingletonTemporaryFileCreator.create()
-      for {
-        _             <- body.runWith(FileIO.toPath(tempFile.path))
-        md5Hash       =  tempFile.path.toFile.length.toString // TODO get md5Hash
-        contentLength =  tempFile.path.toFile.length
-        javaStream    =  FileIO.fromPath(tempFile.path).map(_.toArray).runWith(StreamConverters.asJavaStream[Array[Byte]]())
-      } yield
-        Some(ObjectStoreWriteData(
-          md5Hash       = tempFile.path.toFile.length.toString, // TODO get md5Hash
+      body.runWith(FileIO.toPath(tempFile.path)).map { _ =>
+        ObjectStoreWriteData.Stream(
+          stream        = FileIO.fromPath(tempFile.path).map(_.toArray).runWith(StreamConverters.asJavaStream[Array[Byte]]()),
           contentLength = tempFile.path.toFile.length,
-          body          = ObjectStoreWriteDataBody.Stream(javaStream, contentLength, md5Hash),
-          cleanup       = _ => SingletonTemporaryFileCreator.delete(tempFile)
-        ))
+          md5Hash       = tempFile.path.toFile.length.toString, // TODO get md5Hash
+          release       = () => SingletonTemporaryFileCreator.delete(tempFile)
+        )
+      }
     }
   }
 
   class StringObjectStoreWrite extends ObjectStoreWrite[String] {
 
-    override def write(body: String): Future[Option[ObjectStoreWriteData]] =
-      Future.successful {
-        val bytes = body.getBytes
-        Some(ObjectStoreWriteData(
-          md5Hash       = bytes.toString, // TODO get md5Hash
-          contentLength = bytes.length,
-          body          = ObjectStoreWriteDataBody.InMemory(bytes),
-          cleanup       = _ => ()
-        ))
-      }
+    override def write(body: String): Future[ObjectStoreWriteData] =
+      Future.successful(
+        ObjectStoreWriteData.InMemory(body.getBytes)
+      )
   }
 }
