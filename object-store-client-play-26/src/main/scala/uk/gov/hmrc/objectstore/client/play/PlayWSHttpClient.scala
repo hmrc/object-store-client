@@ -23,25 +23,24 @@ import javax.inject.Inject
 import play.api.Logger
 import play.api.libs.Files.SingletonTemporaryFileCreator
 import play.api.libs.ws.{WSClient, WSResponse}
-import uk.gov.hmrc.objectstore.client.model.http.HttpClient
+import uk.gov.hmrc.objectstore.client.model.http.{HttpClient, NoBody, ObjectStoreWrite}
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ExecutionContext, Future}
 
-class PlayWSHttpClient @Inject()(wsClient: WSClient)(implicit ec: ExecutionContext, m: Materializer) extends HttpClient[Source[ByteString, _], Future[WSResponse]] {
+class PlayWSHttpClient @Inject()(wsClient: WSClient)(implicit ec: ExecutionContext, m: Materializer) extends HttpClient[Future[WSResponse]] {
 
   private val logger: Logger = Logger(this.getClass)
 
-  override def put(url: String, body: Source[ByteString, _]): Future[WSResponse] = {
+  override def put[BODY: ObjectStoreWrite](url: String, body: BODY): Future[WSResponse] =
     invoke(
       url = url,
       method = "PUT",
       processResponse = identity,
       body = body
     )
-  }
 
-  override def post(url: String, body: Source[ByteString, _]): Future[WSResponse] = invoke(
+  override def post[BODY : ObjectStoreWrite](url: String, body: BODY): Future[WSResponse] = invoke(
     url = url,
     method = "POST",
     processResponse = identity,
@@ -52,26 +51,30 @@ class PlayWSHttpClient @Inject()(wsClient: WSClient)(implicit ec: ExecutionConte
     url = url,
     method = "GET",
     processResponse = identity,
+    body = NoBody
   )
 
   override def delete(url: String): Future[WSResponse] = invoke(
     url = url,
     method = "DELETE",
     processResponse = identity,
+    body = NoBody
   )
 
-  private def invoke[T](
+  private def invoke[BODY : ObjectStoreWrite, T](
                          url: String,
                          method: String,
                          processResponse: WSResponse => T,
                          headers: List[(String, String)] = List.empty,
                          queryParameters: List[(String, String)] = List.empty,
-                         body: Source[ByteString, _] = Source.empty,
+                         body: BODY,
                        ): Future[T] = {
 
     logger.info(s"Request: Url: $url")
     val path = SingletonTemporaryFileCreator.create().path
-    val result: Future[IOResult] = body.runWith(FileIO.toPath(path))
+    val write = implicitly[ObjectStoreWrite[BODY]]
+    // TODO get md5Hash, Content-Length from write - and body
+    val result: Future[IOResult] =  ??? // body.runWith(FileIO.toPath(path))
 
     result.flatMap { _ =>
 

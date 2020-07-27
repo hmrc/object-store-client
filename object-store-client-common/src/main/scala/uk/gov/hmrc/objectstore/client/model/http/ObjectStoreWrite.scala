@@ -16,13 +16,19 @@
 
 package uk.gov.hmrc.objectstore.client.model.http
 
-trait HttpClient[Response] {
+import uk.gov.hmrc.objectstore.client.model.objectstore.{Object, ObjectListing}
 
-  def put[BODY : ObjectStoreWrite](url: String, body: BODY): Response
+import scala.language.higherKinds
 
-  def post[BODY : ObjectStoreWrite](url: String, body: BODY): Response
 
-  def get(url: String): Response
+trait ObjectStoreWrite[BODY] {
 
-  def delete(url: String): Response
+  // TODO requires converting body to a md5 hash, content-length, and a wsClient body
+
+}
+
+object NoBody
+
+object ObjectStoreWrite {
+  implicit val nobodyWrite = new ObjectStoreWrite[NoBody.type] {}
 }

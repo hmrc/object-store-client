@@ -18,28 +18,36 @@ package uk.gov.hmrc.objectstore.client
 
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 import uk.gov.hmrc.objectstore.client.model.http.ObjectStoreReadSyntax._
-import uk.gov.hmrc.objectstore.client.model.http.{HttpClient, ObjectStoreRead}
+import uk.gov.hmrc.objectstore.client.model.http.{HttpClient, ObjectStoreRead, ObjectStoreWrite}
 import uk.gov.hmrc.objectstore.client.model.objectstore.{Object, ObjectListing}
 
 import scala.language.higherKinds
 
-class ObjectStoreClient[HttpReqBody, HttpResponse](client: HttpClient[HttpReqBody, HttpResponse], config: ObjectStoreClientConfig) {
+class ObjectStoreClient[HttpResponse](client: HttpClient[HttpResponse], config: ObjectStoreClientConfig) {
 
   private val url = s"${config.baseUrl}/object-store"
 
-  def putObject[F[_]](location: String, content: HttpReqBody)(implicit rt: ObjectStoreRead[HttpResponse, _, F]): F[Unit] = {
+  def putObject[BODY, F[_]](
+    location: String,
+    content: BODY
+  )(implicit
+    rt: ObjectStoreRead[HttpResponse, _, F],
+    wt: ObjectStoreWrite[BODY]
+  ): F[Unit] =
     client.put(s"$url/object/$location", content).consume
-  }
 
-  def getObject[T, F[_]](location: String)(implicit rt: ObjectStoreRead[HttpResponse, T, F]): F[Option[Object[T]]] = {
+  // TODO Curried type alternative
+  /*def putObject[BODY : ObjectStoreWrite] = new AnyVal {
+    def apply[F[_]](location: String, content: BODY)(implicit rt: ObjectStoreRead[HttpResponse, _, F]): F[Unit] =
+      client.put(s"$url/object/$location", content).consume
+  }*/
+
+  def getObject[T, F[_]](location: String)(implicit rt: ObjectStoreRead[HttpResponse, T, F]): F[Option[Object[T]]] =
     client.get(s"$url/object/$location").toObject
-  }
 
-  def deleteObject[F[_]](location: String)(implicit rt: ObjectStoreRead[HttpResponse, _, F]): F[Unit] = {
+  def deleteObject[F[_]](location: String)(implicit rt: ObjectStoreRead[HttpResponse, _, F]): F[Unit] =
     client.delete(s"$url/object/$location").consume
-  }
 
-  def listObjects[F[_]](location: String)(implicit rt: ObjectStoreRead[HttpResponse, _, F]): F[ObjectListing] = {
+  def listObjects[F[_]](location: String)(implicit rt: ObjectStoreRead[HttpResponse, _, F]): F[ObjectListing] =
     client.get(s"$url/list/$location").toObjectListings
-  }
 }
