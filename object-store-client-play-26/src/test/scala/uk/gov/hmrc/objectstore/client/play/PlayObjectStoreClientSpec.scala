@@ -34,6 +34,7 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 import uk.gov.hmrc.objectstore.client.model.objectstore.{ObjectListing, ObjectSummary}
 import uk.gov.hmrc.objectstore.client.play.ObjectStoreReads.PlayFutureObjectStoreRead
+import uk.gov.hmrc.objectstore.client.play.ObjectStoreWrites.AkkaObjectStoreWrite
 
 import scala.concurrent.ExecutionContextExecutor
 
@@ -49,6 +50,7 @@ class PlayObjectStoreClientSpec
   implicit val system: ActorSystem = ActorSystem()
   implicit val m: ActorMaterializer = ActorMaterializer()
   implicit val osRead: PlayFutureObjectStoreRead = new PlayFutureObjectStoreRead()
+  implicit val osWrite: AkkaObjectStoreWrite = new AkkaObjectStoreWrite()
   implicit val defaultPatience: PatienceConfig =
     PatienceConfig(timeout = Span(5, Seconds), interval = Span(50, Millis))
 

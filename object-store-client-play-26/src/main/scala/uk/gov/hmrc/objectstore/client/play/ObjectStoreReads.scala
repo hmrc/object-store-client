@@ -49,11 +49,11 @@ object ObjectStoreReads {
 }
 
 object ObjectStoreWrites {
-  class AkkaObjectStoreWrite(implicit ec: ExecutionContext, m: akka.stream.Materializer) extends ObjectStoreWrite[Source[ByteString, _]] {
+  class AkkaObjectStoreWrite(implicit ec: ExecutionContext, m: akka.stream.Materializer) extends ObjectStoreWrite[Source[ByteString, akka.NotUsed]] {
     import play.api.libs.Files.SingletonTemporaryFileCreator
     import akka.stream.scaladsl.{FileIO, Source}
 
-    override def write(body: Source[ByteString, _]): Future[Option[ObjectStoreWriteData]] = {
+    override def write(body: Source[ByteString, akka.NotUsed]): Future[Option[ObjectStoreWriteData]] = {
       val tempFile = SingletonTemporaryFileCreator.create()
       body
         .runWith(FileIO.toPath(tempFile.path))

@@ -27,20 +27,18 @@ class ObjectStoreClient[HttpResponse](client: HttpClient[HttpResponse], config: 
 
   private val url = s"${config.baseUrl}/object-store"
 
-  def putObject[BODY, F[_]](
+  /*def putObject[BODY, F[_]](
     location: String,
     content: BODY
   )(implicit
     rt: ObjectStoreRead[HttpResponse, _, F],
     wt: ObjectStoreWrite[BODY]
   ): F[Unit] =
-    client.put(s"$url/object/$location", content).consume
+    client.put(s"$url/object/$location", content).consume*/
 
-  // TODO Curried type alternative
-  /*def putObject[BODY : ObjectStoreWrite] = new AnyVal {
-    def apply[F[_]](location: String, content: BODY)(implicit rt: ObjectStoreRead[HttpResponse, _, F]): F[Unit] =
-      client.put(s"$url/object/$location", content).consume
-  }*/
+  // implementation with curried types
+  def putObject[F[_]]: ObjectStoreClient.PutObject[F, HttpResponse] =
+    new ObjectStoreClient.PutObject(client, url)
 
   def getObject[T, F[_]](location: String)(implicit rt: ObjectStoreRead[HttpResponse, T, F]): F[Option[Object[T]]] =
     client.get(s"$url/object/$location").toObject
@@ -50,4 +48,11 @@ class ObjectStoreClient[HttpResponse](client: HttpClient[HttpResponse], config: 
 
   def listObjects[F[_]](location: String)(implicit rt: ObjectStoreRead[HttpResponse, _, F]): F[ObjectListing] =
     client.get(s"$url/list/$location").toObjectListings
+}
+
+object ObjectStoreClient {
+  private[client] final class PutObject[F[_], HttpResponse](client: HttpClient[HttpResponse], url: String) {
+    def apply[BODY : ObjectStoreWrite](location: String, content: BODY)(implicit rt: ObjectStoreRead[HttpResponse, _, F]): F[Unit] =
+      client.put(s"$url/object/$location", content).consume
+  }
 }
