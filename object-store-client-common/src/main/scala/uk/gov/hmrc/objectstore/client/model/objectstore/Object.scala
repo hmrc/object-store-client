@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,8 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.hello
+package uk.gov.hmrc.objectstore.client.model.objectstore
 
-import org.scalatest.Matchers._
-import org.scalatest.WordSpecLike
-
-
-class HelloWorldSpecs extends WordSpecLike {
-
-  "HelloWorld" should {
-
-    "say hello" in {
-      HelloWorld.sayHello shouldBe "hello"
-    }
-  }
-}
+final case class Object[T](location: String,
+                           objectContent: T,
+                           metadata: Option[ObjectMetadata] = None)

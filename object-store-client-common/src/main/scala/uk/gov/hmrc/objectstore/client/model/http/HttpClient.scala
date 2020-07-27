@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,16 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.hello
+package uk.gov.hmrc.objectstore.client.model.http
 
-object HelloWorld {
+trait HttpClient[RequestBody, Response] {
 
-  def sayHello:String = "hello"
+  def put(url: String, body: RequestBody): Response
+
+  def post(url: String, body: RequestBody): Response
+
+  def get(url: String): Response
+
+  def delete(url: String): Response
+
 }
