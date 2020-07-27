@@ -16,19 +16,15 @@
 
 package uk.gov.hmrc.objectstore.client.play
 
-import akka.stream.scaladsl.{FileIO, Source}
-import akka.stream.{IOResult, Materializer}
-import akka.util.ByteString
 import javax.inject.Inject
 import play.api.Logger
-import play.api.libs.Files.SingletonTemporaryFileCreator
-import play.api.libs.ws.{WSClient, WSResponse}
-import uk.gov.hmrc.objectstore.client.model.http.{HttpClient, NoBody, ObjectStoreWrite}
+import play.api.libs.ws.{EmptyBody, WSClient, WSResponse}
+import uk.gov.hmrc.objectstore.client.model.http.{HttpClient, Empty, ObjectStoreWrite}
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ExecutionContext, Future}
 
-class PlayWSHttpClient @Inject()(wsClient: WSClient)(implicit ec: ExecutionContext, m: Materializer) extends HttpClient[Future[WSResponse]] {
+class PlayWSHttpClient @Inject()(wsClient: WSClient)(implicit ec: ExecutionContext) extends HttpClient[Future[WSResponse]] {
 
   private val logger: Logger = Logger(this.getClass)
 
@@ -51,14 +47,14 @@ class PlayWSHttpClient @Inject()(wsClient: WSClient)(implicit ec: ExecutionConte
     url = url,
     method = "GET",
     processResponse = identity,
-    body = NoBody
+    body = Empty
   )
 
   override def delete(url: String): Future[WSResponse] = invoke(
     url = url,
     method = "DELETE",
     processResponse = identity,
-    body = NoBody
+    body = Empty
   )
 
   private def invoke[BODY : ObjectStoreWrite, T](
@@ -71,32 +67,26 @@ class PlayWSHttpClient @Inject()(wsClient: WSClient)(implicit ec: ExecutionConte
                        ): Future[T] = {
 
     logger.info(s"Request: Url: $url")
-    val path = SingletonTemporaryFileCreator.create().path
     val write = implicitly[ObjectStoreWrite[BODY]]
-    // TODO get md5Hash, Content-Length from write - and body
-    val result: Future[IOResult] =  ??? // body.runWith(FileIO.toPath(path))
+    write.write(body)
+      .flatMap { optData =>
+        val md5Hash = optData.map(_.md5Hash) // TODO do something with this
+        val hdrs = optData.foldLeft(headers)((headers, data) => headers ++ List("Content-Length" -> data.contentLength.toString))
 
-    result.flatMap { _ =>
+        val request = wsClient
+          .url(url)
+          .withFollowRedirects(false)
+          .withMethod(method)
+          .withHttpHeaders(hdrs: _*)
+          .withQueryStringParameters(queryParameters: _*)
+          .withRequestTimeout(Duration.Inf)
 
-      //todo just do this when there is no content length
-
-      val file = path.toFile
-      val hdrs = headers ++ List(("Content-Length", file.length().toString))
-
-      wsClient
-        .url(url)
-        .withFollowRedirects(false)
-        .withMethod(method)
-        .withHttpHeaders(hdrs: _*)
-        .withQueryStringParameters(queryParameters: _*)
-        .withRequestTimeout(Duration.Inf)
-        .withBody(file)
-        .execute(method)
-        .map(logResponse)
-        .map(processResponse)
-    }
-
-    //todo consider file cleanup
+        optData.fold(request.withBody(EmptyBody))(data => request.withBody(data.body))
+          .execute(method)
+          .map(logResponse)
+          .map(processResponse)
+          .andThen { case _ => optData.map(_.cleanup(())) }
+      }
   }
 
   private def logResponse(response: WSResponse): WSResponse = {

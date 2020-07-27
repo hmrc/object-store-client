@@ -21,7 +21,7 @@ import akka.util.ByteString
 import play.api.http.Status
 import play.api.libs.json._
 import play.api.libs.ws.WSResponse
-import uk.gov.hmrc.objectstore.client.model.http.ObjectStoreRead
+import uk.gov.hmrc.objectstore.client.model.http.{ObjectStoreRead, ObjectStoreWrite}
 import uk.gov.hmrc.objectstore.client.model.objectstore
 import uk.gov.hmrc.objectstore.client.model.objectstore.ObjectListing
 
@@ -44,6 +44,27 @@ object ObjectStoreReads {
 
     override def consume(response: Future[WSResponse]): Future[Unit] = {
       response.map(_ => ())
+    }
+  }
+}
+
+object ObjectStoreWrites {
+  class AkkaObjectStoreWrite(implicit ec: ExecutionContext, m: akka.stream.Materializer) extends ObjectStoreWrite[Source[ByteString, _]] {
+    import play.api.libs.Files.SingletonTemporaryFileCreator
+    import akka.stream.scaladsl.{FileIO, Source}
+
+    override def write(body: Source[ByteString, _]): Future[Option[ObjectStoreWrite.ObjectStoreWriteData]] = {
+      val tempFile = SingletonTemporaryFileCreator.create()
+      body
+        .runWith(FileIO.toPath(tempFile.path))
+        .map { _ =>
+          Some(ObjectStoreWrite.ObjectStoreWriteData(
+            md5Hash       = tempFile.path.toFile.length.toString, // TODO get md5Hash
+            contentLength = tempFile.path.toFile.length,
+            body          = tempFile.path.toFile,
+            cleanup       = _ => SingletonTemporaryFileCreator.delete(tempFile)
+          ))
+        }
     }
   }
 }

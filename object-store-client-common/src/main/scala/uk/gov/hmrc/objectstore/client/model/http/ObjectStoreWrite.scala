@@ -16,19 +16,26 @@
 
 package uk.gov.hmrc.objectstore.client.model.http
 
-import uk.gov.hmrc.objectstore.client.model.objectstore.{Object, ObjectListing}
-
-import scala.language.higherKinds
+import scala.concurrent.Future
 
 
 trait ObjectStoreWrite[BODY] {
 
-  // TODO requires converting body to a md5 hash, content-length, and a wsClient body
-
+  def write(body: BODY): Future[Option[ObjectStoreWrite.ObjectStoreWriteData]]
 }
 
-object NoBody
+object Empty
 
 object ObjectStoreWrite {
-  implicit val nobodyWrite = new ObjectStoreWrite[NoBody.type] {}
+  implicit val emptyWrite = new ObjectStoreWrite[Empty.type] {
+    override def write(body: Empty.type): Future[Option[ObjectStoreWriteData]] =
+      Future.successful(None)
+  }
+
+  case class ObjectStoreWriteData(
+    md5Hash      : String,
+    contentLength: Long,
+    body         : java.io.File, // TODO is there a common denominator? There are 3 flavours - empty, in-memory, and streamed
+    cleanup      : Unit => Unit
+  )
 }
