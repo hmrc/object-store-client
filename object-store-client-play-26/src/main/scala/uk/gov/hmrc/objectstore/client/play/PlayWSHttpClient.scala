@@ -18,8 +18,8 @@ package uk.gov.hmrc.objectstore.client.play
 
 import javax.inject.Inject
 import play.api.Logger
-import play.api.libs.ws.{EmptyBody, WSClient, WSResponse}
-import uk.gov.hmrc.objectstore.client.model.http.{HttpClient, Empty, ObjectStoreWrite}
+import play.api.libs.ws.{EmptyBody, WSClient, WSRequest, WSResponse}
+import uk.gov.hmrc.objectstore.client.model.http.{HttpClient, Empty, ObjectStoreWrite, ObjectStoreWriteDataBody}
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ExecutionContext, Future}
@@ -81,7 +81,13 @@ class PlayWSHttpClient @Inject()(wsClient: WSClient)(implicit ec: ExecutionConte
           .withQueryStringParameters(queryParameters: _*)
           .withRequestTimeout(Duration.Inf)
 
-        optData.fold(request.withBody(EmptyBody))(data => request.withBody(data.body))
+        def writeBody(request: WSRequest, body: ObjectStoreWriteDataBody) = body match {
+          case ObjectStoreWriteDataBody.Empty           => request.withBody(EmptyBody)
+          case ObjectStoreWriteDataBody.InMemory(bytes) => request.withBody(bytes)
+          case ObjectStoreWriteDataBody.File(file)      => request.withBody(file)
+        }
+
+        optData.fold(request.withBody(EmptyBody))(data => writeBody(request, data.body))
           .execute(method)
           .map(logResponse)
           .map(processResponse)

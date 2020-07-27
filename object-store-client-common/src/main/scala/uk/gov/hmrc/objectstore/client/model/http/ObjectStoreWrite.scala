@@ -21,7 +21,7 @@ import scala.concurrent.Future
 
 trait ObjectStoreWrite[BODY] {
 
-  def write(body: BODY): Future[Option[ObjectStoreWrite.ObjectStoreWriteData]]
+  def write(body: BODY): Future[Option[ObjectStoreWriteData]]
 }
 
 object Empty
@@ -31,11 +31,21 @@ object ObjectStoreWrite {
     override def write(body: Empty.type): Future[Option[ObjectStoreWriteData]] =
       Future.successful(None)
   }
+}
 
-  case class ObjectStoreWriteData(
-    md5Hash      : String,
-    contentLength: Long,
-    body         : java.io.File, // TODO is there a common denominator? There are 3 flavours - empty, in-memory, and streamed
-    cleanup      : Unit => Unit
-  )
+case class ObjectStoreWriteData(
+  md5Hash      : String,
+  contentLength: Long,
+  body         : ObjectStoreWriteDataBody,
+  cleanup      : Unit => Unit
+)
+
+sealed trait ObjectStoreWriteDataBody
+object ObjectStoreWriteDataBody {
+  case object Empty extends ObjectStoreWriteDataBody
+  case class InMemory(getBytes: Array[Byte]) extends ObjectStoreWriteDataBody
+  // this is our streamed implementation - assumes writing to a local file to get length, md5Hash
+  // TODO this is implementation dependent - what if we already have length, md5Hash?
+  // what would a good stream representation be without coupling to Akka etc?
+  case class File(getFile: java.io.File) extends ObjectStoreWriteDataBody
 }

@@ -21,7 +21,7 @@ import akka.util.ByteString
 import play.api.http.Status
 import play.api.libs.json._
 import play.api.libs.ws.WSResponse
-import uk.gov.hmrc.objectstore.client.model.http.{ObjectStoreRead, ObjectStoreWrite}
+import uk.gov.hmrc.objectstore.client.model.http.{ObjectStoreRead, ObjectStoreWrite, ObjectStoreWriteData, ObjectStoreWriteDataBody}
 import uk.gov.hmrc.objectstore.client.model.objectstore
 import uk.gov.hmrc.objectstore.client.model.objectstore.ObjectListing
 
@@ -53,18 +53,32 @@ object ObjectStoreWrites {
     import play.api.libs.Files.SingletonTemporaryFileCreator
     import akka.stream.scaladsl.{FileIO, Source}
 
-    override def write(body: Source[ByteString, _]): Future[Option[ObjectStoreWrite.ObjectStoreWriteData]] = {
+    override def write(body: Source[ByteString, _]): Future[Option[ObjectStoreWriteData]] = {
       val tempFile = SingletonTemporaryFileCreator.create()
       body
         .runWith(FileIO.toPath(tempFile.path))
         .map { _ =>
-          Some(ObjectStoreWrite.ObjectStoreWriteData(
+          Some(ObjectStoreWriteData(
             md5Hash       = tempFile.path.toFile.length.toString, // TODO get md5Hash
             contentLength = tempFile.path.toFile.length,
-            body          = tempFile.path.toFile,
+            body          = ObjectStoreWriteDataBody.File(tempFile.path.toFile),
             cleanup       = _ => SingletonTemporaryFileCreator.delete(tempFile)
           ))
         }
     }
+  }
+
+  class StringObjectStoreWrite extends ObjectStoreWrite[String] {
+
+    override def write(body: String): Future[Option[ObjectStoreWriteData]] =
+      Future.successful {
+        val bytes = body.getBytes
+          Some(ObjectStoreWriteData(
+            md5Hash       = bytes.toString, // TODO get md5Hash
+            contentLength = bytes.length,
+            body          = ObjectStoreWriteDataBody.InMemory(bytes),
+            cleanup       = _ => ()
+          ))
+      }
   }
 }
