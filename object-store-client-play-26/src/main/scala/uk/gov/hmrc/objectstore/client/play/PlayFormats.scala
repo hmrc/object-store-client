@@ -33,6 +33,6 @@ object PlayFormats {
 
   val objectListingFormat: Format[ObjectListing] = {
     implicit val osf: Format[ObjectSummary] = objectSummaryFormat
-    Format((__ \ "objects").read[List[ObjectSummary]].map(ObjectListing.apply), __.write[List[ObjectSummary]].contramap((_: ObjectListing).objectSummaries))
+    Format.at[List[ObjectSummary]](__ \ "objects").inmap(ObjectListing.apply, _.objectSummaries)
   }
 }
