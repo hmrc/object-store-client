@@ -47,7 +47,7 @@ class PlayObjectStoreClientSpec
 
   implicit val ec: ExecutionContextExecutor = scala.concurrent.ExecutionContext.global
   implicit val system: ActorSystem = ActorSystem()
-  implicit val m = ActorMaterializer()
+  implicit val m: ActorMaterializer = ActorMaterializer()
   implicit val osRead: PlayFutureObjectStoreRead = new PlayFutureObjectStoreRead()
   implicit val defaultPatience: PatienceConfig =
     PatienceConfig(timeout = Span(5, Seconds), interval = Span(50, Millis))
@@ -131,6 +131,11 @@ class PlayObjectStoreClientSpec
 
       osClient.listObjects(location).futureValue shouldBe ObjectListing(List.empty)
     }
+  }
+
+  override def afterAll: Unit = {
+    super.afterAll
+    system.terminate()
   }
 
   implicit class SourceOps(source: Source[ByteString, _]) {
