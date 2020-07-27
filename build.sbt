@@ -34,7 +34,15 @@ lazy val library = Project(name, file("."))
   )
   .aggregate(
     objectStoreClientCommon,
-    objectStoreClientPlay26
+    objectStoreClientPlay26,
+    objectStoreClientPlay27
+  )
+
+lazy val objectStoreClientCommon = Project("object-store-client-common", file("object-store-client-common"))
+  .enablePlugins(SbtAutoBuildPlugin, SbtArtifactory)
+  .settings(
+    commonSettings,
+    libraryDependencies ++= AppDependencies.objectStoreClientCommon
   )
 
 lazy val objectStoreClientPlay26 = Project("object-store-client-play-26", file("object-store-client-play-26"))
@@ -44,9 +52,11 @@ lazy val objectStoreClientPlay26 = Project("object-store-client-play-26", file("
     libraryDependencies ++= AppDependencies.objectStoreClienPlay26
   ).dependsOn(objectStoreClientCommon)
 
-lazy val objectStoreClientCommon = Project("object-store-client-common", file("object-store-client-common"))
+lazy val objectStoreClientPlay27 = Project("object-store-client-play-27", file("object-store-client-play-27"))
   .enablePlugins(SbtAutoBuildPlugin, SbtArtifactory)
   .settings(
     commonSettings,
-    libraryDependencies ++= AppDependencies.objectStoreClientCommon
-  )
+    Compile / unmanagedSourceDirectories  += baseDirectory.value / "../object-store-client-play-26/src/main/scala",
+    Test    / unmanagedSourceDirectories  += baseDirectory.value / "../object-store-client-play-26/src/test/scala",
+    libraryDependencies ++= AppDependencies.objectStoreClienPlay27
+  ).dependsOn(objectStoreClientCommon)

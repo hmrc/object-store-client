@@ -3,6 +3,7 @@ import sbt._
 object AppDependencies {
 
   private val play26Version = "2.6.25"
+  private val play27Version = "2.7.4"
 
   val test = Seq(
     "org.mockito"              %  "mockito-all"          % "1.10.19"  % Test,
@@ -21,4 +22,10 @@ object AppDependencies {
     "org.scalatestplus.play" %% "scalatestplus-play"   % "3.1.3"         % Test
   ) ++ test
 
+  lazy val objectStoreClienPlay27: Seq[ModuleID] = Seq(
+    "com.typesafe.play"      %% "play"                 % play27Version,
+    "com.typesafe.play"      %% "play-guice"           % play27Version,
+    "com.typesafe.play"      %% "play-ahc-ws"          % play27Version,
+    "org.scalatestplus.play" %% "scalatestplus-play"   % "4.0.3"         % Test
+  ) ++ test
 }
