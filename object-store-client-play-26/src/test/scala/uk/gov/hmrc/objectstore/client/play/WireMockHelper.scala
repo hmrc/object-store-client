@@ -16,15 +16,19 @@
 
 package uk.gov.hmrc.objectstore.client.play
 
+import java.net.ServerSocket
+
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Suite}
 
+import scala.util.{Random, Try}
+
 trait WireMockHelper extends BeforeAndAfterAll with BeforeAndAfterEach {
   this: Suite =>
 
-  val wireMockPort = 11111
+  val wireMockPort = PortTester.findPort()
   val wireMockHost = "localhost"
   val wireMockUrl  = s"http://$wireMockHost:$wireMockPort"
 
@@ -51,4 +55,19 @@ trait WireMockHelper extends BeforeAndAfterAll with BeforeAndAfterEach {
   override protected def afterEach: Unit =
     reset()
 
+}
+
+private object PortTester {
+
+  def findPort(excluded: Int*): Int =
+    Random.shuffle((6001 to 7000).toVector).find(port => !excluded.contains(port) && isFree(port)).getOrElse(throw new Exception("No free port"))
+
+  private def isFree(port: Int): Boolean = {
+    val triedSocket = Try {
+      val serverSocket = new ServerSocket(port)
+      Try(serverSocket.close())
+      serverSocket
+    }
+    triedSocket.isSuccess
+  }
 }
