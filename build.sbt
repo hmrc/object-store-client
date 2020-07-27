@@ -33,8 +33,16 @@ lazy val library = Project(name, file("."))
     crossScalaVersions := Seq.empty
   )
   .aggregate(
-    objectStoreClientCommon
+    objectStoreClientCommon,
+    objectStoreClientPlay26
   )
+
+lazy val objectStoreClientPlay26 = Project("object-store-client-play-26", file("object-store-client-play-26"))
+  .enablePlugins(SbtAutoBuildPlugin, SbtArtifactory)
+  .settings(
+    commonSettings,
+    libraryDependencies ++= AppDependencies.objectStoreClienPlay26
+  ).dependsOn(objectStoreClientCommon)
 
 lazy val objectStoreClientCommon = Project("object-store-client-common", file("object-store-client-common"))
   .enablePlugins(SbtAutoBuildPlugin, SbtArtifactory)
