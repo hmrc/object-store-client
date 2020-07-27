@@ -44,8 +44,5 @@ sealed trait ObjectStoreWriteDataBody
 object ObjectStoreWriteDataBody {
   case object Empty extends ObjectStoreWriteDataBody
   case class InMemory(getBytes: Array[Byte]) extends ObjectStoreWriteDataBody
-  // this is our streamed implementation - assumes writing to a local file to get length, md5Hash
-  // TODO this is implementation dependent - what if we already have length, md5Hash?
-  // what would a good stream representation be without coupling to Akka etc?
-  case class File(getFile: java.io.File) extends ObjectStoreWriteDataBody
+  case class Stream(stream: java.util.stream.Stream[Array[Byte]], length: Long, md5Hash: String) extends ObjectStoreWriteDataBody
 }

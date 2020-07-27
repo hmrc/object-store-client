@@ -51,20 +51,22 @@ object ObjectStoreReads {
 object ObjectStoreWrites {
   class AkkaObjectStoreWrite(implicit ec: ExecutionContext, m: akka.stream.Materializer) extends ObjectStoreWrite[Source[ByteString, akka.NotUsed]] {
     import play.api.libs.Files.SingletonTemporaryFileCreator
-    import akka.stream.scaladsl.{FileIO, Source}
+    import akka.stream.scaladsl.{FileIO, Source, StreamConverters}
 
     override def write(body: Source[ByteString, akka.NotUsed]): Future[Option[ObjectStoreWriteData]] = {
       val tempFile = SingletonTemporaryFileCreator.create()
-      body
-        .runWith(FileIO.toPath(tempFile.path))
-        .map { _ =>
-          Some(ObjectStoreWriteData(
-            md5Hash       = tempFile.path.toFile.length.toString, // TODO get md5Hash
-            contentLength = tempFile.path.toFile.length,
-            body          = ObjectStoreWriteDataBody.File(tempFile.path.toFile),
-            cleanup       = _ => SingletonTemporaryFileCreator.delete(tempFile)
-          ))
-        }
+      for {
+        _             <- body.runWith(FileIO.toPath(tempFile.path))
+        md5Hash       =  tempFile.path.toFile.length.toString // TODO get md5Hash
+        contentLength =  tempFile.path.toFile.length
+        javaStream    =  FileIO.fromPath(tempFile.path).map(_.toArray).runWith(StreamConverters.asJavaStream[Array[Byte]]())
+      } yield
+        Some(ObjectStoreWriteData(
+          md5Hash       = tempFile.path.toFile.length.toString, // TODO get md5Hash
+          contentLength = tempFile.path.toFile.length,
+          body          = ObjectStoreWriteDataBody.Stream(javaStream, contentLength, md5Hash),
+          cleanup       = _ => SingletonTemporaryFileCreator.delete(tempFile)
+        ))
     }
   }
 
@@ -73,12 +75,12 @@ object ObjectStoreWrites {
     override def write(body: String): Future[Option[ObjectStoreWriteData]] =
       Future.successful {
         val bytes = body.getBytes
-          Some(ObjectStoreWriteData(
-            md5Hash       = bytes.toString, // TODO get md5Hash
-            contentLength = bytes.length,
-            body          = ObjectStoreWriteDataBody.InMemory(bytes),
-            cleanup       = _ => ()
-          ))
+        Some(ObjectStoreWriteData(
+          md5Hash       = bytes.toString, // TODO get md5Hash
+          contentLength = bytes.length,
+          body          = ObjectStoreWriteDataBody.InMemory(bytes),
+          cleanup       = _ => ()
+        ))
       }
   }
 }

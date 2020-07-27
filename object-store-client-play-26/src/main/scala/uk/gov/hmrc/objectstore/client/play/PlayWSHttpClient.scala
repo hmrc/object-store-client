@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.objectstore.client.play
 
+import akka.stream.scaladsl.StreamConverters
 import javax.inject.Inject
 import play.api.Logger
 import play.api.libs.ws.{EmptyBody, WSClient, WSRequest, WSResponse}
@@ -70,8 +71,12 @@ class PlayWSHttpClient @Inject()(wsClient: WSClient)(implicit ec: ExecutionConte
     val write = implicitly[ObjectStoreWrite[BODY]]
     write.write(body)
       .flatMap { optData =>
-        val md5Hash = optData.map(_.md5Hash) // TODO do something with this
-        val hdrs = optData.foldLeft(headers)((headers, data) => headers ++ List("Content-Length" -> data.contentLength.toString))
+        val hdrs = optData.foldLeft(headers)((headers, data) =>
+          headers ++ List(
+              "Content-Length" -> data.contentLength.toString,
+              "Content-MD5"    -> data.md5Hash
+            )
+        )
 
         val request = wsClient
           .url(url)
@@ -82,9 +87,9 @@ class PlayWSHttpClient @Inject()(wsClient: WSClient)(implicit ec: ExecutionConte
           .withRequestTimeout(Duration.Inf)
 
         def writeBody(request: WSRequest, body: ObjectStoreWriteDataBody) = body match {
-          case ObjectStoreWriteDataBody.Empty           => request.withBody(EmptyBody)
-          case ObjectStoreWriteDataBody.InMemory(bytes) => request.withBody(bytes)
-          case ObjectStoreWriteDataBody.File(file)      => request.withBody(file)
+          case ObjectStoreWriteDataBody.Empty                           => request.withBody(EmptyBody)
+          case ObjectStoreWriteDataBody.InMemory(bytes)                 => request.withBody(bytes)
+          case ObjectStoreWriteDataBody.Stream(stream, length, md5Hash) => request.withBody(StreamConverters.fromJavaStream(() => stream.map[akka.util.ByteString](akka.util.ByteString(_))))
         }
 
         optData.fold(request.withBody(EmptyBody))(data => writeBody(request, data.body))
