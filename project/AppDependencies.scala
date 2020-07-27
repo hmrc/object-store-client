@@ -17,7 +17,8 @@ object AppDependencies {
   lazy val objectStoreClienPlay26: Seq[ModuleID] = Seq(
     "com.typesafe.play"      %% "play"                 % play26Version,
     "com.typesafe.play"      %% "play-guice"           % play26Version,
-    "com.typesafe.play"      %% "play-ahc-ws"          % play26Version
+    "com.typesafe.play"      %% "play-ahc-ws"          % play26Version,
+    "org.scalatestplus.play" %% "scalatestplus-play"   % "3.1.3"         % Test
   ) ++ test
 
 }
