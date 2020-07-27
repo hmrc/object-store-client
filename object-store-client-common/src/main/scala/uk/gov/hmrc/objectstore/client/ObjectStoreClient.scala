@@ -28,7 +28,7 @@ class ObjectStoreClient[HttpReqBody, HttpResponse](client: HttpClient[HttpReqBod
   private val url = s"${config.baseUrl}/object-store"
 
   def putObject[F[_]](location: String, content: HttpReqBody)(implicit rt: ObjectStoreRead[HttpResponse, _, F]): F[Unit] = {
-    client.put(s"$url/object/$location", content).toUnit
+    client.put(s"$url/object/$location", content).consume
   }
 
   def getObject[T, F[_]](location: String)(implicit rt: ObjectStoreRead[HttpResponse, T, F]): F[Option[Object[T]]] = {
@@ -36,7 +36,7 @@ class ObjectStoreClient[HttpReqBody, HttpResponse](client: HttpClient[HttpReqBod
   }
 
   def deleteObject[F[_]](location: String)(implicit rt: ObjectStoreRead[HttpResponse, _, F]): F[Unit] = {
-    client.delete(s"$url/object/$location").toUnit
+    client.delete(s"$url/object/$location").consume
   }
 
   def listObjects[F[_]](location: String)(implicit rt: ObjectStoreRead[HttpResponse, _, F]): F[ObjectListing] = {

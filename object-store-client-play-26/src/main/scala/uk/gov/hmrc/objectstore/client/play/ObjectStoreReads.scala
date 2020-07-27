@@ -42,7 +42,7 @@ object ObjectStoreReads {
       }
     }
 
-    override def toUnit(response: Future[WSResponse]): Future[Unit] = {
+    override def consume(response: Future[WSResponse]): Future[Unit] = {
       response.map(_ => ())
     }
   }

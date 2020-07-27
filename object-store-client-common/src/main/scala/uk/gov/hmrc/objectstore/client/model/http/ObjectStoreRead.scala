@@ -27,7 +27,7 @@ trait ObjectStoreRead[HttpResponse, T, F[_]] {
 
   def toObject(response: HttpResponse): F[Option[Object[T]]]
 
-  def toUnit(response: HttpResponse): F[Unit]
+  def consume(response: HttpResponse): F[Unit]
 
 }
 
@@ -39,6 +39,6 @@ object ObjectStoreReadSyntax {
 
     def toObject(implicit r: ObjectStoreRead[HttpResponse, T, F]): F[Option[Object[T]]] = r.toObject(value)
 
-    def toUnit(implicit r: ObjectStoreRead[HttpResponse, T, F]): F[Unit] = r.toUnit(value)
+    def consume(implicit r: ObjectStoreRead[HttpResponse, T, F]): F[Unit] = r.consume(value)
   }
 }
