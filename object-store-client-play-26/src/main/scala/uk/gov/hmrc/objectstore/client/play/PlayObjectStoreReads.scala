@@ -21,15 +21,15 @@ import akka.util.ByteString
 import play.api.http.Status
 import play.api.libs.json._
 import play.api.libs.ws.WSResponse
-import uk.gov.hmrc.objectstore.client.model.http.{ObjectStoreRead, ObjectStoreWrite, ObjectStoreWriteData}
+import uk.gov.hmrc.objectstore.client.model.http.ObjectStoreRead
 import uk.gov.hmrc.objectstore.client.model.objectstore
 import uk.gov.hmrc.objectstore.client.model.objectstore.ObjectListing
 
 import scala.concurrent.{ExecutionContext, Future}
 
-trait ObjectStoreReads {
+trait PlayObjectStoreReads {
 
-  implicit def playFutureObjectStoreRead(implicit ec: ExecutionContext): ObjectStoreRead[Future[WSResponse], Source[ByteString, _], Future] =
+  implicit def futureAkkaSourceRead(implicit ec: ExecutionContext): ObjectStoreRead[Future[WSResponse], Source[ByteString, _], Future] =
     new ObjectStoreRead[Future[WSResponse], Source[ByteString, _], Future]{
 
       override def toObjectListing(response: Future[WSResponse]): Future[ObjectListing] =
@@ -46,4 +46,4 @@ trait ObjectStoreReads {
     }
 }
 
-object ObjectStoreReads extends ObjectStoreReads
+object PlayObjectStoreReads extends PlayObjectStoreReads

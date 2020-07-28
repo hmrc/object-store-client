@@ -26,7 +26,7 @@ object Md5Hash {
       val md  = MessageDigest.getInstance("MD5")
       val dis = new DigestInputStream(is, md)
       Iterator.continually(dis.read()).takeWhile(_ != -1).toArray
-      Base64.getEncoder().encodeToString(md.digest())
+      Base64.getEncoder.encodeToString(md.digest())
     } finally {
       is.close()
     }

@@ -21,24 +21,24 @@ import uk.gov.hmrc.objectstore.client.model.objectstore.{Object, ObjectListing}
 import scala.language.higherKinds
 
 
-trait ObjectStoreRead[HttpResponse, T, F[_]] {
+trait ObjectStoreRead[RES, T, F[_]] {
 
-  def toObjectListing(response: HttpResponse): F[ObjectListing]
+  def toObjectListing(response: RES): F[ObjectListing]
 
-  def toObject(response: HttpResponse): F[Option[Object[T]]]
+  def toObject(response: RES): F[Option[Object[T]]]
 
-  def consume(response: HttpResponse): F[Unit]
+  def consume(response: RES): F[Unit]
 
 }
 
 object ObjectStoreReadSyntax {
 
-  implicit class ObjectStoreReadOps[HttpResponse, T, F[_]](value: HttpResponse) {
+  implicit class ObjectStoreReadOps[RES, T, F[_]](value: RES) {
 
-    def toObjectListings(implicit r: ObjectStoreRead[HttpResponse, T, F]): F[ObjectListing] = r.toObjectListing(value)
+    def toObjectListings(implicit r: ObjectStoreRead[RES, T, F]): F[ObjectListing] = r.toObjectListing(value)
 
-    def toObject(implicit r: ObjectStoreRead[HttpResponse, T, F]): F[Option[Object[T]]] = r.toObject(value)
+    def toObject(implicit r: ObjectStoreRead[RES, T, F]): F[Option[Object[T]]] = r.toObject(value)
 
-    def consume(implicit r: ObjectStoreRead[HttpResponse, T, F]): F[Unit] = r.consume(value)
+    def consume(implicit r: ObjectStoreRead[RES, T, F]): F[Unit] = r.consume(value)
   }
 }

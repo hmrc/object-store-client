@@ -16,35 +16,15 @@
 
 package uk.gov.hmrc.objectstore.client.model.http
 
-import scala.concurrent.Future
+import scala.language.higherKinds
 
-
-trait ObjectStoreWrite[BODY] {
-
-  def write(body: BODY): Future[ObjectStoreWriteData]
+trait ObjectStoreWrite[BODY, REQ] {
+  def write(body: BODY): REQ
 }
 
-object Empty
+object ObjectStoreWriteSyntax {
 
-object ObjectStoreWrite {
-  implicit val emptyWrite = new ObjectStoreWrite[Empty.type] {
-    override def write(body: Empty.type): Future[ObjectStoreWriteData] =
-      Future.successful(ObjectStoreWriteData.Empty)
+  implicit class ObjectStoreWriteOps[BODY, REQ](value: BODY) {
+    def write(implicit w: ObjectStoreWrite[BODY, REQ]): REQ = w.write(value)
   }
-}
-
-sealed trait ObjectStoreWriteData
-object ObjectStoreWriteData {
-  case object Empty extends ObjectStoreWriteData
-
-  case class InMemory(
-    bytes: Array[Byte]
-  ) extends ObjectStoreWriteData
-
-  case class Stream(
-    stream       : java.util.stream.Stream[Array[Byte]],
-    contentLength: Long,
-    md5Hash      : String,
-    release      : () => Unit
-  ) extends ObjectStoreWriteData
 }
