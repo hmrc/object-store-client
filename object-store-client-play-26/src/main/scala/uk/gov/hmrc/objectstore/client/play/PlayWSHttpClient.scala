@@ -74,34 +74,39 @@ class PlayWSHttpClient @Inject()(wsClient: WSClient)(implicit ec: ExecutionConte
                        ): Future[T] = {
 
     logger.info(s"Request: Url: $url")
-    implicitly[ObjectStoreWrite[BODY]].write(body).map {
+    toData(body).flatMap { data =>
+      val hdrs = data.optLengthAndMd5Hash.fold(headers){ case (length, md5Hash) =>
+        headers ++ List(
+          "Content-Length" -> length.toString,
+          "Content-MD5"    -> md5Hash
+        )
+      }
+
+      data.writeBody(
+        wsClient
+          .url(url)
+          .withFollowRedirects(false)
+          .withMethod(method)
+          .withHttpHeaders(hdrs: _*)
+          .withQueryStringParameters(queryParameters: _*)
+          .withRequestTimeout(Duration.Inf)
+      )
+        .execute(method)
+        .map(logResponse)
+        .map(processResponse)
+        .andThen { case _ => data.release() }
+    }
+  }
+
+  private def toData[BODY](body: BODY)(implicit wrt: ObjectStoreWrite[BODY]): Future[Data] =
+    wrt.write(body).map {
       case ObjectStoreWriteData.Empty =>
         Data(None, _.withBody(EmptyBody), () => ())
       case ObjectStoreWriteData.InMemory(bytes) =>
         Data(Some((bytes.length, bytes.length.toString/* TODO implement*/)), _.withBody(bytes), () => ())
       case ObjectStoreWriteData.Stream(stream, length, md5Hash, release) =>
         Data(Some((length, md5Hash)), _.withBody(StreamConverters.fromJavaStream(() => stream.map[akka.util.ByteString](akka.util.ByteString(_)))), release)
-    }.flatMap { data =>
-        val hdrs = data.optLengthAndMd5Hash.fold(headers){ case (length, md5Hash) => headers ++ List(
-            "Content-Length" -> length.toString,
-            "Content-MD5"    -> md5Hash
-          )}
-
-        data.writeBody(
-          wsClient
-            .url(url)
-            .withFollowRedirects(false)
-            .withMethod(method)
-            .withHttpHeaders(hdrs: _*)
-            .withQueryStringParameters(queryParameters: _*)
-            .withRequestTimeout(Duration.Inf)
-        )
-          .execute(method)
-          .map(logResponse)
-          .map(processResponse)
-          .andThen { case _ => data.release() }
-      }
-  }
+    }
 
   private def logResponse(response: WSResponse): WSResponse = {
     logger.info(s"Response: Status ${response.status}, Headers ${response.headers}")

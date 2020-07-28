@@ -27,15 +27,6 @@ class ObjectStoreClient[HttpResponse](client: HttpClient[HttpResponse], config: 
 
   private val url = s"${config.baseUrl}/object-store"
 
-  /*def putObject[BODY, F[_]](
-    location: String,
-    content: BODY
-  )(implicit
-    rt: ObjectStoreRead[HttpResponse, _, F],
-    wt: ObjectStoreWrite[BODY]
-  ): F[Unit] =
-    client.put(s"$url/object/$location", content).consume*/
-
   // implementation with curried types
   def putObject[F[_]]: ObjectStoreClient.PutObject[F, HttpResponse] =
     new ObjectStoreClient.PutObject(client, url)
