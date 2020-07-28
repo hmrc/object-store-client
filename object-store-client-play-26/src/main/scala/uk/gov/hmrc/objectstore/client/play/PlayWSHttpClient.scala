@@ -103,7 +103,8 @@ class PlayWSHttpClient @Inject()(wsClient: WSClient)(implicit ec: ExecutionConte
       case ObjectStoreWriteData.Empty =>
         Data(None, _.withBody(EmptyBody), () => ())
       case ObjectStoreWriteData.InMemory(bytes) =>
-        Data(Some((bytes.length, bytes.length.toString/* TODO implement*/)), _.withBody(bytes), () => ())
+        val md5Hash = Md5Hash.fromInputStream(new java.io.ByteArrayInputStream(bytes))
+        Data(Some((bytes.length, md5Hash)), _.withBody(bytes), () => ())
       case ObjectStoreWriteData.Stream(stream, length, md5Hash, release) =>
         Data(Some((length, md5Hash)), _.withBody(StreamConverters.fromJavaStream(() => stream.map[akka.util.ByteString](akka.util.ByteString(_)))), release)
     }

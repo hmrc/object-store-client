@@ -16,14 +16,11 @@
 
 package uk.gov.hmrc.objectstore.client.play
 
+import java.io.FileInputStream
+
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import play.api.http.Status
-import play.api.libs.json._
-import play.api.libs.ws.WSResponse
-import uk.gov.hmrc.objectstore.client.model.http.{ObjectStoreRead, ObjectStoreWrite, ObjectStoreWriteData}
-import uk.gov.hmrc.objectstore.client.model.objectstore
-import uk.gov.hmrc.objectstore.client.model.objectstore.ObjectListing
+import uk.gov.hmrc.objectstore.client.model.http.{ObjectStoreWrite, ObjectStoreWriteData}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -35,11 +32,12 @@ trait ObjectStoreWrites {
 
       override def write(body: Source[ByteString, akka.NotUsed]): Future[ObjectStoreWriteData] = {
         val tempFile = SingletonTemporaryFileCreator.create()
+        // TODO can we calculate md5Hash on same pass as writing stream to local file? (e.g. DigestCalculator https://doc.akka.io/docs/akka/current/stream/stream-cookbook.html)
         body.runWith(FileIO.toPath(tempFile.path)).map { _ =>
           ObjectStoreWriteData.Stream(
             stream        = FileIO.fromPath(tempFile.path).map(_.toArray).runWith(StreamConverters.asJavaStream[Array[Byte]]()),
             contentLength = tempFile.path.toFile.length,
-            md5Hash       = tempFile.path.toFile.length.toString, // TODO get md5Hash
+            md5Hash       = Md5Hash.fromInputStream(new FileInputStream(tempFile.path.toFile)),
             release       = () => SingletonTemporaryFileCreator.delete(tempFile)
           )
         }
