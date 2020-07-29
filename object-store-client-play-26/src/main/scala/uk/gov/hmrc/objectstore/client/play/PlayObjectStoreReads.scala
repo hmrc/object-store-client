@@ -27,23 +27,23 @@ import uk.gov.hmrc.objectstore.client.model.objectstore.ObjectListing
 
 import scala.concurrent.{ExecutionContext, Future}
 
-object ObjectStoreReads {
+trait PlayObjectStoreReads {
 
-   class PlayFutureObjectStoreRead(implicit ec: ExecutionContext) extends ObjectStoreRead[Future[WSResponse], Source[ByteString, _], Future]{
+  implicit def futureAkkaSourceRead(implicit ec: ExecutionContext): ObjectStoreRead[Future[WSResponse], Source[ByteString, _], Future] =
+    new ObjectStoreRead[Future[WSResponse], Source[ByteString, _], Future]{
 
-    override def toObjectListing(response: Future[WSResponse]): Future[ObjectListing] = {
-      response.map(_.body[JsValue].as[ObjectListing](PlayFormats.objectListingFormat))
+      override def toObjectListing(response: Future[WSResponse]): Future[ObjectListing] =
+        response.map(_.body[JsValue].as[ObjectListing](PlayFormats.objectListingFormat))
+
+      override def toObject(response: Future[WSResponse]): Future[Option[objectstore.Object[Source[ByteString, _]]]] =
+        response.map {
+          case r if Status.isSuccessful(r.status) => Some(objectstore.Object("", r.bodyAsSource))
+          case r if Status.isClientError(r.status) => None
+        }
+
+      override def consume(response: Future[WSResponse]): Future[Unit] =
+        response.map(_ => ())
     }
-
-    override def toObject(response: Future[WSResponse]): Future[Option[objectstore.Object[Source[ByteString, _]]]] = {
-      response.map {
-        case r if Status.isSuccessful(r.status) => Some(objectstore.Object("", r.bodyAsSource))
-        case r if Status.isClientError(r.status) => None
-      }
-    }
-
-    override def consume(response: Future[WSResponse]): Future[Unit] = {
-      response.map(_ => ())
-    }
-  }
 }
+
+object PlayObjectStoreReads extends PlayObjectStoreReads

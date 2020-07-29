@@ -24,8 +24,7 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.github.tomakehurst.wiremock.client.WireMock._
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.time.{Millis, Seconds, Span}
+import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.Application
@@ -33,7 +32,7 @@ import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 import uk.gov.hmrc.objectstore.client.model.objectstore.{ObjectListing, ObjectSummary}
-import uk.gov.hmrc.objectstore.client.play.ObjectStoreReads.PlayFutureObjectStoreRead
+import uk.gov.hmrc.objectstore.client.play.PlayObjectStoreClient.Implicits._
 
 import scala.concurrent.ExecutionContextExecutor
 
@@ -43,14 +42,12 @@ class PlayObjectStoreClientSpec
     with GuiceOneServerPerSuite
     with BeforeAndAfterAll
     with WireMockHelper
-    with ScalaFutures {
+    with ScalaFutures
+    with IntegrationPatience {
 
   implicit val ec: ExecutionContextExecutor = scala.concurrent.ExecutionContext.global
   implicit val system: ActorSystem = ActorSystem()
   implicit val m: ActorMaterializer = ActorMaterializer()
-  implicit val osRead: PlayFutureObjectStoreRead = new PlayFutureObjectStoreRead()
-  implicit val defaultPatience: PatienceConfig =
-    PatienceConfig(timeout = Span(5, Seconds), interval = Span(50, Millis))
 
   protected val osClient: PlayObjectStoreClient = fakeApplication().injector.instanceOf(classOf[PlayObjectStoreClient])
 
@@ -140,16 +137,14 @@ class PlayObjectStoreClientSpec
 
   implicit class SourceOps(source: Source[ByteString, _]) {
 
-    def asString(): String = {
-      source.runFold("") { case (acc, bs) => acc + bs.utf8String }.futureValue
-    }
+    def asString(): String =
+      source.map(_.utf8String).runReduce(_ + _).futureValue
   }
 
   private def generateLocation(): String = UUID.randomUUID().toString
 
-  private def generateContent(body: String): Source[ByteString, NotUsed] = {
+  private def generateContent(body: String): Source[ByteString, NotUsed] =
     Source.single(ByteString(body.getBytes("UTF-8")))
-  }
 
   private def objectListingJson: String =
     """{

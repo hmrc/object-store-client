@@ -14,15 +14,20 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.objectstore.client.model.http
+package uk.gov.hmrc.objectstore.client.play
 
-trait HttpClient[BODY, RES] {
+import java.io.InputStream
+import java.security.{DigestInputStream, MessageDigest}
+import java.util.Base64
 
-  def put(url: String, body: BODY): RES
-
-  def post(url: String, body: BODY): RES
-
-  def get(url: String): RES
-
-  def delete(url: String): RES
+object Md5Hash {
+  def fromInputStream(is: InputStream): String =
+    try {
+      val md  = MessageDigest.getInstance("MD5")
+      val dis = new DigestInputStream(is, md)
+      Iterator.continually(dis.read()).takeWhile(_ != -1).toArray
+      Base64.getEncoder.encodeToString(md.digest())
+    } finally {
+      is.close()
+    }
 }

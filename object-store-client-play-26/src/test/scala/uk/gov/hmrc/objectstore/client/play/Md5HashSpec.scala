@@ -14,15 +14,24 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.objectstore.client.model.http
+package uk.gov.hmrc.objectstore.client.play
 
-trait HttpClient[BODY, RES] {
+import java.io.ByteArrayInputStream
 
-  def put(url: String, body: BODY): RES
+import org.scalatest.{Matchers, WordSpec}
 
-  def post(url: String, body: BODY): RES
 
-  def get(url: String): RES
+class Md5HashSpec
+  extends WordSpec
+     with Matchers {
 
-  def delete(url: String): RES
+  "Md5Hash.fromInputStream" must {
+
+    "convert inputstream to md5Hash" in {
+      val s = "asd"
+      val md5Hash = Md5Hash.fromInputStream(new ByteArrayInputStream(s.getBytes))
+
+      md5Hash shouldBe "eBVpbsvxyW5olLd5RW0zDg=="
+    }
+  }
 }

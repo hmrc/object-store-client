@@ -16,13 +16,15 @@
 
 package uk.gov.hmrc.objectstore.client.model.http
 
-trait HttpClient[BODY, RES] {
+import scala.language.higherKinds
 
-  def put(url: String, body: BODY): RES
+trait ObjectStoreWrite[BODY, REQ] {
+  def write(body: BODY): REQ
+}
 
-  def post(url: String, body: BODY): RES
+object ObjectStoreWriteSyntax {
 
-  def get(url: String): RES
-
-  def delete(url: String): RES
+  implicit class ObjectStoreWriteOps[BODY, REQ](value: BODY) {
+    def write(implicit w: ObjectStoreWrite[BODY, REQ]): REQ = w.write(value)
+  }
 }
