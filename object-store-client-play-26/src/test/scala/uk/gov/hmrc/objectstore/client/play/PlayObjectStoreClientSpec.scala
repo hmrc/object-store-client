@@ -65,8 +65,9 @@ class PlayObjectStoreClientSpec
       val body = s"hello world! ${UUID.randomUUID().toString}"
       val location = generateLocation()
       val content = generateContent(body)
+      val md5Base64 = Md5Hash.fromBytes(body.getBytes)
 
-      putObjectStub(location, body)
+      putObjectStub(location, body, md5Base64)
 
       osClient.putObject(location, content).futureValue shouldBe ((): Unit)
     }
@@ -170,11 +171,12 @@ class PlayObjectStoreClientSpec
       |}""".stripMargin
 
 
-  private def putObjectStub(location: String, reqBody: String): Unit = {
+  private def putObjectStub(location: String, reqBody: String, md5Base64: String): Unit = {
     val request = put(urlEqualTo(s"/object-store/object/$location"))
       .withHeader("content-length", equalTo("49"))
       .withRequestBody(binaryEqualTo(reqBody.getBytes))
       .withHeader("Content-Type", equalTo("application/octet-stream"))
+      .withHeader("Content-MD5", equalTo(md5Base64))
 
     val response = aResponse().withStatus(201)
     stubFor(request
