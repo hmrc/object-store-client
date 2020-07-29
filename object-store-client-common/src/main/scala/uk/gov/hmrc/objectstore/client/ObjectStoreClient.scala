@@ -18,32 +18,39 @@ package uk.gov.hmrc.objectstore.client
 
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 import uk.gov.hmrc.objectstore.client.model.http.ObjectStoreReadSyntax._
+import uk.gov.hmrc.objectstore.client.model.http.ObjectStoreWriteSyntax._
 import uk.gov.hmrc.objectstore.client.model.http.{HttpClient, ObjectStoreRead, ObjectStoreWrite}
 import uk.gov.hmrc.objectstore.client.model.objectstore.{Object, ObjectListing}
 
 import scala.language.higherKinds
 
-class ObjectStoreClient[HttpResponse](client: HttpClient[HttpResponse], config: ObjectStoreClientConfig) {
+class ObjectStoreClient[REQ, RES](client: HttpClient[REQ, RES], config: ObjectStoreClientConfig) {
 
   private val url = s"${config.baseUrl}/object-store"
 
   // implementation with curried types
-  def putObject[F[_]]: ObjectStoreClient.PutObject[F, HttpResponse] =
+  def putObject[F[_]]: ObjectStoreClient.PutObject[REQ, RES, F] =
     new ObjectStoreClient.PutObject(client, url)
 
-  def getObject[T, F[_]](location: String)(implicit rt: ObjectStoreRead[HttpResponse, T, F]): F[Option[Object[T]]] =
-    client.get(s"$url/object/$location").toObject
+  // implementation with curried types
+  def getObject[F[_]]: ObjectStoreClient.GetObject[REQ, RES, F] =
+    new ObjectStoreClient.GetObject(client, url)
 
-  def deleteObject[F[_]](location: String)(implicit rt: ObjectStoreRead[HttpResponse, _, F]): F[Unit] =
+  def deleteObject[F[_]](location: String)(implicit rt: ObjectStoreRead[RES, _, F]): F[Unit] =
     client.delete(s"$url/object/$location").consume
 
-  def listObjects[F[_]](location: String)(implicit rt: ObjectStoreRead[HttpResponse, _, F]): F[ObjectListing] =
+  def listObjects[F[_]](location: String)(implicit rt: ObjectStoreRead[RES, _, F]): F[ObjectListing] =
     client.get(s"$url/list/$location").toObjectListings
 }
 
 object ObjectStoreClient {
-  private[client] final class PutObject[F[_], HttpResponse](client: HttpClient[HttpResponse], url: String) {
-    def apply[BODY : ObjectStoreWrite](location: String, content: BODY)(implicit rt: ObjectStoreRead[HttpResponse, _, F]): F[Unit] =
-      client.put(s"$url/object/$location", content).consume
+  private[client] final class GetObject[REQ, RES, F[_]](client: HttpClient[REQ, RES], url: String) {
+    def apply[T](location: String)(implicit rt: ObjectStoreRead[RES, T, F]): F[Option[Object[T]]] =
+      client.get(s"$url/object/$location").toObject
+  }
+
+  private[client] final class PutObject[REQ, RES, F[_]](client: HttpClient[REQ, RES], url: String) {
+    def apply[BODY](location: String, content: BODY)(implicit rt: ObjectStoreRead[RES, _, F], wt: ObjectStoreWrite[BODY, REQ]): F[Unit] =
+      client.put(s"$url/object/$location", content.write).consume
   }
 }

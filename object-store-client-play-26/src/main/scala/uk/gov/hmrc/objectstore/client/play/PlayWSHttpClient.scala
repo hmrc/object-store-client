@@ -16,20 +16,30 @@
 
 package uk.gov.hmrc.objectstore.client.play
 
-import akka.stream.scaladsl.StreamConverters
 import javax.inject.Inject
 import play.api.Logger
-import play.api.libs.ws.{EmptyBody, WSClient, WSRequest, WSResponse}
-import uk.gov.hmrc.objectstore.client.model.http.{HttpClient, Empty, ObjectStoreWrite, ObjectStoreWriteData}
+import play.api.libs.ws.{WSClient, WSRequest, WSResponse}
+import uk.gov.hmrc.objectstore.client.model.http.HttpClient
+import uk.gov.hmrc.objectstore.client.play.PlayWSHttpClient.{Request, Response}
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ExecutionContext, Future}
 
-class PlayWSHttpClient @Inject()(wsClient: WSClient)(implicit ec: ExecutionContext) extends HttpClient[Future[WSResponse]] {
+
+case class HttpBody[BODY](length: Option[Long],
+                          md5: Option[String],
+                          writeBody: BODY,
+                          release: () => Unit)
+
+object PlayWSHttpClient {
+  type Request = Future[HttpBody[WSRequest => WSRequest]]
+  type Response = Future[WSResponse]
+}
+class PlayWSHttpClient @Inject()(wsClient: WSClient)(implicit ec: ExecutionContext) extends HttpClient[Request, Response] {
 
   private val logger: Logger = Logger(this.getClass)
 
-  override def put[BODY: ObjectStoreWrite](url: String, body: BODY): Future[WSResponse] =
+  override def put(url: String, body: Request): Future[WSResponse] =
     invoke(
       url = url,
       method = "PUT",
@@ -37,7 +47,7 @@ class PlayWSHttpClient @Inject()(wsClient: WSClient)(implicit ec: ExecutionConte
       body = body
     )
 
-  override def post[BODY : ObjectStoreWrite](url: String, body: BODY): Future[WSResponse] = invoke(
+  override def post(url: String, body: Request): Future[WSResponse] = invoke(
     url = url,
     method = "POST",
     processResponse = identity,
@@ -47,67 +57,51 @@ class PlayWSHttpClient @Inject()(wsClient: WSClient)(implicit ec: ExecutionConte
   override def get(url: String): Future[WSResponse] = invoke(
     url = url,
     method = "GET",
-    processResponse = identity,
-    body = Empty
+    processResponse = identity
   )
 
   override def delete(url: String): Future[WSResponse] = invoke(
     url = url,
     method = "DELETE",
-    processResponse = identity,
-    body = Empty
+    processResponse = identity
   )
 
-  private case class Data(
-    optLengthAndMd5Hash: Option[(Long, String)],
-    writeBody          : WSRequest => WSRequest,
-    release            : () => Unit
-  )
+  private val empty = Future.successful(HttpBody[WSRequest => WSRequest](
+    length = None,
+    md5 = None,
+    writeBody = identity,
+    release = () => ()
+  ))
 
-  private def invoke[BODY : ObjectStoreWrite, T](
+  private def invoke[T](
                          url: String,
                          method: String,
                          processResponse: WSResponse => T,
                          headers: List[(String, String)] = List.empty,
                          queryParameters: List[(String, String)] = List.empty,
-                         body: BODY,
+                         body: Request = empty
                        ): Future[T] = {
 
     logger.info(s"Request: Url: $url")
-    toData(body).flatMap { data =>
-      val hdrs = data.optLengthAndMd5Hash.fold(headers){ case (length, md5Hash) =>
-        headers ++ List(
-          "Content-Length" -> length.toString,
-          "Content-MD5"    -> md5Hash
-        )
-      }
+    body.flatMap { httpBody =>
+      val hdrs = headers ++ httpBody.length.map("Content-Length" -> _.toString) ++ httpBody.md5.map("Content-MD5" -> _)
 
-      data.writeBody(
-        wsClient
-          .url(url)
-          .withFollowRedirects(false)
-          .withMethod(method)
-          .withHttpHeaders(hdrs: _*)
-          .withQueryStringParameters(queryParameters: _*)
-          .withRequestTimeout(Duration.Inf)
-      )
+      val request = wsClient
+        .url(url)
+        .withFollowRedirects(false)
+        .withMethod(method)
+        .withHttpHeaders(hdrs: _*)
+        .withQueryStringParameters(queryParameters: _*)
+        .withRequestTimeout(Duration.Inf)
+
+      httpBody
+        .writeBody(request)
         .execute(method)
         .map(logResponse)
         .map(processResponse)
-        .andThen { case _ => data.release() }
+        .andThen { case _ => httpBody.release() }
     }
   }
-
-  private def toData[BODY](body: BODY)(implicit wrt: ObjectStoreWrite[BODY]): Future[Data] =
-    wrt.write(body).map {
-      case ObjectStoreWriteData.Empty =>
-        Data(None, _.withBody(EmptyBody), () => ())
-      case ObjectStoreWriteData.InMemory(bytes) =>
-        val md5Hash = Md5Hash.fromInputStream(new java.io.ByteArrayInputStream(bytes))
-        Data(Some((bytes.length, md5Hash)), _.withBody(bytes), () => ())
-      case ObjectStoreWriteData.Stream(stream, length, md5Hash, release) =>
-        Data(Some((length, md5Hash)), _.withBody(StreamConverters.fromJavaStream(() => stream.map[akka.util.ByteString](akka.util.ByteString(_)))), release)
-    }
 
   private def logResponse(response: WSResponse): WSResponse = {
     logger.info(s"Response: Status ${response.status}, Headers ${response.headers}")

@@ -16,13 +16,13 @@
 
 package uk.gov.hmrc.objectstore.client.model.http
 
-trait HttpClient[Response] {
+trait HttpClient[BODY, RES] {
 
-  def put[BODY : ObjectStoreWrite](url: String, body: BODY): Response
+  def put(url: String, body: BODY): RES
 
-  def post[BODY : ObjectStoreWrite](url: String, body: BODY): Response
+  def post(url: String, body: BODY): RES
 
-  def get(url: String): Response
+  def get(url: String): RES
 
-  def delete(url: String): Response
+  def delete(url: String): RES
 }

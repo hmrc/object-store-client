@@ -23,5 +23,5 @@ import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 class PlayObjectStoreClient @Inject()(httpClient: PlayWSHttpClient, config: ObjectStoreClientConfig) extends ObjectStoreClient(httpClient, config)
 
 object PlayObjectStoreClient {
-  object Implicits extends ObjectStoreReads with ObjectStoreWrites
+  object Implicits extends PlayObjectStoreReads with PlayObjectStoreWrites
 }
