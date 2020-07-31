@@ -20,6 +20,11 @@ import java.io.InputStream
 import java.security.{DigestInputStream, MessageDigest}
 import java.util.Base64
 
+import akka.stream.scaladsl.Sink
+import akka.util.ByteString
+
+import scala.concurrent.{ExecutionContext, Future}
+
 object Md5Hash {
   def fromInputStream(is: InputStream): String =
     try {
@@ -30,4 +35,12 @@ object Md5Hash {
     } finally {
       is.close()
     }
+
+  def fromBytes(bytes: Array[Byte]): String =
+    Base64.getEncoder.encodeToString(MessageDigest.getInstance("MD5").digest(bytes))
+
+  def md5HashSink(implicit ec: ExecutionContext): Sink[ByteString, Future[String]] = {
+    val md  = MessageDigest.getInstance("MD5")
+    Sink.foreach[ByteString](bs => md.update(bs.toArray)).mapMaterializedValue(_.map(_ => Base64.getEncoder.encodeToString(md.digest())))
+  }
 }

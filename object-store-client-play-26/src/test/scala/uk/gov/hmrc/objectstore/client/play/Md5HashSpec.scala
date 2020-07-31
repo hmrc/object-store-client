@@ -28,10 +28,11 @@ class Md5HashSpec
   "Md5Hash.fromInputStream" must {
 
     "convert inputstream to md5Hash" in {
-      val s = "asd"
-      val md5Hash = Md5Hash.fromInputStream(new ByteArrayInputStream(s.getBytes))
+      Md5Hash.fromInputStream(new ByteArrayInputStream("asd".getBytes)) shouldBe "eBVpbsvxyW5olLd5RW0zDg=="
+    }
 
-      md5Hash shouldBe "eBVpbsvxyW5olLd5RW0zDg=="
+    "convert Bytes to md5Hash" in {
+      Md5Hash.fromBytes("asd".getBytes) shouldBe "eBVpbsvxyW5olLd5RW0zDg=="
     }
   }
 }

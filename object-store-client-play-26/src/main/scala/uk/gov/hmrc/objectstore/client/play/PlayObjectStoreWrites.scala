@@ -16,11 +16,9 @@
 
 package uk.gov.hmrc.objectstore.client.play
 
-import java.io.FileInputStream
-
 import akka.NotUsed
-import akka.stream.Materializer
-import akka.stream.scaladsl.{FileIO, Source}
+import akka.stream.{ClosedShape, Materializer}
+import akka.stream.scaladsl.{Broadcast, FileIO, Flow, GraphDSL, RunnableGraph, Sink, Source}
 import akka.util.ByteString
 import play.api.libs.Files.SingletonTemporaryFileCreator
 import play.api.libs.ws.WSRequest
@@ -34,26 +32,51 @@ trait PlayObjectStoreWrites {
     new ObjectStoreWrite[Source[ByteString, akka.NotUsed], Request] {
       override def write(body: Source[ByteString, NotUsed]): Request = {
         val tempFile = SingletonTemporaryFileCreator.create()
-        body.runWith(FileIO.toPath(tempFile.path)).map { _ =>
 
+        val (uploadFinished, md5Finished) =
+          broadcast2(
+            source = body,
+            sink1  = FileIO.toPath(tempFile.path),
+            sink2  = Md5Hash.md5HashSink
+          ).run()
+
+        for {
+          _       <- uploadFinished
+          md5Hash <- md5Finished
+        } yield
           HttpBody(
-            length = Some(tempFile.path.toFile.length),
-            md5 = Some(Md5Hash.fromInputStream(new FileInputStream(tempFile.path.toFile))),
+            length    = Some(tempFile.path.toFile.length),
+            md5       = Some(md5Hash),
             writeBody = (req: WSRequest) => req.withBody(body),
-            release = () => SingletonTemporaryFileCreator.delete(tempFile)
+            release   = () => SingletonTemporaryFileCreator.delete(tempFile)
           )
-        }
       }
     }
 
+  private def broadcast2[T, Mat1, Mat2](
+    source: Source[T, Any],
+    sink1: Sink[T, Mat1],
+    sink2: Sink[T, Mat2]
+  ): RunnableGraph[(Mat1, Mat2)] =
+    RunnableGraph.fromGraph(GraphDSL.create(sink1, sink2)(Tuple2.apply) {
+      implicit builder => (s1, s2) =>
+        import GraphDSL.Implicits._
+        val broadcast = builder.add(Broadcast[T](outputPorts = 2))
+        source ~> broadcast
+        broadcast.out(0) ~> Flow[T].async ~> s1
+        broadcast.out(1) ~> Flow[T].async ~> s2
+        ClosedShape
+    })
+
   implicit lazy val stringWrite: ObjectStoreWrite[String, Request] =
     new ObjectStoreWrite[String, Request] {
-      override def write(body: String): Request = Future.successful(HttpBody(
-        length = Some(body.getBytes.length),
-        md5 = Some(Md5Hash.fromInputStream(new java.io.ByteArrayInputStream(body.getBytes))),
-        writeBody = (req: WSRequest) => req.withBody(body.getBytes),
-        release = () => ())
-      )
+      override def write(body: String): Request =
+        Future.successful(HttpBody(
+          length    = Some(body.getBytes.length),
+          md5       = Some(Md5Hash.fromBytes(body.getBytes)),
+          writeBody = (req: WSRequest) => req.withBody(body.getBytes),
+          release   = () => ()
+        ))
     }
 }
 
