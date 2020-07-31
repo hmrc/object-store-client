@@ -34,8 +34,11 @@ trait PlayObjectStoreWrites {
         val tempFile = SingletonTemporaryFileCreator.create()
 
         val (uploadFinished, md5Finished) =
-          broadcast(body, FileIO.toPath(tempFile.path), Md5Hash.md5HashSink)
-            .run()
+          broadcast2(
+            source = body,
+            sink1  = FileIO.toPath(tempFile.path),
+            sink2  = Md5Hash.md5HashSink
+          ).run()
 
         for {
           _       <- uploadFinished
@@ -50,7 +53,7 @@ trait PlayObjectStoreWrites {
       }
     }
 
-  private def broadcast[T, Mat1, Mat2](
+  private def broadcast2[T, Mat1, Mat2](
     source: Source[T, Any],
     sink1: Sink[T, Mat1],
     sink2: Sink[T, Mat2]
@@ -58,7 +61,7 @@ trait PlayObjectStoreWrites {
     RunnableGraph.fromGraph(GraphDSL.create(sink1, sink2)(Tuple2.apply) {
       implicit builder => (s1, s2) =>
         import GraphDSL.Implicits._
-        val broadcast = builder.add(Broadcast[T](2))
+        val broadcast = builder.add(Broadcast[T](outputPorts = 2))
         source ~> broadcast
         broadcast.out(0) ~> Flow[T].async ~> s1
         broadcast.out(1) ~> Flow[T].async ~> s2
