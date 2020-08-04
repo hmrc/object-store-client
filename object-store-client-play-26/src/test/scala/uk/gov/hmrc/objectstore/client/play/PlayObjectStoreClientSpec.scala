@@ -59,15 +59,24 @@ class PlayObjectStoreClientSpec
   "putObject" must {
 
     "store an object" in {
-
       val body      = s"hello world! ${UUID.randomUUID().toString}"
       val location  = generateLocation()
       val content   = generateContent(body)
       val md5Base64 = Md5Hash.fromBytes(body.getBytes)
 
-      putObjectStub(location, body, md5Base64)
+      putObjectStub(location, statusCode = 201, body, md5Base64)
 
       osClient.putObject(location, content).futureValue shouldBe ((): Unit)
+    }
+
+    "return an exception if object-store response is not successful" in {
+      val body      = s"hello world! ${UUID.randomUUID().toString}"
+      val location  = generateLocation()
+      val content   = generateContent(body)
+      val md5Base64 = Md5Hash.fromBytes(body.getBytes)
+
+      putObjectStub(location, statusCode = 401, body, md5Base64)
+      osClient.putObject(location, content).failed.futureValue shouldBe an[UpstreamErrorResponse]
     }
   }
 
@@ -77,15 +86,21 @@ class PlayObjectStoreClientSpec
       val location = generateLocation()
       val content  = generateContent(body)
 
-      getObjectStub(location, Some(body))
+      getObjectStub(location, statusCode = 200, Some(body))
 
       osClient.getObject(location).futureValue.get.objectContent.asString() shouldBe content.asString()
     }
 
     "return None for an object that doesn't exist" in {
       val location = generateLocation()
-      getObjectStub(location, None)
+      getObjectStub(location, statusCode = 404, None)
       osClient.getObject(location).futureValue shouldBe None
+    }
+
+    "return an exception if object-store response is not successful" in {
+      val location = generateLocation()
+      getObjectStub(location, statusCode = 401, None)
+      osClient.getObject(location).failed.futureValue shouldBe an[UpstreamErrorResponse]
     }
   }
 
@@ -97,13 +112,19 @@ class PlayObjectStoreClientSpec
 
       osClient.deleteObject(location).futureValue shouldBe ((): Unit)
     }
+
+    "return an exception if object-store response is not successful" in {
+      val location = generateLocation()
+      deleteObjectStub(location, statusCode = 401)
+      osClient.deleteObject(location).failed.futureValue shouldBe an[UpstreamErrorResponse]
+    }
   }
 
   "listObject" must {
     "return a ObjectListing with objectSummaries" in {
       val location = generateLocation()
 
-      listObjectsStub(location, objectListingJson)
+      listObjectsStub(location, statusCode = 200, Some(objectListingJson))
 
       osClient.listObjects(location).futureValue.objectSummaries shouldBe List(
         ObjectSummary(
@@ -124,9 +145,15 @@ class PlayObjectStoreClientSpec
     "return a ObjectListing with no objectSummaries" in {
       val location = generateLocation()
 
-      listObjectsStub(location, emptyObjectListingJson)
+      listObjectsStub(location, statusCode = 200, Some(emptyObjectListingJson))
 
       osClient.listObjects(location).futureValue shouldBe ObjectListing(List.empty)
+    }
+
+    "return an exception if object-store response is not successful" in {
+      val location = generateLocation()
+      listObjectsStub(location, statusCode = 401, None)
+      osClient.listObjects(location).failed.futureValue shouldBe an[UpstreamErrorResponse]
     }
   }
 
@@ -169,55 +196,50 @@ class PlayObjectStoreClientSpec
       |    "objects": []
       |}""".stripMargin
 
-  private def putObjectStub(location: String, reqBody: String, md5Base64: String): Unit = {
+  private def putObjectStub(location: String, statusCode: Int, reqBody: String, md5Base64: String): Unit = {
     val request = put(urlEqualTo(s"/object-store/object/$location"))
       .withHeader("content-length", equalTo("49"))
       .withRequestBody(binaryEqualTo(reqBody.getBytes))
       .withHeader("Content-Type", equalTo("application/octet-stream"))
       .withHeader("Content-MD5", equalTo(md5Base64))
 
-    val response = aResponse().withStatus(201)
+    val response = aResponse().withStatus(statusCode)
     stubFor(
       request
         .willReturn(response))
   }
 
-  private def getObjectStub(location: String, resBody: Option[String]): Unit = {
+  private def getObjectStub(location: String, statusCode: Int, resBody: Option[String]): Unit = {
     val request = get(urlEqualTo(s"/object-store/object/$location"))
-    val response = resBody.fold {
-      aResponse()
-        .withStatus(404)
-    } { res =>
-      aResponse()
-        .withStatus(200)
-        .withBody(res.getBytes)
+    val responseBuilder = aResponse.withStatus(statusCode)
+    resBody.foreach(responseBuilder.withBody)
+
+    stubFor(
+      request
+        .willReturn(responseBuilder))
+  }
+
+  private def deleteObjectStub(location: String, statusCode: Int = 200): Unit = {
+    val request = delete(urlEqualTo(s"/object-store/object/$location"))
+    val response = aResponse()
+      .withStatus(statusCode)
+
+    stubFor(
+      request
+        .willReturn(response))
+  }
+
+  private def listObjectsStub(location: String, statusCode: Int, resBodyJson: Option[String]): Unit = {
+    val request = get(urlEqualTo(s"/object-store/list/$location"))
+    val responseBuilder = aResponse().withStatus(statusCode)
+    resBodyJson foreach { body =>
+      responseBuilder.withBody(body)
+      responseBuilder.withHeader("Content-Type", "application/json")
     }
 
     stubFor(
       request
-        .willReturn(response))
-  }
-
-  private def deleteObjectStub(location: String): Unit = {
-    val request = delete(urlEqualTo(s"/object-store/object/$location"))
-    val response = aResponse()
-      .withStatus(200)
-
-    stubFor(
-      request
-        .willReturn(response))
-  }
-
-  private def listObjectsStub(location: String, resBodyJson: String): Unit = {
-    val request = get(urlEqualTo(s"/object-store/list/$location"))
-    val response = aResponse()
-      .withStatus(200)
-      .withBody(resBodyJson)
-      .withHeader("Content-Type", "application/json")
-
-    stubFor(
-      request
-        .willReturn(response))
+        .willReturn(responseBuilder))
   }
 
 }
