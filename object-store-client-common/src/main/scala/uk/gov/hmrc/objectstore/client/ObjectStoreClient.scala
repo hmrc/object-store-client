@@ -50,7 +50,9 @@ object ObjectStoreClient {
   }
 
   private[client] final class PutObject[REQ, RES, F[_]](client: HttpClient[REQ, RES], url: String) {
-    def apply[BODY](location: String, content: BODY)(implicit rt: ObjectStoreRead[RES, _, F], wt: ObjectStoreWrite[BODY, REQ]): F[Unit] =
+    def apply[BODY](location: String, content: BODY)(
+      implicit rt: ObjectStoreRead[RES, _, F],
+      wt: ObjectStoreWrite[BODY, REQ]): F[Unit] =
       client.put(s"$url/object/$location", content.write).consume
   }
 }

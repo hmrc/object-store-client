@@ -16,5 +16,4 @@
 
 package uk.gov.hmrc.objectstore.client.model.objectstore
 
-final case class ObjectMetadata(metadata: Map[String, String],
-                                userMetadata: Map[String, String])
+final case class ObjectMetadata(metadata: Map[String, String], userMetadata: Map[String, String])

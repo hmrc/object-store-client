@@ -20,7 +20,6 @@ import uk.gov.hmrc.objectstore.client.model.objectstore.{Object, ObjectListing}
 
 import scala.language.higherKinds
 
-
 trait ObjectStoreRead[RES, T, F[_]] {
 
   def toObjectListing(response: RES): F[ObjectListing]
