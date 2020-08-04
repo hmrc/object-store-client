@@ -33,17 +33,26 @@ trait PlayObjectStoreReads {
     new ObjectStoreRead[Future[WSResponse], Source[ByteString, _], Future]{
 
       override def toObjectListing(response: Future[WSResponse]): Future[ObjectListing] =
-        response.map(_.body[JsValue].as[ObjectListing](PlayFormats.objectListingFormat))
+        response.map {
+          case r if Status.isSuccessful(r.status) => r.body[JsValue].as[ObjectListing](PlayFormats.objectListingFormat)
+          case r => throw UpstreamErrorResponse("Object store call failed", r.status)
+        }
 
       override def toObject(response: Future[WSResponse]): Future[Option[objectstore.Object[Source[ByteString, _]]]] =
         response.map {
-          case r if Status.isSuccessful(r.status) => Some(objectstore.Object("", r.bodyAsSource))
-          case r if Status.isClientError(r.status) => None
+          case r if Status.isSuccessful(r.status) => Some(objectstore.Object("", r.bodyAsSource)) // todo - location is empty?
+          case r if r.status == Status.NOT_FOUND => None
+          case r => throw UpstreamErrorResponse("Object store call failed", r.status)
         }
 
       override def consume(response: Future[WSResponse]): Future[Unit] =
-        response.map(_ => ())
+        response.map {
+          case r if Status.isSuccessful(r.status) => ()
+          case r => throw UpstreamErrorResponse("Object store call failed", r.status)
+        }
     }
 }
 
 object PlayObjectStoreReads extends PlayObjectStoreReads
+
+case class UpstreamErrorResponse(message: String, statusCode: Int) extends Exception(message)
