@@ -25,7 +25,7 @@ import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 
 class ObjectStoreModule() extends Module {
   override def bindings(environment: Environment, configuration: Configuration): Seq[Binding[_]] = Seq(
-    bind[ObjectStoreClientConfig].toProvider[ObjectStoreClientConfigProvider],
+    bind[ObjectStoreClientConfig].toProvider[ObjectStoreClientConfigProvider]
   )
 }
 
