@@ -40,7 +40,9 @@ object Md5Hash {
     Base64.getEncoder.encodeToString(MessageDigest.getInstance("MD5").digest(bytes))
 
   def md5HashSink(implicit ec: ExecutionContext): Sink[ByteString, Future[String]] = {
-    val md  = MessageDigest.getInstance("MD5")
-    Sink.foreach[ByteString](bs => md.update(bs.toArray)).mapMaterializedValue(_.map(_ => Base64.getEncoder.encodeToString(md.digest())))
+    val md = MessageDigest.getInstance("MD5")
+    Sink
+      .foreach[ByteString](bs => md.update(bs.toArray))
+      .mapMaterializedValue(_.map(_ => Base64.getEncoder.encodeToString(md.digest())))
   }
 }

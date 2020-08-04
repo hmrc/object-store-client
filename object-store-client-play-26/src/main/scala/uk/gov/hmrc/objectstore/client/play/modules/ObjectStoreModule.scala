@@ -24,7 +24,6 @@ import play.api.{Configuration, Environment}
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 
 class ObjectStoreModule() extends Module {
-
   override def bindings(environment: Environment, configuration: Configuration): Seq[Binding[_]] = Seq(
     bind[ObjectStoreClientConfig].toProvider[ObjectStoreClientConfigProvider],
   )
@@ -32,6 +31,11 @@ class ObjectStoreModule() extends Module {
 
 private class ObjectStoreClientConfigProvider @Inject()(configuration: Configuration)
     extends Provider[ObjectStoreClientConfig] {
+
+  override def get(): ObjectStoreClientConfig = ObjectStoreClientConfig(
+    baseUrl            = getBaseUrl(configuration.underlying),
+    authorizationToken = getAuthorizationHeader(configuration.underlying)
+  )
 
   private def getBaseUrl(config: Config): String = {
     val osConfig = config.getConfig("microservice.services.object-store")
@@ -48,9 +52,4 @@ private class ObjectStoreClientConfigProvider @Inject()(configuration: Configura
 
   private def getAuthorizationHeader(config: Config): String =
     config.getConfig("internal-auth").getString("token")
-
-  override def get(): ObjectStoreClientConfig = ObjectStoreClientConfig(
-    baseUrl            = getBaseUrl(configuration.underlying),
-    authorizationToken = getAuthorizationHeader(configuration.underlying)
-  )
 }

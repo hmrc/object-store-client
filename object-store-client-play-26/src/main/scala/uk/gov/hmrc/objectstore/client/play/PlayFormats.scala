@@ -27,8 +27,7 @@ object PlayFormats {
     ((__ \ "location").format[String]
       ~ (__ \ "contentLength").format[Long]
       ~ (__ \ "contentMD5").format[String]
-      ~ (__ \ "lastModified").format[String]
-      )(ObjectSummary.apply, unlift(ObjectSummary.unapply))
+      ~ (__ \ "lastModified").format[String])(ObjectSummary.apply, unlift(ObjectSummary.unapply))
   }
 
   val objectListingFormat: Format[ObjectListing] = {
