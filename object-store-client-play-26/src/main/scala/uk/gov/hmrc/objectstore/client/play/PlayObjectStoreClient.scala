@@ -20,8 +20,14 @@ import javax.inject.Inject
 import uk.gov.hmrc.objectstore.client.ObjectStoreClient
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 
-class PlayObjectStoreClient @Inject()(httpClient: PlayWSHttpClient, config: ObjectStoreClientConfig) extends ObjectStoreClient(httpClient, config)
+class PlayObjectStoreClient @Inject()(
+  httpClient: PlayWSHttpClient,
+  config    : ObjectStoreClientConfig
+) extends ObjectStoreClient(httpClient, config)
 
 object PlayObjectStoreClient {
-  object Implicits extends PlayObjectStoreReads with PlayObjectStoreWrites
+  object Implicits
+    extends PlayObjectStoreReads
+       with PlayObjectStoreReads2
+       with PlayObjectStoreWrites
 }

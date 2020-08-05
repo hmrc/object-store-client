@@ -19,7 +19,6 @@ package uk.gov.hmrc.objectstore.client.play
 import javax.inject.Inject
 import play.api.Logger
 import play.api.libs.ws.{WSClient, WSRequest, WSResponse}
-import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 import uk.gov.hmrc.objectstore.client.model.http.HttpClient
 import uk.gov.hmrc.objectstore.client.play.PlayWSHttpClient.{Request, Response}
 
@@ -80,7 +79,7 @@ class PlayWSHttpClient @Inject()(wsClient: WSClient)(implicit ec: ExecutionConte
     url: String,
     method: String,
     processResponse: WSResponse => T,
-    headers: List[(String, String)]         = List.empty,
+    headers: List[(String, String)],
     queryParameters: List[(String, String)] = List.empty,
     body: Request                           = empty
   ): Future[T] = {

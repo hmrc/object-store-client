@@ -88,19 +88,29 @@ class PlayObjectStoreClientSpec
 
       getObjectStub(location, statusCode = 200, Some(body))
 
-      osClient.getObject(location).futureValue.get.objectContent.asString() shouldBe content.asString()
+      osClient.getObject[scala.concurrent.Future, Source[ByteString, NotUsed]](location).futureValue.get.objectContent.asString() shouldBe content.asString()
+    }
+
+    "return an object that exists as String" in {
+      val body     = "hello world! e36cb887-58ae-4422-9894-215faaf0aa35"
+      val location = generateLocation()
+      val content  = generateContent(body)
+
+      getObjectStub(location, statusCode = 200, Some(body))
+
+      osClient.getObject[scala.concurrent.Future, String](location).futureValue.get.objectContent shouldBe content.asString()
     }
 
     "return None for an object that doesn't exist" in {
       val location = generateLocation()
       getObjectStub(location, statusCode = 404, None)
-      osClient.getObject(location).futureValue shouldBe None
+      osClient.getObject[scala.concurrent.Future, Source[ByteString, NotUsed]](location).futureValue shouldBe None
     }
 
     "return an exception if object-store response is not successful" in {
       val location = generateLocation()
       getObjectStub(location, statusCode = 401, None)
-      osClient.getObject(location).failed.futureValue shouldBe an[UpstreamErrorResponse]
+      osClient.getObject[scala.concurrent.Future, Source[ByteString, NotUsed]](location).failed.futureValue shouldBe an[UpstreamErrorResponse]
     }
   }
 

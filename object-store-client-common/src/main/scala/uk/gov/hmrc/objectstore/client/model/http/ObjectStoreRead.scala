@@ -20,45 +20,49 @@ import uk.gov.hmrc.objectstore.client.model.objectstore.{Object, ObjectListing}
 
 import scala.language.higherKinds
 
-trait ObjectStoreRead[RES, T, F[_]] { outer =>
+trait ObjectStoreRead[RES, F[_]] {
 
   def toObjectListing(response: RES): F[ObjectListing]
 
-  def toObject(response: RES): F[Option[Object[T]]]
+  def toObject[T](response: RES)(implicit r2: ObjectStoreRead2[RES, F, T]): F[Option[Object[T]]] =
+    r2.toObject(response)
 
   def consume(response: RES): F[Unit]
+}
 
-  // to avoid a dependency on any Functor library, prove F is a monad here...
+trait ObjectStoreRead2[RES, F[_], T] { outer =>
+
+  def toObject(response: RES): F[Option[Object[T]]]
+
+  // to avoid a dependency on any functional library, prove F is a monad here...
   def fPure[A](a: A): F[A]
   def fFlatMap[A, B](fa: F[A])(fn: A => F[B]): F[B]
 
-  def map[T2](fn: T => T2): ObjectStoreRead[RES, T2, F] =
+  def map[T2](fn: T => T2): ObjectStoreRead2[RES, F, T2] =
     flatMap(a => fPure(fn(a)))
 
-  def flatMap[T2](fn: T => F[T2]): ObjectStoreRead[RES, T2, F] = new ObjectStoreRead[RES, T2, F] {
-    override def toObjectListing(response: RES): F[ObjectListing] = outer.toObjectListing(response)
+  def flatMap[T2](fn: T => F[T2]): ObjectStoreRead2[RES, F, T2] =
+    new ObjectStoreRead2[RES, F, T2] {
+      override def toObject(response: RES): F[Option[Object[T2]]] =
+        fFlatMap(outer.toObject(response)){
+          case Some(o) => fFlatMap(fn(o.objectContent))(content => fPure(Some(o.copy(objectContent = content))))
+          case None    => fPure(None)
+        }
 
-    override def toObject(response: RES): F[Option[Object[T2]]] =
-      fFlatMap(outer.toObject(response)){
-        case Some(o) => fFlatMap(fn(o.objectContent))(content => fPure(Some(o.copy(objectContent = content))))
-        case None    => fPure(None)
-      }
-
-    override def consume(response: RES): F[Unit] = outer.consume(response)
-
-    override def fPure[A](a: A): F[A] = outer.fPure(a)
-    override def fFlatMap[A, B](fa: F[A])(fn: A => F[B]): F[B] = outer.fFlatMap(fa)(fn)
-  }
+      override def fPure[A](a: A): F[A] = outer.fPure(a)
+      override def fFlatMap[A, B](fa: F[A])(fn: A => F[B]): F[B] = outer.fFlatMap(fa)(fn)
+    }
 }
+
 
 object ObjectStoreReadSyntax {
 
-  implicit class ObjectStoreReadOps[RES, T, F[_]](value: RES) {
+  implicit class ObjectStoreReadOps[RES, F[_]](value: RES) {
 
-    def toObjectListings(implicit r: ObjectStoreRead[RES, T, F]): F[ObjectListing] = r.toObjectListing(value)
+    def toObjectListings(implicit r: ObjectStoreRead[RES, F]): F[ObjectListing] = r.toObjectListing(value)
 
-    def toObject(implicit r: ObjectStoreRead[RES, T, F]): F[Option[Object[T]]] = r.toObject(value)
+    def toObject[T](implicit r: ObjectStoreRead[RES, F], r2: ObjectStoreRead2[RES, F, T]): F[Option[Object[T]]] = r.toObject(value)
 
-    def consume(implicit r: ObjectStoreRead[RES, T, F]): F[Unit] = r.consume(value)
+    def consume(implicit r: ObjectStoreRead[RES, F]): F[Unit] = r.consume(value)
   }
 }
