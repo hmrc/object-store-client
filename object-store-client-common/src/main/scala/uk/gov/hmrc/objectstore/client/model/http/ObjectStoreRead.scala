@@ -28,17 +28,26 @@ trait ObjectStoreRead[RES, T, F[_]] { outer =>
 
   def consume(response: RES): F[Unit]
 
-  // to avoid a dependency on any Functor library, prove F is a functor here...
-  def fmap[A, B](fa: F[A])(f: A => B): F[B]
+  // to avoid a dependency on any Functor library, prove F is a monad here...
+  def fPure[A](a: A): F[A]
+  def fFlatMap[A, B](fa: F[A])(fn: A => F[B]): F[B]
 
-  def map[T2](f: T => T2): ObjectStoreRead[RES, T2, F] = new ObjectStoreRead[RES, T2, F] {
+  def map[T2](fn: T => T2): ObjectStoreRead[RES, T2, F] =
+    flatMap(a => fPure(fn(a)))
+
+  def flatMap[T2](fn: T => F[T2]): ObjectStoreRead[RES, T2, F] = new ObjectStoreRead[RES, T2, F] {
     override def toObjectListing(response: RES): F[ObjectListing] = outer.toObjectListing(response)
 
-    override def toObject(response: RES): F[Option[Object[T2]]] = fmap(outer.toObject(response))(_.map(_.map(f)))
+    override def toObject(response: RES): F[Option[Object[T2]]] =
+      fFlatMap(outer.toObject(response)){
+        case Some(o) => fFlatMap(fn(o.objectContent))(content => fPure(Some(o.copy(objectContent = content))))
+        case None    => fPure(None)
+      }
 
     override def consume(response: RES): F[Unit] = outer.consume(response)
 
-    override def fmap[A, B](fa: F[A])(f: A => B): F[B] = outer.fmap(fa)(f)
+    override def fPure[A](a: A): F[A] = outer.fPure(a)
+    override def fFlatMap[A, B](fa: F[A])(fn: A => F[B]): F[B] = outer.fFlatMap(fa)(fn)
   }
 }
 
