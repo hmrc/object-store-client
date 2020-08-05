@@ -20,7 +20,7 @@ import uk.gov.hmrc.objectstore.client.model.objectstore.{Object, ObjectListing}
 
 import scala.language.higherKinds
 
-trait ObjectStoreRead[RES, T, F[_]] {
+trait ObjectStoreRead[RES, T, F[_]] { outer =>
 
   def toObjectListing(response: RES): F[ObjectListing]
 
@@ -28,9 +28,18 @@ trait ObjectStoreRead[RES, T, F[_]] {
 
   def consume(response: RES): F[Unit]
 
-  /* TODO inorder to make ObjectStoreRead a covariant Functor, we need proof that F is too... (and make Object one too)
-  def map(f: T => T2): ObjectStore[RES, T2, F] = ???
-  */
+  // to avoid a dependency on any Functor library, prove F is a functor here...
+  def fmap[A, B](fa: F[A])(f: A => B): F[B]
+
+  def map[T2](f: T => T2): ObjectStoreRead[RES, T2, F] = new ObjectStoreRead[RES, T2, F] {
+    override def toObjectListing(response: RES): F[ObjectListing] = outer.toObjectListing(response)
+
+    override def toObject(response: RES): F[Option[Object[T2]]] = fmap(outer.toObject(response))(_.map(_.map(f)))
+
+    override def consume(response: RES): F[Unit] = outer.consume(response)
+
+    override def fmap[A, B](fa: F[A])(f: A => B): F[B] = outer.fmap(fa)(f)
+  }
 }
 
 object ObjectStoreReadSyntax {
