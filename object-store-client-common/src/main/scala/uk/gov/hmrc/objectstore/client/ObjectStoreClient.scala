@@ -35,12 +35,11 @@ class ObjectStoreClient[REQ, RES](client: HttpClient[REQ, RES], config: ObjectSt
   def putObject[F[_]]: ObjectStoreClient.PutObject[REQ, RES, F] =
     new ObjectStoreClient.PutObject(client, url, List(authorizationHeader))
 
-  def getObject[F[_], T](
+  def getObject[F[_]](
     location: String
   )(implicit
-    r : ObjectStoreRead[RES, F],
-    r2: ObjectStoreRead2[RES, F, T]
-  ): F[Option[Object[T]]] =
+    r : ObjectStoreRead[RES, F]
+  ): F[Option[Object[RES, F]]] =
     client.get(s"$url/object/$location", List(authorizationHeader)).toObject
 
   def deleteObject[F[_]](location: String)(implicit rt: ObjectStoreRead[RES, F]): F[Unit] =

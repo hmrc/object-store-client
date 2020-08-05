@@ -24,34 +24,37 @@ trait ObjectStoreRead[RES, F[_]] {
 
   def toObjectListing(response: RES): F[ObjectListing]
 
-  def toObject[T](response: RES)(implicit r2: ObjectStoreRead2[RES, F, T]): F[Option[Object[T]]] =
-    r2.toObject(response)
+  def toObject(response: RES): F[Option[Object[RES, F]]]
 
   def consume(response: RES): F[Unit]
 }
 
 trait ObjectStoreRead2[RES, F[_], T] { outer =>
 
-  def toObject(response: RES): F[Option[Object[T]]]
+  def toContent(response: RES): T
 
   // to avoid a dependency on any functional library, prove F is a monad here...
   def fPure[A](a: A): F[A]
   def fFlatMap[A, B](fa: F[A])(fn: A => F[B]): F[B]
 
   def map[T2](fn: T => T2): ObjectStoreRead2[RES, F, T2] =
-    flatMap(a => fPure(fn(a)))
-
-  def flatMap[T2](fn: T => F[T2]): ObjectStoreRead2[RES, F, T2] =
     new ObjectStoreRead2[RES, F, T2] {
-      override def toObject(response: RES): F[Option[Object[T2]]] =
-        fFlatMap(outer.toObject(response)){
-          case Some(o) => fFlatMap(fn(o.objectContent))(content => fPure(Some(o.copy(objectContent = content))))
-          case None    => fPure(None)
-        }
+      override def toContent(response: RES): T2 =
+        fn(outer.toContent(response))
 
       override def fPure[A](a: A): F[A] = outer.fPure(a)
       override def fFlatMap[A, B](fa: F[A])(fn: A => F[B]): F[B] = outer.fFlatMap(fa)(fn)
     }
+//    flatMap(a => fPure(fn(a)))
+
+  /*def flatMap[T2](fn: T => F[T2]): ObjectStoreRead2[RES, F, T2] =
+    new ObjectStoreRead2[RES, F, T2] {
+      override def toContent(response: RES): T2 =
+        fFlatMap(outer.toContent(response))(fn)
+
+      override def fPure[A](a: A): F[A] = outer.fPure(a)
+      override def fFlatMap[A, B](fa: F[A])(fn: A => F[B]): F[B] = outer.fFlatMap(fa)(fn)
+    }*/
 }
 
 
@@ -61,7 +64,7 @@ object ObjectStoreReadSyntax {
 
     def toObjectListings(implicit r: ObjectStoreRead[RES, F]): F[ObjectListing] = r.toObjectListing(value)
 
-    def toObject[T](implicit r: ObjectStoreRead[RES, F], r2: ObjectStoreRead2[RES, F, T]): F[Option[Object[T]]] = r.toObject(value)
+    def toObject[T](implicit r: ObjectStoreRead[RES, F]): F[Option[Object[RES, F]]] = r.toObject(value)
 
     def consume(implicit r: ObjectStoreRead[RES, F]): F[Unit] = r.consume(value)
   }

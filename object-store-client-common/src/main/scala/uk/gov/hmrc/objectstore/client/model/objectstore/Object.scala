@@ -16,8 +16,14 @@
 
 package uk.gov.hmrc.objectstore.client.model.objectstore
 
-final case class Object[T](
+import uk.gov.hmrc.objectstore.client.model.http.ObjectStoreRead2
+
+case class Object[RES, F[_]]( // TODO in our implemention F is already part of RES...
   location     : String,
-  objectContent: T,
+  res          : RES,
   metadata     : Option[ObjectMetadata] = None
-)
+) {
+
+  def content[T](implicit r2: ObjectStoreRead2[RES, F, T]): T =
+    r2.toContent(res)
+}
