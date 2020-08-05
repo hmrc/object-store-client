@@ -34,7 +34,7 @@ import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 import uk.gov.hmrc.objectstore.client.model.objectstore.{ObjectListing, ObjectSummary}
 import uk.gov.hmrc.objectstore.client.play.PlayObjectStoreClient.Implicits._
 
-import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.{ExecutionContextExecutor, Future}
 
 class PlayObjectStoreClientSpec
     extends WordSpec
@@ -88,7 +88,7 @@ class PlayObjectStoreClientSpec
 
       getObjectStub(location, statusCode = 200, Some(body))
 
-      osClient.getObject[scala.concurrent.Future, Source[ByteString, NotUsed]](location).futureValue.get.objectContent.asString() shouldBe content.asString()
+      osClient.getObject(location).futureValue.get.content[Future[Source[ByteString, NotUsed]]].futureValue.asString() shouldBe content.asString()
     }
 
     "return an object that exists as String" in {
@@ -98,19 +98,19 @@ class PlayObjectStoreClientSpec
 
       getObjectStub(location, statusCode = 200, Some(body))
 
-      osClient.getObject[scala.concurrent.Future, String](location).futureValue.get.objectContent shouldBe content.asString()
+      osClient.getObject(location).futureValue.get.content[Future[String]].futureValue shouldBe content.asString()
     }
 
     "return None for an object that doesn't exist" in {
       val location = generateLocation()
       getObjectStub(location, statusCode = 404, None)
-      osClient.getObject[scala.concurrent.Future, Source[ByteString, NotUsed]](location).futureValue shouldBe None
+      osClient.getObject(location).futureValue shouldBe None
     }
 
     "return an exception if object-store response is not successful" in {
       val location = generateLocation()
       getObjectStub(location, statusCode = 401, None)
-      osClient.getObject[scala.concurrent.Future, Source[ByteString, NotUsed]](location).failed.futureValue shouldBe an[UpstreamErrorResponse]
+      osClient.getObject(location).failed.futureValue shouldBe an[UpstreamErrorResponse]
     }
   }
 

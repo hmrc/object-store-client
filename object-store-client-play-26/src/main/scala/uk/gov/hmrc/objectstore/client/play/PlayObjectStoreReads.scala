@@ -35,15 +35,22 @@ trait PlayObjectStoreReads {
     new ObjectStoreRead[Future[WSResponse], Future]{
 
       override def toObjectListing(response: Future[WSResponse]): Future[ObjectListing] =
-        response.map {
-          case r if Status.isSuccessful(r.status) => r.body[JsValue].as[ObjectListing](PlayFormats.objectListingFormat)
-          case r => throw UpstreamErrorResponse("Object store call failed", r.status)
+        response.flatMap {
+          case r if Status.isSuccessful(r.status) => Future.successful(r.body[JsValue].as[ObjectListing](PlayFormats.objectListingFormat))
+          case r => Future.failed(UpstreamErrorResponse("Object store call failed", r.status))
+        }
+
+      override def toObject(response: Future[WSResponse]): Future[Option[objectstore.Object[Future[WSResponse], Future]]] =
+        response.flatMap {
+          case r if Status.isSuccessful(r.status) => Future.successful(Some(objectstore.Object("", response))) // todo - location is empty?
+          case r if r.status == Status.NOT_FOUND => Future.successful(None)
+          case r => Future.failed(UpstreamErrorResponse("Object store call failed", r.status))
         }
 
       override def consume(response: Future[WSResponse]): Future[Unit] =
-        response.map {
-          case r if Status.isSuccessful(r.status) => ()
-          case r => throw UpstreamErrorResponse("Object store call failed", r.status)
+        response.flatMap {
+          case r if Status.isSuccessful(r.status) => Future.successful(())
+          case r => Future.failed(UpstreamErrorResponse("Object store call failed", r.status))
         }
     }
 }
@@ -52,23 +59,19 @@ object PlayObjectStoreReads extends PlayObjectStoreReads
 
 trait PlayObjectStoreReads2 {
 
-  implicit def futureAkkaSourceRead2(implicit ec: ExecutionContext): ObjectStoreRead2[Future[WSResponse], Future, Source[ByteString, NotUsed]] =
-    new ObjectStoreRead2[Future[WSResponse], Future, Source[ByteString, NotUsed]]{
+  implicit def futureAkkaSourceRead2(implicit ec: ExecutionContext): ObjectStoreRead2[Future[WSResponse], Future, Future[Source[ByteString, NotUsed]]] =
+    new ObjectStoreRead2[Future[WSResponse], Future, Future[Source[ByteString, NotUsed]]]{
 
-      override def toObject(response: Future[WSResponse]): Future[Option[objectstore.Object[Source[ByteString, NotUsed]]]] =
-        response.map {
-          case r if Status.isSuccessful(r.status) => Some(objectstore.Object("", r.bodyAsSource.mapMaterializedValue(_ => NotUsed))) // todo - location is empty?
-          case r if r.status == Status.NOT_FOUND => None
-          case r => throw UpstreamErrorResponse("Object store call failed", r.status)
-        }
+      override def toContent(response: Future[WSResponse]): Future[Source[ByteString, NotUsed]] =
+        response.map(_.bodyAsSource.mapMaterializedValue(_ => NotUsed))
 
       override def fPure[A](a: A): Future[A] = Future.successful(a)
       override def fFlatMap[A, B](fa: Future[A])(fn: A => Future[B]): Future[B] = fa.flatMap(fn)
     }
 
   // TODO move this so it is imported explicitly, since it will load everything into memory...
-  implicit def futureStringRead2(implicit ec: ExecutionContext, m: Materializer): ObjectStoreRead2[Future[WSResponse], Future, String] =
-    futureAkkaSourceRead2.flatMap(_.map(_.utf8String).runReduce(_ + _))
+  implicit def futureStringRead2(implicit ec: ExecutionContext, m: Materializer): ObjectStoreRead2[Future[WSResponse], Future, Future[String]] =
+    futureAkkaSourceRead2.map(_.flatMap(_.map(_.utf8String).runReduce(_ + _)))
 }
 
 object PlayObjectStoreReads2 extends PlayObjectStoreReads2

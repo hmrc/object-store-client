@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.objectstore.client.model.http
 
+import scala.concurrent.Future
+
 trait HttpClient[BODY, RES] {
 
   def put(url: String, body: BODY): RES
