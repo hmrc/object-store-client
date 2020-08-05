@@ -92,7 +92,7 @@ class PlayWSHttpClient @Inject()(wsClient: WSClient)(implicit ec: ExecutionConte
 
       body
         .writeBody(wsRequest)
-        .execute(method)
+        .stream()
         .map(logResponse)
         .map(processResponse)
         .andThen { case _ => body.release() }
