@@ -20,7 +20,4 @@ final case class Object[T](
   location     : String,
   objectContent: T,
   metadata     : Option[ObjectMetadata] = None
-) {
-  def map[T2](f: T => T2): Object[T2] =
-    Object(location, f(objectContent), metadata)
-}
+)

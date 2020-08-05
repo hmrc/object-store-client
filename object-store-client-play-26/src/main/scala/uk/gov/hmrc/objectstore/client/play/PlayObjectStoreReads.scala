@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.objectstore.client.play
 
+import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import play.api.http.Status
@@ -50,7 +51,13 @@ trait PlayObjectStoreReads {
           case r if Status.isSuccessful(r.status) => ()
           case r => throw UpstreamErrorResponse("Object store call failed", r.status)
         }
+
+      override def fPure[A](a: A): Future[A] = Future.successful(a)
+      override def fFlatMap[A, B](fa: Future[A])(fn: A => Future[B]): Future[B] = fa.flatMap(fn)
     }
+
+  implicit def futureStringRead(implicit ec: ExecutionContext, m: Materializer): ObjectStoreRead[Future[WSResponse], String, Future] =
+    futureAkkaSourceRead.flatMap(_.map(_.utf8String).runReduce(_ + _))
 }
 
 object PlayObjectStoreReads extends PlayObjectStoreReads
