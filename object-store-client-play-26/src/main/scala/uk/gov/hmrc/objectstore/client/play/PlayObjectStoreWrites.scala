@@ -16,20 +16,44 @@
 
 package uk.gov.hmrc.objectstore.client.play
 
+import java.io.{File, FileInputStream}
+
 import akka.NotUsed
 import akka.stream.{ClosedShape, Materializer}
 import akka.stream.scaladsl.{Broadcast, FileIO, Flow, GraphDSL, RunnableGraph, Sink, Source}
 import akka.util.ByteString
 import play.api.libs.Files.SingletonTemporaryFileCreator
 import play.api.libs.ws.WSRequest
-import uk.gov.hmrc.objectstore.client.model.http.ObjectStoreWrite
+import uk.gov.hmrc.objectstore.client.model.http.{ObjectStoreWrite, Payload}
 import uk.gov.hmrc.objectstore.client.play.PlayWSHttpClient.Request
 
 import scala.concurrent.{ExecutionContext, Future}
 
 trait PlayObjectStoreWrites {
-  implicit def akkaSourceWrite(implicit ec: ExecutionContext, m: Materializer): ObjectStoreWrite[Source[ByteString, akka.NotUsed], Request] =
-    new ObjectStoreWrite[Source[ByteString, akka.NotUsed], Request] {
+  implicit val payloadAkkaSourceWrite: ObjectStoreWrite[Payload[Source[ByteString, NotUsed]], Request] =
+    new ObjectStoreWrite[Payload[Source[ByteString, NotUsed]], Request] {
+      override def write(payload: Payload[Source[ByteString, NotUsed]]): Request =
+        Future.successful(
+          HttpBody(
+            length    = Some(payload.length),
+            md5       = Some(payload.md5Hash),
+            writeBody = (req: WSRequest) => req.withBody(payload.content),
+            release   = () => ()
+          )
+        )
+    }
+
+  implicit val fileWrite: ObjectStoreWrite[File, Request] =
+    payloadAkkaSourceWrite.contramap { file =>
+      Payload(
+        length  = file.length,
+        md5Hash = Md5Hash.fromInputStream(new FileInputStream(file)),
+        content = FileIO.fromPath(file.toPath).mapMaterializedValue(_ => NotUsed)
+      )
+    }
+
+  implicit def akkaSourceWrite(implicit ec: ExecutionContext, m: Materializer): ObjectStoreWrite[Source[ByteString, NotUsed], Request] =
+    new ObjectStoreWrite[Source[ByteString, NotUsed], Request] {
       override def write(body: Source[ByteString, NotUsed]): Request = {
         val tempFile = SingletonTemporaryFileCreator.create()
 
@@ -47,7 +71,7 @@ trait PlayObjectStoreWrites {
           HttpBody(
             length    = Some(tempFile.path.toFile.length),
             md5       = Some(md5Hash),
-            writeBody = (req: WSRequest) => req.withBody(body),
+            writeBody = (req: WSRequest) => req.withBody(body), // TODO check this isn't writing to disk too...
             release   = () => SingletonTemporaryFileCreator.delete(tempFile)
           )
       }
@@ -69,14 +93,12 @@ trait PlayObjectStoreWrites {
     })
 
   implicit lazy val stringWrite: ObjectStoreWrite[String, Request] =
-    new ObjectStoreWrite[String, Request] {
-      override def write(body: String): Request =
-        Future.successful(HttpBody(
-          length    = Some(body.getBytes.length),
-          md5       = Some(Md5Hash.fromBytes(body.getBytes)),
-          writeBody = (req: WSRequest) => req.withBody(body.getBytes),
-          release   = () => ()
-        ))
+    payloadAkkaSourceWrite.contramap { str =>
+      Payload(
+        length  = str.getBytes.length,
+        md5Hash = Md5Hash.fromBytes(str.getBytes),
+        content = Source.single(str.getBytes).map(ByteString(_)) // TODO check this isn't inefficiently writing to disk...
+      )
     }
 }
 

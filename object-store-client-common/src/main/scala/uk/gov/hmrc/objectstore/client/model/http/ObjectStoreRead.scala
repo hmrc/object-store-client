@@ -28,6 +28,9 @@ trait ObjectStoreRead[RES, T, F[_]] {
 
   def consume(response: RES): F[Unit]
 
+  /* TODO inorder to make ObjectStoreRead a covariant Functor, we need proof that F is too... (and make Object one too)
+  def map(f: T => T2): ObjectStore[RES, T2, F] = ???
+  */
 }
 
 object ObjectStoreReadSyntax {

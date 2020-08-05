@@ -16,10 +16,17 @@
 
 package uk.gov.hmrc.objectstore.client.model.http
 
-import scala.language.higherKinds
+case class Payload[T](length: Long, md5Hash: String, content: T)
 
-trait ObjectStoreWrite[BODY, REQ] {
+trait ObjectStoreWrite[BODY, REQ] { outer =>
   def write(body: BODY): REQ
+
+  // ObjectStoreWrite is a contravariant Functor, for composition.
+  def contramap[BODY2](f: BODY2 => BODY): ObjectStoreWrite[BODY2, REQ] =
+    new ObjectStoreWrite[BODY2, REQ] {
+      override def write(body: BODY2): REQ =
+        outer.write(f(body))
+    }
 }
 
 object ObjectStoreWriteSyntax {
