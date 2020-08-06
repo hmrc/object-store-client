@@ -19,7 +19,7 @@ package uk.gov.hmrc.objectstore.client
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 import uk.gov.hmrc.objectstore.client.model.http.ObjectStoreReadSyntax._
 import uk.gov.hmrc.objectstore.client.model.http.ObjectStoreWriteSyntax._
-import uk.gov.hmrc.objectstore.client.model.http.{HttpClient, ObjectStoreRead, ObjectStoreRead2, ObjectStoreWrite}
+import uk.gov.hmrc.objectstore.client.model.http.{HttpClient, ObjectStoreRead, ObjectStoreWrite}
 import uk.gov.hmrc.objectstore.client.model.objectstore.{Object, ObjectListing}
 
 import scala.language.higherKinds
@@ -39,7 +39,7 @@ class ObjectStoreClient[REQ, RES](client: HttpClient[REQ, RES], config: ObjectSt
     location: String
   )(implicit
     r : ObjectStoreRead[RES, F]
-  ): F[Option[Object[RES, F]]] =
+  ): F[Option[Object[RES]]] =
     client.get(s"$url/object/$location", List(authorizationHeader)).toObject
 
   def deleteObject[F[_]](location: String)(implicit rt: ObjectStoreRead[RES, F]): F[Unit] =

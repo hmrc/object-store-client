@@ -40,7 +40,7 @@ trait PlayObjectStoreReads {
           case r => Future.failed(UpstreamErrorResponse("Object store call failed", r.status))
         }
 
-      override def toObject(response: Future[WSResponse]): Future[Option[objectstore.Object[Future[WSResponse], Future]]] =
+      override def toObject(response: Future[WSResponse]): Future[Option[objectstore.Object[Future[WSResponse]]]] =
         response.flatMap {
           case r if Status.isSuccessful(r.status) => Future.successful(Some(objectstore.Object("", response))) // todo - location is empty?
           case r if r.status == Status.NOT_FOUND => Future.successful(None)
@@ -59,18 +59,15 @@ object PlayObjectStoreReads extends PlayObjectStoreReads
 
 trait PlayObjectStoreReads2 {
 
-  implicit def futureAkkaSourceRead2(implicit ec: ExecutionContext): ObjectStoreRead2[Future[WSResponse], Future, Future[Source[ByteString, NotUsed]]] =
-    new ObjectStoreRead2[Future[WSResponse], Future, Future[Source[ByteString, NotUsed]]]{
+  implicit def futureAkkaSourceRead2(implicit ec: ExecutionContext): ObjectStoreRead2[Future[WSResponse], Future[Source[ByteString, NotUsed]]] =
+    new ObjectStoreRead2[Future[WSResponse], Future[Source[ByteString, NotUsed]]]{
 
       override def toContent(response: Future[WSResponse]): Future[Source[ByteString, NotUsed]] =
         response.map(_.bodyAsSource.mapMaterializedValue(_ => NotUsed))
-
-      override def fPure[A](a: A): Future[A] = Future.successful(a)
-      override def fFlatMap[A, B](fa: Future[A])(fn: A => Future[B]): Future[B] = fa.flatMap(fn)
     }
 
   // TODO move this so it is imported explicitly, since it will load everything into memory...
-  implicit def futureStringRead2(implicit ec: ExecutionContext, m: Materializer): ObjectStoreRead2[Future[WSResponse], Future, Future[String]] =
+  implicit def futureStringRead2(implicit ec: ExecutionContext, m: Materializer): ObjectStoreRead2[Future[WSResponse], Future[String]] =
     futureAkkaSourceRead2.map(_.flatMap(_.map(_.utf8String).runReduce(_ + _)))
 }
 
