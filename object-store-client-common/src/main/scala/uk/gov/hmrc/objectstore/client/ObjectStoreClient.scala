@@ -26,33 +26,42 @@ import scala.language.higherKinds
 
 class ObjectStoreClient[REQ, RES](client: HttpClient[REQ, RES], config: ObjectStoreClientConfig) {
 
+  private val authorizationHeader: List[(String, String)] =
+    List(("Authorization", config.authorizationToken))
+
   private val url = s"${config.baseUrl}/object-store"
 
   // implementation with curried types
   def putObject[F[_]]: ObjectStoreClient.PutObject[REQ, RES, F] =
-    new ObjectStoreClient.PutObject(client, url)
+    new ObjectStoreClient.PutObject(client, url, authorizationHeader)
 
   // implementation with curried types
   def getObject[F[_]]: ObjectStoreClient.GetObject[REQ, RES, F] =
-    new ObjectStoreClient.GetObject(client, url)
+    new ObjectStoreClient.GetObject(client, url, authorizationHeader)
 
   def deleteObject[F[_]](location: String)(implicit rt: ObjectStoreRead[RES, _, F]): F[Unit] =
-    client.delete(s"$url/object/$location").consume
+    client.delete(s"$url/object/$location", authorizationHeader).consume
 
   def listObjects[F[_]](location: String)(implicit rt: ObjectStoreRead[RES, _, F]): F[ObjectListing] =
-    client.get(s"$url/list/$location").toObjectListings
+    client.get(s"$url/list/$location", authorizationHeader).toObjectListings
 }
 
 object ObjectStoreClient {
-  private[client] final class GetObject[REQ, RES, F[_]](client: HttpClient[REQ, RES], url: String) {
+  private[client] final class GetObject[REQ, RES, F[_]](
+    client: HttpClient[REQ, RES],
+    url: String,
+    headers: List[(String, String)]) {
     def apply[T](location: String)(implicit rt: ObjectStoreRead[RES, T, F]): F[Option[Object[T]]] =
-      client.get(s"$url/object/$location").toObject
+      client.get(s"$url/object/$location", headers).toObject
   }
 
-  private[client] final class PutObject[REQ, RES, F[_]](client: HttpClient[REQ, RES], url: String) {
+  private[client] final class PutObject[REQ, RES, F[_]](
+    client: HttpClient[REQ, RES],
+    url: String,
+    headers: List[(String, String)]) {
     def apply[BODY](location: String, content: BODY)(
       implicit rt: ObjectStoreRead[RES, _, F],
       wt: ObjectStoreWrite[BODY, REQ]): F[Unit] =
-      client.put(s"$url/object/$location", content.write).consume
+      client.put(s"$url/object/$location", content.write, headers).consume
   }
 }

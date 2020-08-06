@@ -18,11 +18,11 @@ package uk.gov.hmrc.objectstore.client.model.http
 
 trait HttpClient[BODY, RES] {
 
-  def put(url: String, body: BODY): RES
+  def put(url: String, body: BODY, headers: List[(String, String)]): RES
 
-  def post(url: String, body: BODY): RES
+  def post(url: String, body: BODY, headers: List[(String, String)]): RES
 
-  def get(url: String): RES
+  def get(url: String, headers: List[(String, String)]): RES
 
-  def delete(url: String): RES
+  def delete(url: String, headers: List[(String, String)]): RES
 }
