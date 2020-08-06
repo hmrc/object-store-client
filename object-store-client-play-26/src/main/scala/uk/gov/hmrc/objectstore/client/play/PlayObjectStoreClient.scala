@@ -17,13 +17,15 @@
 package uk.gov.hmrc.objectstore.client.play
 
 import javax.inject.Inject
+import uk.gov.hmrc.objectstore.client.model.Monad
 import uk.gov.hmrc.objectstore.client.ObjectStoreClient
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 
 class PlayObjectStoreClient @Inject()(
   httpClient: PlayWSHttpClient,
   config    : ObjectStoreClientConfig
-) extends ObjectStoreClient(httpClient, config)
+)(implicit ec: scala.concurrent.ExecutionContext
+) extends ObjectStoreClient(httpClient, config)(Monad.monadForFuture(ec))
 
 object PlayObjectStoreClient {
   object Implicits

@@ -31,10 +31,10 @@ case class HttpBody[BODY](length: Option[Long], md5: Option[String], writeBody: 
 
 object PlayWSHttpClient {
   type Request  = Future[HttpBody[WSRequest => WSRequest]]
-  type Response = Future[WSResponse]
+  type Response = WSResponse
 }
 class PlayWSHttpClient @Inject()(wsClient: WSClient)(implicit ec: ExecutionContext)
-    extends HttpClient[Request, Response] {
+    extends HttpClient[Future, Request, Response] {
 
   private val logger: Logger = Logger(this.getClass)
 
