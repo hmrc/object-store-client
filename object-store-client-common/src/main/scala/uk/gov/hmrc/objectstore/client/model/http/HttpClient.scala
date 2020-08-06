@@ -16,13 +16,11 @@
 
 package uk.gov.hmrc.objectstore.client.model.http
 
-import scala.concurrent.Future
+trait HttpClient[REQ, RES] {
 
-trait HttpClient[BODY, RES] {
+  def put(url: String, body: REQ): RES
 
-  def put(url: String, body: BODY): RES
-
-  def post(url: String, body: BODY): RES
+  def post(url: String, body: REQ): RES
 
   def get(url: String): RES
 

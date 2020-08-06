@@ -28,6 +28,6 @@ class PlayObjectStoreClient @Inject()(
 object PlayObjectStoreClient {
   object Implicits
     extends PlayObjectStoreReads
-       with PlayObjectStoreReads2
-       with PlayObjectStoreWrites
+       with PlayObjectStoreContentReads
+       with PlayObjectStoreContentWrites
 }

@@ -29,25 +29,13 @@ trait ObjectStoreRead[RES, F[_]] {
   def consume(response: RES): F[Unit]
 }
 
-trait ObjectStoreRead2[RES, T] { outer =>
+trait ObjectStoreContentRead[RES, CONTENT] { outer =>
 
-  def toContent(response: RES): T
+  def readContent(response: RES): CONTENT
 
-  def map[T2](fn: T => T2): ObjectStoreRead2[RES, T2] =
-    new ObjectStoreRead2[RES, T2] {
-      override def toContent(response: RES): T2 =
-        fn(outer.toContent(response))
+  def map[CONTENT2](fn: CONTENT => CONTENT2): ObjectStoreContentRead[RES, CONTENT2] =
+    new ObjectStoreContentRead[RES, CONTENT2] {
+      override def readContent(response: RES): CONTENT2 =
+        fn(outer.readContent(response))
     }
-}
-
-object ObjectStoreReadSyntax {
-
-  implicit class ObjectStoreReadOps[RES, F[_]](value: RES) {
-
-    def toObjectListings(implicit r: ObjectStoreRead[RES, F]): F[ObjectListing] = r.toObjectListing(value)
-
-    def toObject[T](implicit r: ObjectStoreRead[RES, F]): F[Option[Object[RES]]] = r.toObject(value)
-
-    def consume(implicit r: ObjectStoreRead[RES, F]): F[Unit] = r.consume(value)
-  }
 }

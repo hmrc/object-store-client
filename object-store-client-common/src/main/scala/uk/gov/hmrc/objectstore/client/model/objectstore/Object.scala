@@ -16,14 +16,14 @@
 
 package uk.gov.hmrc.objectstore.client.model.objectstore
 
-import uk.gov.hmrc.objectstore.client.model.http.ObjectStoreRead2
+import uk.gov.hmrc.objectstore.client.model.http.ObjectStoreContentRead
 
 case class Object[RES](
-  location     : String,
-  res          : RES,
-  metadata     : Option[ObjectMetadata] = None
+  location: String,
+  res     : RES,
+  metadata: Option[ObjectMetadata] = None
 ) {
 
-  def content[T](implicit r2: ObjectStoreRead2[RES, T]): T =
-    r2.toContent(res)
+  def content[CONTENT](implicit r: ObjectStoreContentRead[RES, CONTENT]): CONTENT =
+    r.readContent(res)
 }
