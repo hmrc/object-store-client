@@ -16,22 +16,14 @@
 
 package uk.gov.hmrc.objectstore.client.model.http
 
-case class Payload[T](length: Long, md5Hash: String, content: T)
+case class Payload[CONTENT](length: Long, md5Hash: String, content: CONTENT)
 
-trait ObjectStoreWrite[BODY, REQ] { outer =>
-  def write(body: BODY): REQ
+trait ObjectStoreContentWrite[CONTENT, REQ] { outer =>
+  def writeContent(content: CONTENT): REQ
 
-  // ObjectStoreWrite is a contravariant Functor, for composition.
-  def contramap[BODY2](f: BODY2 => BODY): ObjectStoreWrite[BODY2, REQ] =
-    new ObjectStoreWrite[BODY2, REQ] {
-      override def write(body: BODY2): REQ =
-        outer.write(f(body))
+  def contramap[CONTENT2](f: CONTENT2 => CONTENT): ObjectStoreContentWrite[CONTENT2, REQ] =
+    new ObjectStoreContentWrite[CONTENT2, REQ] {
+      override def writeContent(content: CONTENT2): REQ =
+        outer.writeContent(f(content))
     }
-}
-
-object ObjectStoreWriteSyntax {
-
-  implicit class ObjectStoreWriteOps[BODY, REQ](value: BODY) {
-    def write(implicit w: ObjectStoreWrite[BODY, REQ]): REQ = w.write(value)
-  }
 }

@@ -25,6 +25,8 @@ import uk.gov.hmrc.objectstore.client.play.PlayWSHttpClient.{Request, Response}
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ExecutionContext, Future}
 
+// TODO move this into common (and empty implementation) ?
+// relationship with Payload?
 case class HttpBody[BODY](length: Option[Long], md5: Option[String], writeBody: BODY, release: () => Unit)
 
 object PlayWSHttpClient {
@@ -76,12 +78,12 @@ class PlayWSHttpClient @Inject()(wsClient: WSClient)(implicit ec: ExecutionConte
     ))
 
   private def invoke[T](
-    url: String,
-    method: String,
+    url            : String,
+    method         : String,
     processResponse: WSResponse => T,
-    headers: List[(String, String)],
+    headers        : List[(String, String)],
     queryParameters: List[(String, String)] = List.empty,
-    body: Request                           = empty
+    body           : Request                = empty
   ): Future[T] = {
 
     logger.info(s"Request: Url: $url")

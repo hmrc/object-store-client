@@ -23,7 +23,7 @@ import akka.util.ByteString
 import play.api.http.Status
 import play.api.libs.json._
 import play.api.libs.ws.WSResponse
-import uk.gov.hmrc.objectstore.client.model.http.{ObjectStoreRead, ObjectStoreRead2}
+import uk.gov.hmrc.objectstore.client.model.http.{ObjectStoreRead, ObjectStoreContentRead}
 import uk.gov.hmrc.objectstore.client.model.objectstore
 import uk.gov.hmrc.objectstore.client.model.objectstore.ObjectListing
 
@@ -57,20 +57,20 @@ trait PlayObjectStoreReads {
 
 object PlayObjectStoreReads extends PlayObjectStoreReads
 
-trait PlayObjectStoreReads2 {
+trait PlayObjectStoreContentReads {
 
-  implicit def futureAkkaSourceRead2(implicit ec: ExecutionContext): ObjectStoreRead2[Future[WSResponse], Future[Source[ByteString, NotUsed]]] =
-    new ObjectStoreRead2[Future[WSResponse], Future[Source[ByteString, NotUsed]]]{
+  implicit def futureAkkaSourceContentRead(implicit ec: ExecutionContext): ObjectStoreContentRead[Future[WSResponse], Future[Source[ByteString, NotUsed]]] =
+    new ObjectStoreContentRead[Future[WSResponse], Future[Source[ByteString, NotUsed]]]{
 
-      override def toContent(response: Future[WSResponse]): Future[Source[ByteString, NotUsed]] =
+      override def readContent(response: Future[WSResponse]): Future[Source[ByteString, NotUsed]] =
         response.map(_.bodyAsSource.mapMaterializedValue(_ => NotUsed))
     }
 
   // TODO move this so it is imported explicitly, since it will load everything into memory...
-  implicit def futureStringRead2(implicit ec: ExecutionContext, m: Materializer): ObjectStoreRead2[Future[WSResponse], Future[String]] =
-    futureAkkaSourceRead2.map(_.flatMap(_.map(_.utf8String).runReduce(_ + _)))
+  implicit def futureStringContentRead(implicit ec: ExecutionContext, m: Materializer): ObjectStoreContentRead[Future[WSResponse], Future[String]] =
+    futureAkkaSourceContentRead.map(_.flatMap(_.map(_.utf8String).runReduce(_ + _)))
 }
 
-object PlayObjectStoreReads2 extends PlayObjectStoreReads2
+object PlayObjectStoreContentReads extends PlayObjectStoreContentReads
 
 case class UpstreamErrorResponse(message: String, statusCode: Int) extends Exception(message)
