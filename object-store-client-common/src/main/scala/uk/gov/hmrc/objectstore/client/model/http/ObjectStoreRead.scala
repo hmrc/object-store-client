@@ -20,13 +20,37 @@ import uk.gov.hmrc.objectstore.client.model.objectstore.{Object, ObjectListing}
 
 import scala.language.higherKinds
 
+
+trait Functor[F[_]] {
+  def map[A, B](fa: F[A])(f: A => B): F[B]
+}
+
+object Functor {
+
+  def apply[F[_]](implicit functor: Functor[F]): Functor[F] = new Functor[F] {
+    override def map[A, B](fa: F[A])(f: A => B): F[B] = functor.map(fa)(f)
+  }
+}
+
 trait ObjectStoreRead[RES, T, F[_]] {
+  self =>
 
   def toObjectListing(response: RES): F[ObjectListing]
 
   def toObject(response: RES): F[Option[Object[T]]]
 
   def consume(response: RES): F[Unit]
+
+
+  def map[B](fn: T => B)(implicit functor: Functor[F]): ObjectStoreRead[RES, B, F] = new ObjectStoreRead[RES, B, F] {
+    override def toObjectListing(response: RES): F[ObjectListing] = self.toObjectListing(response)
+
+    override def toObject(response: RES): F[Option[Object[B]]] = Functor[F].map(self.toObject(response))(_.map{ obj =>
+      obj.copy(objectContent = fn(obj.objectContent))
+    })
+
+    override def consume(response: RES): F[Unit] = self.consume(response)
+  }
 
 }
 
@@ -39,5 +63,6 @@ object ObjectStoreReadSyntax {
     def toObject(implicit r: ObjectStoreRead[RES, T, F]): F[Option[Object[T]]] = r.toObject(value)
 
     def consume(implicit r: ObjectStoreRead[RES, T, F]): F[Unit] = r.consume(value)
+
   }
 }

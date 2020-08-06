@@ -16,17 +16,24 @@
 
 package uk.gov.hmrc.objectstore.client.play
 
+import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import play.api.http.Status
 import play.api.libs.json._
 import play.api.libs.ws.WSResponse
-import uk.gov.hmrc.objectstore.client.model.http.ObjectStoreRead
+import uk.gov.hmrc.objectstore.client.model.http.{Functor, ObjectStoreRead}
 import uk.gov.hmrc.objectstore.client.model.objectstore
 import uk.gov.hmrc.objectstore.client.model.objectstore.ObjectListing
 
 import scala.concurrent.{ExecutionContext, Future}
 
+object FunctorExample {
+  // Example implementation for Future
+  def functorForFuture(implicit ec:ExecutionContext): Functor[Future] = new Functor[Future] {
+    def map[A, B](fa: Future[A])(f: A => B): Future[B] = fa.map(f)
+  }
+}
 trait PlayObjectStoreReads {
 
   implicit def futureAkkaSourceRead(implicit ec: ExecutionContext): ObjectStoreRead[Future[WSResponse], Source[ByteString, _], Future] =
@@ -51,6 +58,10 @@ trait PlayObjectStoreReads {
           case r => throw UpstreamErrorResponse("Object store call failed", r.status)
         }
     }
+
+  implicit def futureStringRead(implicit ec: ExecutionContext, m: Materializer): ObjectStoreRead[Future[WSResponse], Future[String], Future] = {
+    futureAkkaSourceRead.map(_.map(_.utf8String).runReduce(_ + _))(FunctorExample.functorForFuture)
+  }
 }
 
 object PlayObjectStoreReads extends PlayObjectStoreReads
