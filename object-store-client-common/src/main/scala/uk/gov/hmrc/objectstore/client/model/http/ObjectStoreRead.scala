@@ -24,39 +24,21 @@ trait ObjectStoreRead[RES, F[_]] {
 
   def toObjectListing(response: RES): F[ObjectListing]
 
-  def toObject(response: RES): F[Option[Object[RES, F]]]
+  def toObject(response: RES): F[Option[Object[RES]]]
 
   def consume(response: RES): F[Unit]
 }
 
-trait ObjectStoreRead2[RES, F[_], T] { outer =>
+trait ObjectStoreRead2[RES, T] { outer =>
 
   def toContent(response: RES): T
 
-  // to avoid a dependency on any functional library, prove F is a monad here...
-  def fPure[A](a: A): F[A]
-  def fFlatMap[A, B](fa: F[A])(fn: A => F[B]): F[B]
-
-  def map[T2](fn: T => T2): ObjectStoreRead2[RES, F, T2] =
-    new ObjectStoreRead2[RES, F, T2] {
+  def map[T2](fn: T => T2): ObjectStoreRead2[RES, T2] =
+    new ObjectStoreRead2[RES, T2] {
       override def toContent(response: RES): T2 =
         fn(outer.toContent(response))
-
-      override def fPure[A](a: A): F[A] = outer.fPure(a)
-      override def fFlatMap[A, B](fa: F[A])(fn: A => F[B]): F[B] = outer.fFlatMap(fa)(fn)
     }
-//    flatMap(a => fPure(fn(a)))
-
-  /*def flatMap[T2](fn: T => F[T2]): ObjectStoreRead2[RES, F, T2] =
-    new ObjectStoreRead2[RES, F, T2] {
-      override def toContent(response: RES): T2 =
-        fFlatMap(outer.toContent(response))(fn)
-
-      override def fPure[A](a: A): F[A] = outer.fPure(a)
-      override def fFlatMap[A, B](fa: F[A])(fn: A => F[B]): F[B] = outer.fFlatMap(fa)(fn)
-    }*/
 }
-
 
 object ObjectStoreReadSyntax {
 
@@ -64,7 +46,7 @@ object ObjectStoreReadSyntax {
 
     def toObjectListings(implicit r: ObjectStoreRead[RES, F]): F[ObjectListing] = r.toObjectListing(value)
 
-    def toObject[T](implicit r: ObjectStoreRead[RES, F]): F[Option[Object[RES, F]]] = r.toObject(value)
+    def toObject[T](implicit r: ObjectStoreRead[RES, F]): F[Option[Object[RES]]] = r.toObject(value)
 
     def consume(implicit r: ObjectStoreRead[RES, F]): F[Unit] = r.consume(value)
   }
