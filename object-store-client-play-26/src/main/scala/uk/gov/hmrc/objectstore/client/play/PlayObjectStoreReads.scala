@@ -17,12 +17,13 @@
 package uk.gov.hmrc.objectstore.client.play
 
 import akka.NotUsed
+import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import play.api.http.Status
 import play.api.libs.json.{JsResult, JsValue, Json, Reads}
 import play.api.libs.ws.WSResponse
-import uk.gov.hmrc.objectstore.client.model.MonadError
+import uk.gov.hmrc.objectstore.client.model.{Monad, MonadError}
 import uk.gov.hmrc.objectstore.client.model.http.{ObjectStoreRead, ObjectStoreContentRead}
 import uk.gov.hmrc.objectstore.client.model.objectstore
 import uk.gov.hmrc.objectstore.client.model.objectstore.ObjectListing
@@ -31,8 +32,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait PlayObjectStoreReads {
 
-  private def wsResponseRead[F[_], E >: UpstreamErrorResponse](implicit F: MonadError[F, E]): ObjectStoreRead[WSResponse, F] =
-    new ObjectStoreRead[WSResponse, F]{
+  private def wsResponseRead[F[_], E >: UpstreamErrorResponse](implicit F: MonadError[F, E]): ObjectStoreRead[F, WSResponse] =
+    new ObjectStoreRead[F, WSResponse]{
       override def toObjectListing(response: WSResponse): F[ObjectListing] =
         response match {
           case r if Status.isSuccessful(r.status) => F.pure(r.body[JsValue].as[ObjectListing](PlayFormats.objectListingFormat))
@@ -53,12 +54,12 @@ trait PlayObjectStoreReads {
         }
     }
 
-  implicit def futureRead(implicit ec: ExecutionContext): ObjectStoreRead[WSResponse, Future] =
+  implicit def futureRead(implicit ec: ExecutionContext): ObjectStoreRead[Future, WSResponse] =
     wsResponseRead[Future, Exception]
 
   // TODO however this is probably not useful, since it can only used with a ObjectStoreClient which operates with Either
   // in which case, we may as well just replace F with Future in common?
-  implicit val eitherRead: ObjectStoreRead[WSResponse, Either[UpstreamErrorResponse, *]] =
+  implicit val eitherRead: ObjectStoreRead[Either[UpstreamErrorResponse, *], WSResponse] =
     wsResponseRead[Either[UpstreamErrorResponse, *], UpstreamErrorResponse]
 }
 
@@ -66,25 +67,28 @@ object PlayObjectStoreReads extends PlayObjectStoreReads
 
 trait PlayObjectStoreContentReads {
 
-  implicit def akkaSourceContentRead: ObjectStoreContentRead[WSResponse, Source[ByteString, NotUsed]] =
-    new ObjectStoreContentRead[WSResponse, Source[ByteString, NotUsed]]{
-      override def readContent(response: WSResponse): Source[ByteString, NotUsed] =
-        response.bodyAsSource.mapMaterializedValue(_ => NotUsed)
+  implicit def akkaSourceContentRead: ObjectStoreContentRead[Future, WSResponse, Source[ByteString, NotUsed]] =
+    new ObjectStoreContentRead[Future, WSResponse, Source[ByteString, NotUsed]]{
+      override def readContent(response: WSResponse): Future[Source[ByteString, NotUsed]] =
+        Future.successful(response.bodyAsSource.mapMaterializedValue(_ => NotUsed))
     }
 }
 
 trait InMemoryPlayObjectStoreContentReads extends PlayObjectStoreContentReads {
-  implicit val stringContentRead: ObjectStoreContentRead[WSResponse, String] =
-    new ObjectStoreContentRead[WSResponse, String]{
-      override def readContent(response: WSResponse): String =
-        response.body
-    }
+  /*implicit val stringContentRead: ObjectStoreContentRead[Future, WSResponse, String] =
+    new ObjectStoreContentRead[Future, WSResponse, String]{
+      override def readContent(response: WSResponse): Future[String] =
+        Future.successful(response.body)
+    }*/
 
-  implicit val jsValueContentRead: ObjectStoreContentRead[WSResponse, JsValue] =
-    stringContentRead.map(Json.parse)
+  implicit def stringContentRead(implicit ec: ExecutionContext, m: Materializer): ObjectStoreContentRead[Future, WSResponse, String] =
+    akkaSourceContentRead.mapF(_.map(_.utf8String).runReduce(_ + _))
 
-  implicit def jsResultContentRead[A : Reads]: ObjectStoreContentRead[WSResponse, JsResult[A]] =
-    jsValueContentRead.map(_.validate[A])
+  implicit def jsValueContentRead(implicit ec: ExecutionContext, m: Materializer): ObjectStoreContentRead[Future, WSResponse, JsValue] =
+    stringContentRead.map(Json.parse)(Monad.monadForFuture(ec))
+
+  implicit def jsResultContentRead[A : Reads](implicit ec: ExecutionContext, m: Materializer): ObjectStoreContentRead[Future, WSResponse, JsResult[A]] =
+    jsValueContentRead.map(_.validate[A])(Monad.monadForFuture(ec))
 }
 
 object PlayObjectStoreContentReads extends PlayObjectStoreContentReads

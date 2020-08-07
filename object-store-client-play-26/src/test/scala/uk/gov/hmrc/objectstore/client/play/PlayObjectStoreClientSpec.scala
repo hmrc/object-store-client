@@ -37,7 +37,7 @@ import uk.gov.hmrc.objectstore.client.model.http.Payload
 import uk.gov.hmrc.objectstore.client.model.objectstore.{ObjectListing, ObjectSummary}
 import uk.gov.hmrc.objectstore.client.play.PlayObjectStoreClient.Implicits._
 
-import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.{ExecutionContextExecutor, Future}
 
 class PlayObjectStoreClientSpec
     extends WordSpec
@@ -121,7 +121,7 @@ class PlayObjectStoreClientSpec
 
       (for {
           obj <- osClient.getObject(location)
-          src =  obj.get.content[Source[ByteString, NotUsed]]
+          src <- obj.get.content[Future, Source[ByteString, NotUsed]]
           str =  src.asString()
        } yield str
       ).futureValue shouldBe body
@@ -137,7 +137,7 @@ class PlayObjectStoreClientSpec
 
       (for {
          obj <- osClient.getObject(location)
-         str =  obj.get.content[String]
+         str <- obj.get.content[Future, String]
        } yield str
       ).futureValue shouldBe body
     }
@@ -158,7 +158,7 @@ class PlayObjectStoreClientSpec
 
       (for {
          obj <- osClient.getObject(location)
-         str =  obj.get.content[JsValue]
+         str <- obj.get.content[Future, JsValue]
        } yield str
       ).futureValue shouldBe JsObject(Seq("k1" -> JsString("v1"), "k2" -> JsString("v2")))
     }
@@ -174,7 +174,7 @@ class PlayObjectStoreClientSpec
 
       (for {
          obj <- osClient.getObject(location)
-         str =  obj.get.content[JsValue]
+         str <- obj.get.content[Future, JsValue]
        } yield str
       ).failed.futureValue shouldBe an[Exception]
     }
@@ -190,7 +190,7 @@ class PlayObjectStoreClientSpec
 
       (for {
          obj <- osClient.getObject(location)
-         str =  obj.get.content[JsResult[Obj]]
+         str <- obj.get.content[Future, JsResult[Obj]]
        } yield str
       ).futureValue shouldBe JsSuccess(Obj(k1 = "v1", k2 = "v2"), __)
     }

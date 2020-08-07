@@ -31,21 +31,21 @@ class ObjectStoreClient[F[_], REQ, RES](client: HttpClient[F, REQ, RES], config:
   private val url = s"${config.baseUrl}/object-store"
 
   // implementation with curried types
-  def putObject: ObjectStoreClient.PutObject[REQ, RES, F] =
+  def putObject: ObjectStoreClient.PutObject[F, REQ, RES] =
     new ObjectStoreClient.PutObject(client, url, List(authorizationHeader))
 
-  def getObject(location: String)(implicit r: ObjectStoreRead[RES, F]): F[Option[Object[RES]]] =
+  def getObject(location: String)(implicit r: ObjectStoreRead[F, RES]): F[Option[Object[RES]]] =
     F.flatMap(client.get(s"$url/object/$location", List(authorizationHeader)))(r.toObject)
 
-  def deleteObject(location: String)(implicit r: ObjectStoreRead[RES, F]): F[Unit] =
+  def deleteObject(location: String)(implicit r: ObjectStoreRead[F, RES]): F[Unit] =
     F.flatMap(client.delete(s"$url/object/$location", List(authorizationHeader)))(r.consume)
 
-  def listObjects(location: String)(implicit r: ObjectStoreRead[RES, F]): F[ObjectListing] =
+  def listObjects(location: String)(implicit r: ObjectStoreRead[F, RES]): F[ObjectListing] =
     F.flatMap(client.get(s"$url/list/$location", List(authorizationHeader)))(r.toObjectListing)
 }
 
 object ObjectStoreClient {
-  private[client] final class PutObject[REQ, RES, F[_]](
+  private[client] final class PutObject[F[_], REQ, RES](
     client : HttpClient[F, REQ, RES],
     url    : String,
     headers: List[(String, String)]
@@ -55,9 +55,13 @@ object ObjectStoreClient {
       location: String,
       content : CONTENT
     )(implicit
-      r: ObjectStoreRead[RES, F],
-      w: ObjectStoreContentWrite[CONTENT, REQ]
+      r: ObjectStoreRead[F, RES],
+      w: ObjectStoreContentWrite[F, CONTENT, REQ]
     ): F[Unit] =
-      F.flatMap(client.put(s"$url/object/$location", w.writeContent(content), headers))(r.consume)
+      F.flatMap(w.writeContent(content))(c =>
+        F.flatMap(client.put(s"$url/object/$location", c, headers))(
+          r.consume
+        )
+      )
   }
 }

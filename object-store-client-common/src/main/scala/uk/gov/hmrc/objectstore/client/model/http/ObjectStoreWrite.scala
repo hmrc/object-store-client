@@ -16,14 +16,22 @@
 
 package uk.gov.hmrc.objectstore.client.model.http
 
+import uk.gov.hmrc.objectstore.client.model.Monad
+
 case class Payload[CONTENT](length: Long, md5Hash: String, content: CONTENT)
 
-trait ObjectStoreContentWrite[CONTENT, REQ] { outer =>
-  def writeContent(content: CONTENT): REQ
+trait ObjectStoreContentWrite[F[_], CONTENT, REQ] { outer =>
+  def writeContent(content: CONTENT): F[REQ]
 
-  def contramap[CONTENT2](f: CONTENT2 => CONTENT): ObjectStoreContentWrite[CONTENT2, REQ] =
-    new ObjectStoreContentWrite[CONTENT2, REQ] {
-      override def writeContent(content: CONTENT2): REQ =
+  def contramap[CONTENT2](f: CONTENT2 => CONTENT): ObjectStoreContentWrite[F, CONTENT2, REQ] =
+    new ObjectStoreContentWrite[F, CONTENT2, REQ] {
+      override def writeContent(content: CONTENT2): F[REQ] =
         outer.writeContent(f(content))
+    }
+
+  def contramapF[CONTENT2](f: CONTENT2 => F[CONTENT])(implicit F: Monad[F]): ObjectStoreContentWrite[F, CONTENT2, REQ] =
+    new ObjectStoreContentWrite[F, CONTENT2, REQ] {
+      override def writeContent(content: CONTENT2): F[REQ] =
+        F.flatMap(f(content))(outer.writeContent)
     }
 }

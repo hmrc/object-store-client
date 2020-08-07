@@ -24,6 +24,6 @@ case class Object[RES](
   metadata: Option[ObjectMetadata] = None
 ) {
 
-  def content[CONTENT](implicit r: ObjectStoreContentRead[RES, CONTENT]): CONTENT =
+  def content[F[_], CONTENT](implicit r: ObjectStoreContentRead[F, RES, CONTENT]): F[CONTENT] =
     r.readContent(res)
 }

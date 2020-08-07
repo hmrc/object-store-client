@@ -30,7 +30,7 @@ import scala.concurrent.{ExecutionContext, Future}
 case class HttpBody[BODY](length: Option[Long], md5: Option[String], writeBody: BODY, release: () => Unit)
 
 object PlayWSHttpClient {
-  type Request  = Future[HttpBody[WSRequest => WSRequest]]
+  type Request  = HttpBody[WSRequest => WSRequest]
   type Response = WSResponse
 }
 class PlayWSHttpClient @Inject()(wsClient: WSClient)(implicit ec: ExecutionContext)
@@ -69,13 +69,13 @@ class PlayWSHttpClient @Inject()(wsClient: WSClient)(implicit ec: ExecutionConte
     headers         = headers
   )
 
-  private val empty = Future.successful(
+  private val empty =
     HttpBody[WSRequest => WSRequest](
       length    = None,
       md5       = None,
       writeBody = identity,
       release   = () => ()
-    ))
+    )
 
   private def invoke[T](
     url            : String,
@@ -87,25 +87,24 @@ class PlayWSHttpClient @Inject()(wsClient: WSClient)(implicit ec: ExecutionConte
   ): Future[T] = {
 
     logger.info(s"Request: Url: $url")
-    body.flatMap { httpBody =>
-      val hdrs = (headers ++ httpBody.length.map("Content-Length" -> _.toString) ++ httpBody.md5.map(
-        "Content-MD5" -> _))
+    val hdrs = headers ++
+      body.length.map("Content-Length" -> _.toString) ++
+      body.md5.map("Content-MD5" -> _)
 
-      val request = wsClient
-        .url(url)
-        .withFollowRedirects(false)
-        .withMethod(method)
-        .withHttpHeaders(hdrs: _*)
-        .withQueryStringParameters(queryParameters: _*)
-        .withRequestTimeout(Duration.Inf)
+    val wsRequest = wsClient
+      .url(url)
+      .withFollowRedirects(false)
+      .withMethod(method)
+      .withHttpHeaders(hdrs: _*)
+      .withQueryStringParameters(queryParameters: _*)
+      .withRequestTimeout(Duration.Inf)
 
-      httpBody
-        .writeBody(request)
-        .execute(method)
-        .map(logResponse)
-        .map(processResponse)
-        .andThen { case _ => httpBody.release() }
-    }
+    body
+      .writeBody(wsRequest)
+      .execute(method)
+      .map(logResponse)
+      .map(processResponse)
+      .andThen { case _ => body.release() }
   }
 
   private def logResponse(response: WSResponse): WSResponse = {

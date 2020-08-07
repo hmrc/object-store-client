@@ -31,9 +31,9 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait PlayObjectStoreContentWrites {
 
-  implicit val payloadAkkaSourceContentWrite: ObjectStoreContentWrite[Payload[Source[ByteString, NotUsed]], Request] =
-    new ObjectStoreContentWrite[Payload[Source[ByteString, NotUsed]], Request] {
-      override def writeContent(payload: Payload[Source[ByteString, NotUsed]]): Request =
+  implicit val payloadAkkaSourceContentWrite: ObjectStoreContentWrite[Future, Payload[Source[ByteString, NotUsed]], Request] =
+    new ObjectStoreContentWrite[Future, Payload[Source[ByteString, NotUsed]], Request] {
+      override def writeContent(payload: Payload[Source[ByteString, NotUsed]]): Future[Request] =
         Future.successful(
           HttpBody(
             length    = Some(payload.length),
@@ -44,7 +44,7 @@ trait PlayObjectStoreContentWrites {
         )
     }
 
-  implicit val fileWrite: ObjectStoreContentWrite[File, Request] =
+  implicit val fileWrite: ObjectStoreContentWrite[Future, File, Request] =
     payloadAkkaSourceContentWrite.contramap { file =>
       Payload(
         length  = file.length,
@@ -53,9 +53,9 @@ trait PlayObjectStoreContentWrites {
       )
     }
 
-  implicit def akkaSourceContentWrite(implicit ec: ExecutionContext, m: Materializer): ObjectStoreContentWrite[Source[ByteString, NotUsed], Request] =
-    new ObjectStoreContentWrite[Source[ByteString, NotUsed], Request] {
-      override def writeContent(content: Source[ByteString, NotUsed]): Request = {
+  implicit def akkaSourceContentWrite(implicit ec: ExecutionContext, m: Materializer): ObjectStoreContentWrite[Future, Source[ByteString, NotUsed], Request] =
+    new ObjectStoreContentWrite[Future, Source[ByteString, NotUsed], Request] {
+      override def writeContent(content: Source[ByteString, NotUsed]): Future[Request] = {
         val tempFile = SingletonTemporaryFileCreator.create()
 
         val (uploadFinished, md5Finished) =
@@ -93,7 +93,7 @@ trait PlayObjectStoreContentWrites {
         ClosedShape
     })
 
-  implicit lazy val bytesWrite: ObjectStoreContentWrite[Array[Byte], Request] =
+  implicit lazy val bytesWrite: ObjectStoreContentWrite[Future, Array[Byte], Request] =
     payloadAkkaSourceContentWrite.contramap { bytes =>
       Payload(
         length  = bytes.length,
@@ -102,7 +102,7 @@ trait PlayObjectStoreContentWrites {
       )
     }
 
-  implicit lazy val stringWrite: ObjectStoreContentWrite[String, Request] =
+  implicit lazy val stringWrite: ObjectStoreContentWrite[Future, String, Request] =
     bytesWrite.contramap(_.getBytes)
 }
 
