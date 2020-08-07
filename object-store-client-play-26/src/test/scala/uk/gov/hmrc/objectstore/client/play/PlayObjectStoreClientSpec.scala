@@ -33,6 +33,7 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
+import uk.gov.hmrc.objectstore.client.model.http.Payload
 import uk.gov.hmrc.objectstore.client.model.objectstore.{ObjectListing, ObjectSummary}
 import uk.gov.hmrc.objectstore.client.play.PlayObjectStoreClient.Implicits._
 
@@ -60,26 +61,54 @@ class PlayObjectStoreClientSpec
 
   "putObject" must {
 
-    "store an object" in {
+    "store an object as Source" in {
       val body      = s"hello world! ${UUID.randomUUID().toString}"
       val location  = generateLocation()
-      val content   = toSource(body)
       val md5Base64 = Md5Hash.fromBytes(body.getBytes)
+
+      initPutObjectStub(location, statusCode = 201, body.getBytes, md5Base64)
+
+      osClient.putObject(location, toSource(body)).futureValue shouldBe (())
+    }
+
+    "store an object as Source with known md5hash and length" in {
+      val body      = s"hello world! ${UUID.randomUUID().toString}"
+      val location  = generateLocation()
+      val md5Base64 = Md5Hash.fromBytes(body.getBytes)
+
+      initPutObjectStub(location, statusCode = 201, body.getBytes, md5Base64)
+
+      osClient.putObject(location, Payload(length = body.length, md5Hash = md5Base64, content = toSource(body))).futureValue shouldBe (())
+    }
+
+    "store an object as Bytes" in {
+      val body      = s"hello world! ${UUID.randomUUID().toString}".getBytes
+      val location  = generateLocation()
+      val md5Base64 = Md5Hash.fromBytes(body)
 
       initPutObjectStub(location, statusCode = 201, body, md5Base64)
 
-      osClient.putObject(location, content).futureValue shouldBe ((): Unit)
+      osClient.putObject(location, body).futureValue shouldBe (())
+    }
+
+    "store an object as String" in {
+      val body      = s"hello world! ${UUID.randomUUID().toString}"
+      val location  = generateLocation()
+      val md5Base64 = Md5Hash.fromBytes(body.getBytes)
+
+      initPutObjectStub(location, statusCode = 201, body.getBytes, md5Base64)
+
+      osClient.putObject(location, body).futureValue shouldBe (())
     }
 
     "return an exception if object-store response is not successful" in {
       val body      = s"hello world! ${UUID.randomUUID().toString}"
       val location  = generateLocation()
-      val content   = toSource(body)
       val md5Base64 = Md5Hash.fromBytes(body.getBytes)
 
-      initPutObjectStub(location, statusCode = 401, body, md5Base64)
+      initPutObjectStub(location, statusCode = 401, body.getBytes, md5Base64)
 
-      osClient.putObject(location, content).failed.futureValue shouldBe an[UpstreamErrorResponse]
+      osClient.putObject(location, toSource(body)).failed.futureValue shouldBe an[UpstreamErrorResponse]
     }
   }
 
@@ -104,7 +133,7 @@ class PlayObjectStoreClientSpec
 
       initGetObjectStub(location, statusCode = 200, Some(body))
 
-      import InMemory._
+      import InMemoryReads._
 
       (for {
          obj <- osClient.getObject(location)
@@ -125,13 +154,29 @@ class PlayObjectStoreClientSpec
 
       initGetObjectStub(location, statusCode = 200, Some(body))
 
-      import InMemory._
+      import InMemoryReads._
 
       (for {
          obj <- osClient.getObject(location)
          str =  obj.get.content[JsValue]
        } yield str
       ).futureValue shouldBe JsObject(Seq("k1" -> JsString("v1"), "k2" -> JsString("v2")))
+    }
+
+    // TODO what's the expected behaviour here?
+    "fail with invalid json when reading as JsValue" in {
+      val body     = """{ "k1": "v1", "k2": "v2""""
+      val location = generateLocation()
+
+      initGetObjectStub(location, statusCode = 200, Some(body))
+
+      import InMemoryReads._
+
+      (for {
+         obj <- osClient.getObject(location)
+         str =  obj.get.content[JsValue]
+       } yield str
+      ).failed.futureValue shouldBe an[Exception]
     }
 
 
@@ -141,7 +186,7 @@ class PlayObjectStoreClientSpec
 
       initGetObjectStub(location, statusCode = 200, Some(body))
 
-      import InMemory._
+      import InMemoryReads._
 
       (for {
          obj <- osClient.getObject(location)
@@ -173,7 +218,7 @@ class PlayObjectStoreClientSpec
 
       initDeleteObjectStub(location)
 
-      osClient.deleteObject(location).futureValue shouldBe ((): Unit)
+      osClient.deleteObject(location).futureValue shouldBe (())
     }
 
     "return an exception if object-store response is not successful" in {
@@ -263,11 +308,11 @@ class PlayObjectStoreClientSpec
       |    "objects": []
       |}""".stripMargin
 
-  private def initPutObjectStub(location: String, statusCode: Int, reqBody: String, md5Base64: String): Unit = {
+  private def initPutObjectStub(location: String, statusCode: Int, reqBody: Array[Byte], md5Base64: String): Unit = {
     val request = put(urlEqualTo(s"/object-store/object/$location"))
       .withHeader("Authorization", equalTo("AuthorizationToken"))
       .withHeader("content-length", equalTo("49"))
-      .withRequestBody(binaryEqualTo(reqBody.getBytes))
+      .withRequestBody(binaryEqualTo(reqBody))
       .withHeader("Content-Type", equalTo("application/octet-stream"))
       .withHeader("Content-MD5", equalTo(md5Base64))
 

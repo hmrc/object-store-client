@@ -30,6 +30,7 @@ import uk.gov.hmrc.objectstore.client.play.PlayWSHttpClient.Request
 import scala.concurrent.{ExecutionContext, Future}
 
 trait PlayObjectStoreContentWrites {
+
   implicit val payloadAkkaSourceContentWrite: ObjectStoreContentWrite[Payload[Source[ByteString, NotUsed]], Request] =
     new ObjectStoreContentWrite[Payload[Source[ByteString, NotUsed]], Request] {
       override def writeContent(payload: Payload[Source[ByteString, NotUsed]]): Request =
@@ -92,14 +93,17 @@ trait PlayObjectStoreContentWrites {
         ClosedShape
     })
 
-  implicit lazy val stringWrite: ObjectStoreContentWrite[String, Request] =
-    payloadAkkaSourceContentWrite.contramap { str =>
+  implicit lazy val bytesWrite: ObjectStoreContentWrite[Array[Byte], Request] =
+    payloadAkkaSourceContentWrite.contramap { bytes =>
       Payload(
-        length  = str.getBytes.length,
-        md5Hash = Md5Hash.fromBytes(str.getBytes),
-        content = Source.single(str.getBytes).map(ByteString(_)) // TODO check this isn't inefficiently writing to disk...
+        length  = bytes.length,
+        md5Hash = Md5Hash.fromBytes(bytes),
+        content = Source.single(bytes).map(ByteString(_)) // TODO check this isn't inefficiently writing to disk...
       )
     }
+
+  implicit lazy val stringWrite: ObjectStoreContentWrite[String, Request] =
+    bytesWrite.contramap(_.getBytes)
 }
 
 object PlayObjectStoreContentWrites extends PlayObjectStoreContentWrites

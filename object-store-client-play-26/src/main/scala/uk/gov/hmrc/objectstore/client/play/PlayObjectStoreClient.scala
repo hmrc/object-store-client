@@ -32,6 +32,6 @@ object PlayObjectStoreClient {
        with PlayObjectStoreContentReads
        with PlayObjectStoreContentWrites {
 
-    object InMemory extends InMemoryPlayObjectStoreContentReads
+    object InMemoryReads extends InMemoryPlayObjectStoreContentReads
   }
 }
