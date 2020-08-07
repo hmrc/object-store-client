@@ -198,6 +198,7 @@ class PlayObjectStoreClientSpec
 
   private def putObjectStub(location: String, statusCode: Int, reqBody: String, md5Base64: String): Unit = {
     val request = put(urlEqualTo(s"/object-store/object/$location"))
+      .withHeader("Authorization", equalTo("AuthorizationToken"))
       .withHeader("content-length", equalTo("49"))
       .withRequestBody(binaryEqualTo(reqBody.getBytes))
       .withHeader("Content-Type", equalTo("application/octet-stream"))
@@ -211,6 +212,7 @@ class PlayObjectStoreClientSpec
 
   private def getObjectStub(location: String, statusCode: Int, resBody: Option[String]): Unit = {
     val request = get(urlEqualTo(s"/object-store/object/$location"))
+      .withHeader("Authorization", equalTo("AuthorizationToken"))
     val responseBuilder = aResponse.withStatus(statusCode)
     resBody.foreach(responseBuilder.withBody)
 
@@ -221,6 +223,7 @@ class PlayObjectStoreClientSpec
 
   private def deleteObjectStub(location: String, statusCode: Int = 200): Unit = {
     val request = delete(urlEqualTo(s"/object-store/object/$location"))
+      .withHeader("Authorization", equalTo("AuthorizationToken"))
     val response = aResponse()
       .withStatus(statusCode)
 
@@ -231,6 +234,7 @@ class PlayObjectStoreClientSpec
 
   private def listObjectsStub(location: String, statusCode: Int, resBodyJson: Option[String]): Unit = {
     val request = get(urlEqualTo(s"/object-store/list/$location"))
+      .withHeader("Authorization", equalTo("AuthorizationToken"))
     val responseBuilder = aResponse().withStatus(statusCode)
     resBodyJson foreach { body =>
       responseBuilder.withBody(body)

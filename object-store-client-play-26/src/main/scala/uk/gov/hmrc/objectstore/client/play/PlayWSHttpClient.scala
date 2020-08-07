@@ -32,36 +32,40 @@ object PlayWSHttpClient {
   type Request  = Future[HttpBody[WSRequest => WSRequest]]
   type Response = Future[WSResponse]
 }
-class PlayWSHttpClient @Inject()(wsClient: WSClient, config: ObjectStoreClientConfig)(implicit ec: ExecutionContext)
+class PlayWSHttpClient @Inject()(wsClient: WSClient)(implicit ec: ExecutionContext)
     extends HttpClient[Request, Response] {
 
   private val logger: Logger = Logger(this.getClass)
 
-  override def put(url: String, body: Request): Future[WSResponse] =
+  override def put(url: String, body: Request, headers: List[(String, String)]): Future[WSResponse] =
     invoke(
       url             = url,
       method          = "PUT",
       processResponse = identity,
-      body            = body
+      body            = body,
+      headers         = headers
     )
 
-  override def post(url: String, body: Request): Future[WSResponse] = invoke(
+  override def post(url: String, body: Request, headers: List[(String, String)]): Future[WSResponse] = invoke(
     url             = url,
     method          = "POST",
     processResponse = identity,
-    body            = body
+    body            = body,
+    headers         = headers
   )
 
-  override def get(url: String): Future[WSResponse] = invoke(
+  override def get(url: String, headers: List[(String, String)]): Future[WSResponse] = invoke(
     url             = url,
     method          = "GET",
-    processResponse = identity
+    processResponse = identity,
+    headers         = headers
   )
 
-  override def delete(url: String): Future[WSResponse] = invoke(
+  override def delete(url: String, headers: List[(String, String)]): Future[WSResponse] = invoke(
     url             = url,
     method          = "DELETE",
-    processResponse = identity
+    processResponse = identity,
+    headers         = headers
   )
 
   private val empty = Future.successful(
@@ -84,7 +88,7 @@ class PlayWSHttpClient @Inject()(wsClient: WSClient, config: ObjectStoreClientCo
     logger.info(s"Request: Url: $url")
     body.flatMap { httpBody =>
       val hdrs = (headers ++ httpBody.length.map("Content-Length" -> _.toString) ++ httpBody.md5.map(
-        "Content-MD5" -> _)) :+ authorizationHeader
+        "Content-MD5" -> _))
 
       val request = wsClient
         .url(url)
@@ -102,9 +106,6 @@ class PlayWSHttpClient @Inject()(wsClient: WSClient, config: ObjectStoreClientCo
         .andThen { case _ => httpBody.release() }
     }
   }
-
-  private def authorizationHeader: (String, String) =
-    ("Authorization", config.authorizationToken)
 
   private def logResponse(response: WSResponse): WSResponse = {
     logger.info(s"Response: Status ${response.status}, Headers ${response.headers}")
