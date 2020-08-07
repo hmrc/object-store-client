@@ -29,18 +29,34 @@ trait Monad[F[_]] extends Functor[F] {
     flatMap(fa)(a => pure(fn(a)))
 }
 
+trait MonadError[F[_], E] extends Monad[F] {
+  def raiseError[A](e: E): F[A]
+}
 
-/*object Functor {
-  def functorForFuture(implicit ec: ExecutionContext): Functor[Future] = new Functor[Future] {
-    def map[A, B](fa: Future[A])(f: A => B): Future[B] = fa.map(f)
-  }
-}*/
+
+import scala.concurrent.{ExecutionContext, Future}
+
 
 object Monad {
-  import scala.concurrent.{ExecutionContext, Future}
-  // TODO if no instance found, need to fail with message "Are you missing an ExecutionContext in scope..."
-  def monadForFuture(implicit ec: ExecutionContext): Monad[Future] = new Monad[Future] {
-    def pure[A](a: A) = Future.successful(a)
-    def flatMap[A, B](fa: Future[A])(fn: A => Future[B]): Future[B] = fa.flatMap(fn)
+  implicit def monadForFuture(implicit ec: ExecutionContext): MonadError[Future, Exception] = new MonadError[Future, Exception] {
+    override def pure[A](a: A) =
+      Future.successful(a)
+
+    override def flatMap[A, B](fa: Future[A])(fn: A => Future[B]): Future[B] =
+      fa.flatMap(fn)
+
+    override def raiseError[A](e: Exception): Future[A] =
+      Future.failed(e)
+  }
+
+  implicit def monadForEither[E]: MonadError[Either[E, *], E] = new MonadError[Either[E, *], E] {
+    override def pure[A](a: A) =
+      Right(a)
+
+    override def flatMap[A, B](fa: Either[E, A])(fn: A => Either[E, B]): Either[E, B] =
+      fa.flatMap(fn)
+
+    override def raiseError[A](e: E): Either[E, A] =
+      Left(e)
   }
 }

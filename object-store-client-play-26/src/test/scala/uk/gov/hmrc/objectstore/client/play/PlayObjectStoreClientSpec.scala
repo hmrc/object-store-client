@@ -30,6 +30,8 @@ import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
+import play.api.libs.functional.syntax._
+import play.api.libs.json._
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 import uk.gov.hmrc.objectstore.client.model.objectstore.{ObjectListing, ObjectSummary}
 import uk.gov.hmrc.objectstore.client.play.PlayObjectStoreClient.Implicits._
@@ -61,7 +63,7 @@ class PlayObjectStoreClientSpec
     "store an object" in {
       val body      = s"hello world! ${UUID.randomUUID().toString}"
       val location  = generateLocation()
-      val content   = generateContent(body)
+      val content   = toSource(body)
       val md5Base64 = Md5Hash.fromBytes(body.getBytes)
 
       initPutObjectStub(location, statusCode = 201, body, md5Base64)
@@ -72,7 +74,7 @@ class PlayObjectStoreClientSpec
     "return an exception if object-store response is not successful" in {
       val body      = s"hello world! ${UUID.randomUUID().toString}"
       val location  = generateLocation()
-      val content   = generateContent(body)
+      val content   = toSource(body)
       val md5Base64 = Md5Hash.fromBytes(body.getBytes)
 
       initPutObjectStub(location, statusCode = 401, body, md5Base64)
@@ -85,7 +87,6 @@ class PlayObjectStoreClientSpec
     "return an object that exists" in {
       val body     = "hello world! e36cb887-58ae-4422-9894-215faaf0aa35"
       val location = generateLocation()
-      val content  = generateContent(body)
 
       initGetObjectStub(location, statusCode = 200, Some(body))
 
@@ -94,21 +95,59 @@ class PlayObjectStoreClientSpec
           src =  obj.get.content[Source[ByteString, NotUsed]]
           str =  src.asString()
        } yield str
-      ).futureValue shouldBe content.asString()
+      ).futureValue shouldBe body
     }
 
     "return an object that exists as String" in {
       val body     = "hello world! e36cb887-58ae-4422-9894-215faaf0aa35"
       val location = generateLocation()
-      val content  = generateContent(body)
 
       initGetObjectStub(location, statusCode = 200, Some(body))
+
+      import InMemory._
 
       (for {
          obj <- osClient.getObject(location)
          str <- obj.get.content[Future[String]]
        } yield str
-      ).futureValue shouldBe content.asString()
+      ).futureValue shouldBe body
+    }
+
+    case class Obj(k1: String, k2: String)
+    implicit val or: Reads[Obj] =
+      ( (__ \ "k1").read[String]
+      ~ (__ \ "k2").read[String]
+      )(Obj.apply _)
+
+    "return an object that exists as JsValue" in {
+      val body     = """{ "k1": "v1", "k2": "v2" }"""
+      val location = generateLocation()
+
+      initGetObjectStub(location, statusCode = 200, Some(body))
+
+      import InMemory._
+
+      (for {
+         obj <- osClient.getObject(location)
+         str <- obj.get.content[Future[JsValue]]
+       } yield str
+      ).futureValue shouldBe JsObject(Seq("k1" -> JsString("v1"), "k2" -> JsString("v2")))
+    }
+
+
+    "return an object that exists as JsResult" in {
+      val body     = """{ "k1": "v1", "k2": "v2" }"""
+      val location = generateLocation()
+
+      initGetObjectStub(location, statusCode = 200, Some(body))
+
+      import InMemory._
+
+      (for {
+         obj <- osClient.getObject(location)
+         str <- obj.get.content[Future[JsResult[Obj]]]
+       } yield str
+      ).futureValue shouldBe JsSuccess(Obj(k1 = "v1", k2 = "v2"), __)
     }
 
     "return None for an object that doesn't exist" in {
@@ -198,7 +237,7 @@ class PlayObjectStoreClientSpec
 
   private def generateLocation(): String = UUID.randomUUID().toString
 
-  private def generateContent(body: String): Source[ByteString, NotUsed] =
+  private def toSource(body: String): Source[ByteString, NotUsed] =
     Source.single(ByteString(body.getBytes("UTF-8")))
 
   private def objectListingJson: String =
