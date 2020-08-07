@@ -25,7 +25,7 @@ trait ObjectStoreRead[F[_], RES] {
 
   def toObjectListing(response: RES): F[ObjectListing]
 
-  def toObject[CONTENT](response: RES)(implicit cr: ObjectStoreContentRead[F, RES, CONTENT]): F[Option[Object[CONTENT]]]
+  def toObject[CONTENT](response: RES, toContent: RES => F[CONTENT]): F[Option[Object[CONTENT]]]
 
   def consume(response: RES): F[Unit]
 }

@@ -40,7 +40,7 @@ class ObjectStoreClient[F[_], BODY, RES](client: HttpClient[F, BODY, RES], confi
     r: ObjectStoreRead[F, RES],
     cr: ObjectStoreContentRead[F, RES, CONTENT]
   ): F[Option[Object[CONTENT]]] =
-    F.flatMap(client.get(s"$url/object/$location", List(authorizationHeader)))(res => r.toObject(res)(cr))
+    F.flatMap(client.get(s"$url/object/$location", List(authorizationHeader)))(res => r.toObject(res, cr.readContent))
 
   def deleteObject(location: String)(implicit r: ObjectStoreRead[F, RES]): F[Unit] =
     F.flatMap(client.delete(s"$url/object/$location", List(authorizationHeader)))(r.consume)

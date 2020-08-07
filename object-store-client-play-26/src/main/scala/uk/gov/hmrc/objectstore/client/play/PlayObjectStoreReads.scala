@@ -38,9 +38,9 @@ trait PlayObjectStoreReads {
           case r => Future.failed(UpstreamErrorResponse("Object store call failed", r.status))
         }
 
-      override def toObject[CONTENT](response: WSResponse)(implicit cr: ObjectStoreContentRead[Future, WSResponse, CONTENT]): Future[Option[Object[CONTENT]]] =
+      override def toObject[CONTENT](response: WSResponse, readContent: WSResponse => Future[CONTENT]): Future[Option[Object[CONTENT]]] =
         response match {
-          case r if Status.isSuccessful(r.status) => cr.readContent(r).map(c => Some(Object("", c))) // todo - location is empty?
+          case r if Status.isSuccessful(r.status) => readContent(r).map(c => Some(Object("", c))) // todo - location is empty?
           case r if r.status == Status.NOT_FOUND => Future.successful(None)
           case r => Future.failed(UpstreamErrorResponse("Object store call failed", r.status))
         }
@@ -68,7 +68,7 @@ trait InMemoryPlayObjectStoreContentReads extends PlayObjectStoreContentReads {
   implicit def stringContentRead(implicit ec: ExecutionContext, m: Materializer): ObjectStoreContentRead[Future, WSResponse, String] =
     akkaSourceContentRead.mapF(_.map(_.utf8String).runReduce(_ + _))
 
-  // or we can just use a blocking implementation, avoiding the requirement for Materializer
+  // or we can just use a blocking implementation, avoiding the requirement for Materializer?
   /*implicit val stringContentRead: ObjectStoreContentRead[Future, WSResponse, String] =
     new ObjectStoreContentRead[Future, WSResponse, String]{
       override def readContent(response: WSResponse): Future[String] =

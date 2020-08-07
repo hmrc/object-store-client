@@ -18,14 +18,14 @@ package uk.gov.hmrc.objectstore.client.model
 
 import scala.annotation.implicitNotFound
 
-@implicitNotFound("""Cannot find an implicit Functor[${F}]. If you are using Future,
-you may be missing an implicit ExecutionContext.""")
+@implicitNotFound("""Cannot find an implicit Functor[${F}].
+If you are using Future, you may be missing an implicit ExecutionContext.""")
 trait Functor[F[_]] {
   def map[A, B](fa: F[A])(fn: A => B): F[B]
 }
 
-@implicitNotFound("""Cannot find an implicit Monad[${F}]. If you are using Future,
-you may be missing an implicit ExecutionContext.""")
+@implicitNotFound("""Cannot find an implicit Monad[${F}].
+If you are using Future, you may be missing an implicit ExecutionContext.""")
 trait Monad[F[_]] extends Functor[F] {
   def pure[A](a: A): F[A]
 
@@ -46,10 +46,12 @@ object Monad {
 
     override def flatMap[A, B](fa: Future[A])(fn: A => Future[B]): Future[B] =
       fa.flatMap(fn)
+
+    override def map[A, B](fa: Future[A])(fn: A => B): Future[B] =
+      fa.map(fn)
   }
 }
 
 object Functor {
-  implicit def functorForFuture(implicit ec: ExecutionContext): Functor[Future] =
-    Monad.monadForFuture
+  implicit def functorForMonad[F[_]](implicit F: Monad[F]): Functor[F] = F
 }

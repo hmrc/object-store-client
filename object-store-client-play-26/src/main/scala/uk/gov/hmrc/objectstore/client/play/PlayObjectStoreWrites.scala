@@ -72,7 +72,7 @@ trait PlayObjectStoreContentWrites {
           HttpBody(
             length    = Some(tempFile.path.toFile.length),
             md5       = Some(md5Hash),
-            writeBody = (req: WSRequest) => req.withBody(content), // TODO check this isn't writing to disk too...
+            writeBody = (req: WSRequest) => req.withBody(content),
             release   = () => SingletonTemporaryFileCreator.delete(tempFile)
           )
       }
@@ -98,7 +98,7 @@ trait PlayObjectStoreContentWrites {
       Payload(
         length  = bytes.length,
         md5Hash = Md5Hash.fromBytes(bytes),
-        content = Source.single(bytes).map(ByteString(_)) // TODO check this isn't inefficiently writing to disk...
+        content = Source.single(bytes).map(ByteString(_))
       )
     }
 
