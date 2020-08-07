@@ -23,7 +23,7 @@ import uk.gov.hmrc.objectstore.client.model.Monad
 
 import scala.language.higherKinds
 
-class ObjectStoreClient[F[_], REQ, RES](client: HttpClient[F, REQ, RES], config: ObjectStoreClientConfig)(implicit F: Monad[F]) {
+class ObjectStoreClient[F[_], BODY, RES](client: HttpClient[F, BODY, RES], config: ObjectStoreClientConfig)(implicit F: Monad[F]) {
 
   private val authorizationHeader: (String, String) =
     ("Authorization", config.authorizationToken)
@@ -31,7 +31,7 @@ class ObjectStoreClient[F[_], REQ, RES](client: HttpClient[F, REQ, RES], config:
   private val url = s"${config.baseUrl}/object-store"
 
   // implementation with curried types
-  def putObject: ObjectStoreClient.PutObject[F, REQ, RES] =
+  def putObject: ObjectStoreClient.PutObject[F, BODY, RES] =
     new ObjectStoreClient.PutObject(client, url, List(authorizationHeader))
 
   def getObject[CONTENT](
@@ -50,8 +50,8 @@ class ObjectStoreClient[F[_], REQ, RES](client: HttpClient[F, REQ, RES], config:
 }
 
 object ObjectStoreClient {
-  private[client] final class PutObject[F[_], REQ, RES](
-    client : HttpClient[F, REQ, RES],
+  private[client] final class PutObject[F[_], BODY, RES](
+    client : HttpClient[F, BODY, RES],
     url    : String,
     headers: List[(String, String)]
   )(implicit F: Monad[F]
@@ -61,7 +61,7 @@ object ObjectStoreClient {
       content : CONTENT
     )(implicit
       r: ObjectStoreRead[F, RES],
-      w: ObjectStoreContentWrite[F, CONTENT, REQ]
+      w: ObjectStoreContentWrite[F, CONTENT, BODY]
     ): F[Unit] =
       F.flatMap(w.writeContent(content))(c =>
         F.flatMap(client.put(s"$url/object/$location", c, headers))(

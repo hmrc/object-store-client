@@ -16,11 +16,11 @@
 
 package uk.gov.hmrc.objectstore.client.model.http
 
-trait HttpClient[F[_], REQ, RES] {
+trait HttpClient[F[_], BODY, RES] {
 
-  def put(url: String, body: REQ, headers: List[(String, String)]): F[RES]
+  def put(url: String, body: BODY, headers: List[(String, String)]): F[RES]
 
-  def post(url: String, body: REQ, headers: List[(String, String)]): F[RES]
+  def post(url: String, body: BODY, headers: List[(String, String)]): F[RES]
 
   def get(url: String, headers: List[(String, String)]): F[RES]
 
