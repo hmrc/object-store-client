@@ -37,7 +37,7 @@ import uk.gov.hmrc.objectstore.client.model.http.Payload
 import uk.gov.hmrc.objectstore.client.model.objectstore.{ObjectListing, ObjectSummary}
 import uk.gov.hmrc.objectstore.client.play.PlayObjectStoreClient.Implicits._
 
-import scala.concurrent.{ExecutionContextExecutor, Future}
+import scala.concurrent.ExecutionContextExecutor
 
 class PlayObjectStoreClientSpec
     extends WordSpec
@@ -119,12 +119,8 @@ class PlayObjectStoreClientSpec
 
       initGetObjectStub(location, statusCode = 200, Some(body))
 
-      (for {
-          obj <- osClient.getObject(location)
-          src <- obj.get.content[Future, Source[ByteString, NotUsed]]
-          str =  src.asString()
-       } yield str
-      ).futureValue shouldBe body
+      val obj = osClient.getObject[Source[ByteString, NotUsed]](location).futureValue
+      obj.get.content.asString() shouldBe body
     }
 
     "return an object that exists as String" in {
@@ -135,11 +131,8 @@ class PlayObjectStoreClientSpec
 
       import InMemoryReads._
 
-      (for {
-         obj <- osClient.getObject(location)
-         str <- obj.get.content[Future, String]
-       } yield str
-      ).futureValue shouldBe body
+      val obj = osClient.getObject[String](location).futureValue
+      obj.get.content shouldBe body
     }
 
     case class Obj(k1: String, k2: String)
@@ -156,11 +149,8 @@ class PlayObjectStoreClientSpec
 
       import InMemoryReads._
 
-      (for {
-         obj <- osClient.getObject(location)
-         str <- obj.get.content[Future, JsValue]
-       } yield str
-      ).futureValue shouldBe JsObject(Seq("k1" -> JsString("v1"), "k2" -> JsString("v2")))
+      val obj = osClient.getObject[JsValue](location).futureValue
+      obj.get.content shouldBe JsObject(Seq("k1" -> JsString("v1"), "k2" -> JsString("v2")))
     }
 
     // TODO what's the expected behaviour here?
@@ -172,13 +162,8 @@ class PlayObjectStoreClientSpec
 
       import InMemoryReads._
 
-      (for {
-         obj <- osClient.getObject(location)
-         str <- obj.get.content[Future, JsValue]
-       } yield str
-      ).failed.futureValue shouldBe an[Exception]
+      osClient.getObject[JsValue](location).failed.futureValue shouldBe an[Exception]
     }
-
 
     "return an object that exists as JsResult" in {
       val body     = """{ "k1": "v1", "k2": "v2" }"""
@@ -188,11 +173,8 @@ class PlayObjectStoreClientSpec
 
       import InMemoryReads._
 
-      (for {
-         obj <- osClient.getObject(location)
-         str <- obj.get.content[Future, JsResult[Obj]]
-       } yield str
-      ).futureValue shouldBe JsSuccess(Obj(k1 = "v1", k2 = "v2"), __)
+      val obj = osClient.getObject[JsResult[Obj]](location).futureValue
+      obj.get.content shouldBe JsSuccess(Obj(k1 = "v1", k2 = "v2"), __)
     }
 
     "return None for an object that doesn't exist" in {

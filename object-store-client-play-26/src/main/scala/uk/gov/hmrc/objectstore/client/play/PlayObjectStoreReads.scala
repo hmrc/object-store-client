@@ -40,9 +40,9 @@ trait PlayObjectStoreReads {
           case r => F.raiseError(UpstreamErrorResponse("Object store call failed", r.status))
         }
 
-      override def toObject(response: WSResponse): F[Option[objectstore.Object[WSResponse]]] =
+      override def toObject[CONTENT](response: WSResponse)(implicit cr: ObjectStoreContentRead[F, WSResponse, CONTENT]): F[Option[objectstore.Object[CONTENT]]] =
         response match {
-          case r if Status.isSuccessful(r.status) => F.pure(Some(objectstore.Object("", response))) // todo - location is empty?
+          case r if Status.isSuccessful(r.status) => F.map(cr.readContent(r))(c => Some(objectstore.Object("", c))) // todo - location is empty?
           case r if r.status == Status.NOT_FOUND => F.pure(None)
           case r => F.raiseError(UpstreamErrorResponse("Object store call failed", r.status))
         }
@@ -75,14 +75,15 @@ trait PlayObjectStoreContentReads {
 }
 
 trait InMemoryPlayObjectStoreContentReads extends PlayObjectStoreContentReads {
+  implicit def stringContentRead(implicit ec: ExecutionContext, m: Materializer): ObjectStoreContentRead[Future, WSResponse, String] =
+    akkaSourceContentRead.mapF(_.map(_.utf8String).runReduce(_ + _))
+
+  // or we can just use a blocking implementation, avoiding the requirement for ExecutionContext, Materializer
   /*implicit val stringContentRead: ObjectStoreContentRead[Future, WSResponse, String] =
     new ObjectStoreContentRead[Future, WSResponse, String]{
       override def readContent(response: WSResponse): Future[String] =
         Future.successful(response.body)
     }*/
-
-  implicit def stringContentRead(implicit ec: ExecutionContext, m: Materializer): ObjectStoreContentRead[Future, WSResponse, String] =
-    akkaSourceContentRead.mapF(_.map(_.utf8String).runReduce(_ + _))
 
   implicit def jsValueContentRead(implicit ec: ExecutionContext, m: Materializer): ObjectStoreContentRead[Future, WSResponse, JsValue] =
     stringContentRead.map(Json.parse)(Monad.monadForFuture(ec))

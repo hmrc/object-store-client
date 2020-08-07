@@ -17,7 +17,7 @@
 package uk.gov.hmrc.objectstore.client
 
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
-import uk.gov.hmrc.objectstore.client.model.http.{HttpClient, ObjectStoreRead, ObjectStoreContentWrite}
+import uk.gov.hmrc.objectstore.client.model.http.{HttpClient, ObjectStoreRead, ObjectStoreContentRead, ObjectStoreContentWrite}
 import uk.gov.hmrc.objectstore.client.model.objectstore.{Object, ObjectListing}
 import uk.gov.hmrc.objectstore.client.model.Monad
 
@@ -34,8 +34,13 @@ class ObjectStoreClient[F[_], REQ, RES](client: HttpClient[F, REQ, RES], config:
   def putObject: ObjectStoreClient.PutObject[F, REQ, RES] =
     new ObjectStoreClient.PutObject(client, url, List(authorizationHeader))
 
-  def getObject(location: String)(implicit r: ObjectStoreRead[F, RES]): F[Option[Object[RES]]] =
-    F.flatMap(client.get(s"$url/object/$location", List(authorizationHeader)))(r.toObject)
+  def getObject[CONTENT](
+    location: String
+  )(implicit
+    r: ObjectStoreRead[F, RES],
+    cr: ObjectStoreContentRead[F, RES, CONTENT]
+  ): F[Option[Object[CONTENT]]] =
+    F.flatMap(client.get(s"$url/object/$location", List(authorizationHeader)))(res => r.toObject(res)(cr))
 
   def deleteObject(location: String)(implicit r: ObjectStoreRead[F, RES]): F[Unit] =
     F.flatMap(client.delete(s"$url/object/$location", List(authorizationHeader)))(r.consume)

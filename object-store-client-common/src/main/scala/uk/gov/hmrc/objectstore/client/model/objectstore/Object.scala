@@ -16,14 +16,8 @@
 
 package uk.gov.hmrc.objectstore.client.model.objectstore
 
-import uk.gov.hmrc.objectstore.client.model.http.ObjectStoreContentRead
-
-case class Object[RES](
+case class Object[CONTENT](
   location: String,
-  res     : RES,
+  content : CONTENT,
   metadata: Option[ObjectMetadata] = None
-) {
-
-  def content[F[_], CONTENT](implicit r: ObjectStoreContentRead[F, RES, CONTENT]): F[CONTENT] =
-    r.readContent(res)
-}
+)
