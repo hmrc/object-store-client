@@ -16,10 +16,16 @@
 
 package uk.gov.hmrc.objectstore.client.model
 
+import scala.annotation.implicitNotFound
+
+@implicitNotFound("""Cannot find an implicit Functor[${F}]. If you are using Future,
+you may be missing an implicit ExecutionContext.""")
 trait Functor[F[_]] {
   def map[A, B](fa: F[A])(fn: A => B): F[B]
 }
 
+@implicitNotFound("""Cannot find an implicit Monad[${F}]. If you are using Future,
+you may be missing an implicit ExecutionContext.""")
 trait Monad[F[_]] extends Functor[F] {
   def pure[A](a: A): F[A]
 
@@ -29,34 +35,21 @@ trait Monad[F[_]] extends Functor[F] {
     flatMap(fa)(a => pure(fn(a)))
 }
 
-trait MonadError[F[_], E] extends Monad[F] {
-  def raiseError[A](e: E): F[A]
-}
-
 
 import scala.concurrent.{ExecutionContext, Future}
 
 
 object Monad {
-  implicit def monadForFuture(implicit ec: ExecutionContext): MonadError[Future, Exception] = new MonadError[Future, Exception] {
+  implicit def monadForFuture(implicit ec: ExecutionContext): Monad[Future] = new Monad[Future] {
     override def pure[A](a: A) =
       Future.successful(a)
 
     override def flatMap[A, B](fa: Future[A])(fn: A => Future[B]): Future[B] =
       fa.flatMap(fn)
-
-    override def raiseError[A](e: Exception): Future[A] =
-      Future.failed(e)
   }
+}
 
-  implicit def monadForEither[E]: MonadError[Either[E, *], E] = new MonadError[Either[E, *], E] {
-    override def pure[A](a: A) =
-      Right(a)
-
-    override def flatMap[A, B](fa: Either[E, A])(fn: A => Either[E, B]): Either[E, B] =
-      fa.flatMap(fn)
-
-    override def raiseError[A](e: E): Either[E, A] =
-      Left(e)
-  }
+object Functor {
+  implicit def functorForFuture(implicit ec: ExecutionContext): Functor[Future] =
+    Monad.monadForFuture
 }

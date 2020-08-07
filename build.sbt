@@ -11,8 +11,7 @@ lazy val commonSettings = Seq(
   scalaVersion := scala2_12,
   crossScalaVersions := Seq(scala2_11, scala2_12),
   makePublicallyAvailableOnBintray := true,
-  resolvers := commonResolvers,
-  addCompilerPlugin("org.typelevel" % "kind-projector" % "0.11.0" cross CrossVersion.full)
+  resolvers := commonResolvers
 )
 lazy val library = Project(name, file("."))
   .enablePlugins(SbtAutoBuildPlugin, SbtGitVersioning, SbtArtifactory)
