@@ -17,7 +17,6 @@
 package uk.gov.hmrc.objectstore.client.play
 
 import akka.NotUsed
-import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import play.api.http.Status
@@ -69,21 +68,23 @@ trait PlayObjectStoreContentReads {
 
   implicit def akkaSourceContentRead: ObjectStoreContentRead[WSResponse, Source[ByteString, NotUsed]] =
     new ObjectStoreContentRead[WSResponse, Source[ByteString, NotUsed]]{
-
       override def readContent(response: WSResponse): Source[ByteString, NotUsed] =
         response.bodyAsSource.mapMaterializedValue(_ => NotUsed)
     }
 }
 
 trait InMemoryPlayObjectStoreContentReads extends PlayObjectStoreContentReads {
-  implicit def futureStringContentRead(implicit m: Materializer): ObjectStoreContentRead[WSResponse, Future[String]] =
-    akkaSourceContentRead.map(_.map(_.utf8String).runReduce(_ + _))
+  implicit val stringContentRead: ObjectStoreContentRead[WSResponse, String] =
+    new ObjectStoreContentRead[WSResponse, String]{
+      override def readContent(response: WSResponse): String =
+        response.body
+    }
 
-  implicit def futureJsValueContentRead(implicit ec: ExecutionContext, m: Materializer): ObjectStoreContentRead[WSResponse, Future[JsValue]] =
-    futureStringContentRead.map(_.map(Json.parse))
+  implicit val jsValueContentRead: ObjectStoreContentRead[WSResponse, JsValue] =
+    stringContentRead.map(Json.parse)
 
-  implicit def futureJsResultContentRead[A : Reads](implicit ec: ExecutionContext, m: Materializer): ObjectStoreContentRead[WSResponse, Future[JsResult[A]]] =
-    futureJsValueContentRead.map(_.map(_.validate[A]))
+  implicit def jsResultContentRead[A : Reads]: ObjectStoreContentRead[WSResponse, JsResult[A]] =
+    jsValueContentRead.map(_.validate[A])
 }
 
 object PlayObjectStoreContentReads extends PlayObjectStoreContentReads

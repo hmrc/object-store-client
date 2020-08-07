@@ -36,7 +36,7 @@ import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 import uk.gov.hmrc.objectstore.client.model.objectstore.{ObjectListing, ObjectSummary}
 import uk.gov.hmrc.objectstore.client.play.PlayObjectStoreClient.Implicits._
 
-import scala.concurrent.{ExecutionContextExecutor, Future}
+import scala.concurrent.ExecutionContextExecutor
 
 class PlayObjectStoreClientSpec
     extends WordSpec
@@ -108,7 +108,7 @@ class PlayObjectStoreClientSpec
 
       (for {
          obj <- osClient.getObject(location)
-         str <- obj.get.content[Future[String]]
+         str =  obj.get.content[String]
        } yield str
       ).futureValue shouldBe body
     }
@@ -129,7 +129,7 @@ class PlayObjectStoreClientSpec
 
       (for {
          obj <- osClient.getObject(location)
-         str <- obj.get.content[Future[JsValue]]
+         str =  obj.get.content[JsValue]
        } yield str
       ).futureValue shouldBe JsObject(Seq("k1" -> JsString("v1"), "k2" -> JsString("v2")))
     }
@@ -145,7 +145,7 @@ class PlayObjectStoreClientSpec
 
       (for {
          obj <- osClient.getObject(location)
-         str <- obj.get.content[Future[JsResult[Obj]]]
+         str =  obj.get.content[JsResult[Obj]]
        } yield str
       ).futureValue shouldBe JsSuccess(Obj(k1 = "v1", k2 = "v2"), __)
     }
