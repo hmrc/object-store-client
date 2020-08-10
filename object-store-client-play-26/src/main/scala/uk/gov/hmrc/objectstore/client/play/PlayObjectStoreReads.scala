@@ -80,6 +80,9 @@ trait InMemoryPlayObjectStoreContentReads extends PlayObjectStoreContentReads {
 
   implicit def jsResultContentRead[A : Reads](implicit ec: ExecutionContext, m: Materializer): ObjectStoreContentRead[Future, WSResponse, JsResult[A]] =
     jsValueContentRead.map(_.validate[A])
+
+  implicit def jsReadsRead[A : Reads](implicit ec: ExecutionContext, m: Materializer): ObjectStoreContentRead[Future, WSResponse, A] =
+    jsValueContentRead.map(_.as[A])
 }
 
 object PlayObjectStoreContentReads extends PlayObjectStoreContentReads

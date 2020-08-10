@@ -177,6 +177,18 @@ class PlayObjectStoreClientSpec
       obj.get.content shouldBe JsSuccess(Obj(k1 = "v1", k2 = "v2"), __)
     }
 
+    "return an object that exists as JsReads" in {
+      val body     = """{ "k1": "v1", "k2": "v2" }"""
+      val location = generateLocation()
+
+      initGetObjectStub(location, statusCode = 200, Some(body))
+
+      import InMemoryReads._
+
+      val obj = osClient.getObject[Obj](location).futureValue
+      obj.get.content shouldBe Obj(k1 = "v1", k2 = "v2")
+    }
+
     "return None for an object that doesn't exist" in {
       val location = generateLocation()
 
