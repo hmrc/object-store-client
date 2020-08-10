@@ -16,26 +16,51 @@
 
 package uk.gov.hmrc.objectstore.client.play
 
+import java.io.{File, FileInputStream}
+
 import akka.NotUsed
 import akka.stream.{ClosedShape, Materializer}
 import akka.stream.scaladsl.{Broadcast, FileIO, Flow, GraphDSL, RunnableGraph, Sink, Source}
 import akka.util.ByteString
 import play.api.libs.Files.SingletonTemporaryFileCreator
 import play.api.libs.ws.WSRequest
-import uk.gov.hmrc.objectstore.client.model.http.ObjectStoreWrite
+import uk.gov.hmrc.objectstore.client.model.http.{ObjectStoreContentWrite, Payload}
 import uk.gov.hmrc.objectstore.client.play.PlayWSHttpClient.Request
 
 import scala.concurrent.{ExecutionContext, Future}
 
-trait PlayObjectStoreWrites {
-  implicit def akkaSourceWrite(implicit ec: ExecutionContext, m: Materializer): ObjectStoreWrite[Source[ByteString, akka.NotUsed], Request] =
-    new ObjectStoreWrite[Source[ByteString, akka.NotUsed], Request] {
-      override def write(body: Source[ByteString, NotUsed]): Request = {
+trait PlayObjectStoreContentWrites {
+
+  implicit val payloadAkkaSourceContentWrite: ObjectStoreContentWrite[Future, Payload[Source[ByteString, NotUsed]], Request] =
+    new ObjectStoreContentWrite[Future, Payload[Source[ByteString, NotUsed]], Request] {
+      override def writeContent(payload: Payload[Source[ByteString, NotUsed]]): Future[Request] =
+        Future.successful(
+          HttpBody(
+            length    = Some(payload.length),
+            md5       = Some(payload.md5Hash),
+            writeBody = (req: WSRequest) => req.withBody(payload.content),
+            release   = () => ()
+          )
+        )
+    }
+
+  implicit val fileWrite: ObjectStoreContentWrite[Future, File, Request] =
+    payloadAkkaSourceContentWrite.contramap { file =>
+      Payload(
+        length  = file.length,
+        md5Hash = Md5Hash.fromInputStream(new FileInputStream(file)),
+        content = FileIO.fromPath(file.toPath).mapMaterializedValue(_ => NotUsed)
+      )
+    }
+
+  implicit def akkaSourceContentWrite(implicit ec: ExecutionContext, m: Materializer): ObjectStoreContentWrite[Future, Source[ByteString, NotUsed], Request] =
+    new ObjectStoreContentWrite[Future, Source[ByteString, NotUsed], Request] {
+      override def writeContent(content: Source[ByteString, NotUsed]): Future[Request] = {
         val tempFile = SingletonTemporaryFileCreator.create()
 
         val (uploadFinished, md5Finished) =
           broadcast2(
-            source = body,
+            source = content,
             sink1  = FileIO.toPath(tempFile.path),
             sink2  = Md5Hash.md5HashSink
           ).run()
@@ -47,7 +72,7 @@ trait PlayObjectStoreWrites {
           HttpBody(
             length    = Some(tempFile.path.toFile.length),
             md5       = Some(md5Hash),
-            writeBody = (req: WSRequest) => req.withBody(body),
+            writeBody = (req: WSRequest) => req.withBody(content),
             release   = () => SingletonTemporaryFileCreator.delete(tempFile)
           )
       }
@@ -68,16 +93,17 @@ trait PlayObjectStoreWrites {
         ClosedShape
     })
 
-  implicit lazy val stringWrite: ObjectStoreWrite[String, Request] =
-    new ObjectStoreWrite[String, Request] {
-      override def write(body: String): Request =
-        Future.successful(HttpBody(
-          length    = Some(body.getBytes.length),
-          md5       = Some(Md5Hash.fromBytes(body.getBytes)),
-          writeBody = (req: WSRequest) => req.withBody(body.getBytes),
-          release   = () => ()
-        ))
+  implicit lazy val bytesWrite: ObjectStoreContentWrite[Future, Array[Byte], Request] =
+    payloadAkkaSourceContentWrite.contramap { bytes =>
+      Payload(
+        length  = bytes.length,
+        md5Hash = Md5Hash.fromBytes(bytes),
+        content = Source.single(bytes).map(ByteString(_))
+      )
     }
+
+  implicit lazy val stringWrite: ObjectStoreContentWrite[Future, String, Request] =
+    bytesWrite.contramap(_.getBytes)
 }
 
-object PlayObjectStoreWrites extends PlayObjectStoreWrites
+object PlayObjectStoreContentWrites extends PlayObjectStoreContentWrites

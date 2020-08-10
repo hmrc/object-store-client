@@ -16,4 +16,8 @@
 
 package uk.gov.hmrc.objectstore.client.model.objectstore
 
-final case class Object[T](location: String, objectContent: T, metadata: Option[ObjectMetadata] = None)
+case class Object[CONTENT](
+  location: String,
+  content : CONTENT,
+  metadata: Option[ObjectMetadata] = None
+)

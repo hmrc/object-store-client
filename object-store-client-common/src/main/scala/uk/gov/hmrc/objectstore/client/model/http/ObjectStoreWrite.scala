@@ -16,15 +16,22 @@
 
 package uk.gov.hmrc.objectstore.client.model.http
 
-import scala.language.higherKinds
+import uk.gov.hmrc.objectstore.client.model.Monad
 
-trait ObjectStoreWrite[BODY, REQ] {
-  def write(body: BODY): REQ
-}
+case class Payload[CONTENT](length: Long, md5Hash: String, content: CONTENT)
 
-object ObjectStoreWriteSyntax {
+trait ObjectStoreContentWrite[F[_], CONTENT, BODY] { outer =>
+  def writeContent(content: CONTENT): F[BODY]
 
-  implicit class ObjectStoreWriteOps[BODY, REQ](value: BODY) {
-    def write(implicit w: ObjectStoreWrite[BODY, REQ]): REQ = w.write(value)
-  }
+  def contramap[CONTENT2](f: CONTENT2 => CONTENT): ObjectStoreContentWrite[F, CONTENT2, BODY] =
+    new ObjectStoreContentWrite[F, CONTENT2, BODY] {
+      override def writeContent(content: CONTENT2): F[BODY] =
+        outer.writeContent(f(content))
+    }
+
+  def contramapF[CONTENT2](f: CONTENT2 => F[CONTENT])(implicit F: Monad[F]): ObjectStoreContentWrite[F, CONTENT2, BODY] =
+    new ObjectStoreContentWrite[F, CONTENT2, BODY] {
+      override def writeContent(content: CONTENT2): F[BODY] =
+        F.flatMap(f(content))(outer.writeContent)
+    }
 }
