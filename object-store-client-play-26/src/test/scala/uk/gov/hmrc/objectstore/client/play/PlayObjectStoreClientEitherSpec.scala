@@ -26,7 +26,7 @@ import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.github.tomakehurst.wiremock.client.WireMock._
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
+import org.scalatest.{BeforeAndAfterAll, EitherValues, Matchers, WordSpec}
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.Application
 import play.api.inject.bind
@@ -39,20 +39,21 @@ import uk.gov.hmrc.objectstore.client.model.objectstore.{ObjectListing, ObjectSu
 
 import scala.concurrent.ExecutionContextExecutor
 
-class PlayObjectStoreClientSpec
+class PlayObjectStoreClientEitherSpec
     extends WordSpec
     with Matchers
     with GuiceOneServerPerSuite
     with BeforeAndAfterAll
     with WireMockHelper
     with ScalaFutures
-    with IntegrationPatience {
+    with IntegrationPatience
+    with EitherValues {
 
   implicit val ec: ExecutionContextExecutor = scala.concurrent.ExecutionContext.global
   implicit val system: ActorSystem          = ActorSystem()
   implicit val m: ActorMaterializer         = ActorMaterializer()
 
-  protected val osClient: PlayObjectStoreClient = fakeApplication().injector.instanceOf(classOf[PlayObjectStoreClient])
+  protected val osClient: PlayObjectStoreClientEither = fakeApplication().injector.instanceOf(classOf[PlayObjectStoreClientEither])
 
   override def fakeApplication(): Application =
     new GuiceApplicationBuilder()
@@ -71,7 +72,7 @@ class PlayObjectStoreClientSpec
 
       initPutObjectStub(location, statusCode = 201, body.getBytes, md5Base64)
 
-      osClient.putObject(location, source).futureValue shouldBe (())
+      osClient.putObject(location, source).futureValue.right.value shouldBe (())
     }
 
     "store an object as Source with Any bound to Mat" in {
@@ -82,7 +83,7 @@ class PlayObjectStoreClientSpec
 
       initPutObjectStub(location, statusCode = 201, body.getBytes, md5Base64)
 
-      osClient.putObject(location, source).futureValue shouldBe (())
+      osClient.putObject(location, source).futureValue.right.value shouldBe (())
     }
 
     "store an object as Source with NotUsed bound to Mat and known md5hash and length" in {
@@ -93,7 +94,7 @@ class PlayObjectStoreClientSpec
 
       initPutObjectStub(location, statusCode = 201, body.getBytes, md5Base64)
 
-      osClient.putObject(location, Payload(length = body.length, md5Hash = md5Base64, content = source)).futureValue shouldBe (())
+      osClient.putObject(location, Payload(length = body.length, md5Hash = md5Base64, content = source)).futureValue.right.value shouldBe (())
     }
 
     "store an object as Source with Any bound to Mat and known md5hash and length" in {
@@ -104,7 +105,7 @@ class PlayObjectStoreClientSpec
 
       initPutObjectStub(location, statusCode = 201, body.getBytes, md5Base64)
 
-      osClient.putObject(location, Payload(length = body.length, md5Hash = md5Base64, content = source)).futureValue shouldBe (())
+      osClient.putObject(location, Payload(length = body.length, md5Hash = md5Base64, content = source)).futureValue.right.value shouldBe (())
     }
 
     "store an object as Bytes" in {
@@ -114,7 +115,7 @@ class PlayObjectStoreClientSpec
 
       initPutObjectStub(location, statusCode = 201, body, md5Base64)
 
-      osClient.putObject(location, body).futureValue shouldBe (())
+      osClient.putObject(location, body).futureValue.right.value shouldBe (())
     }
 
     "store an object as String" in {
@@ -124,7 +125,7 @@ class PlayObjectStoreClientSpec
 
       initPutObjectStub(location, statusCode = 201, body.getBytes, md5Base64)
 
-      osClient.putObject(location, body).futureValue shouldBe (())
+      osClient.putObject(location, body).futureValue.right.value shouldBe (())
     }
 
     "return an exception if object-store response is not successful" in {
@@ -134,7 +135,7 @@ class PlayObjectStoreClientSpec
 
       initPutObjectStub(location, statusCode = 401, body.getBytes, md5Base64)
 
-      osClient.putObject(location, toSource(body)).failed.futureValue shouldBe an[UpstreamErrorResponse]
+      osClient.putObject(location, toSource(body)).futureValue.left.value shouldBe an[UpstreamErrorResponse]
     }
   }
 
@@ -145,7 +146,7 @@ class PlayObjectStoreClientSpec
 
       initGetObjectStub(location, statusCode = 200, Some(body))
 
-      val obj = osClient.getObject[Source[ByteString, NotUsed]](location).futureValue
+      val obj = osClient.getObject[Source[ByteString, NotUsed]](location).futureValue.right.value
       obj.get.content.asString() shouldBe body
     }
 
@@ -157,7 +158,7 @@ class PlayObjectStoreClientSpec
 
       import InMemoryReads._
 
-      val obj = osClient.getObject[String](location).futureValue
+      val obj = osClient.getObject[String](location).futureValue.right.value
       obj.get.content shouldBe body
     }
 
@@ -175,11 +176,10 @@ class PlayObjectStoreClientSpec
 
       import InMemoryReads._
 
-      val obj = osClient.getObject[JsValue](location).futureValue
+      val obj = osClient.getObject[JsValue](location).futureValue.right.value
       obj.get.content shouldBe JsObject(Seq("k1" -> JsString("v1"), "k2" -> JsString("v2")))
     }
 
-    // TODO what's the expected behaviour here?
     "fail with invalid json when reading as JsValue" in {
       val body     = """{ "k1": "v1", "k2": "v2""""
       val location = generateLocation()
@@ -188,7 +188,7 @@ class PlayObjectStoreClientSpec
 
       import InMemoryReads._
 
-      osClient.getObject[JsValue](location).failed.futureValue shouldBe an[Exception]
+      osClient.getObject[JsValue](location).futureValue.left.value shouldBe an[PlayObjectStoreException]
     }
 
     "return an object that exists as JsResult" in {
@@ -199,7 +199,7 @@ class PlayObjectStoreClientSpec
 
       import InMemoryReads._
 
-      val obj = osClient.getObject[JsResult[Obj]](location).futureValue
+      val obj = osClient.getObject[JsResult[Obj]](location).futureValue.right.value
       obj.get.content shouldBe JsSuccess(Obj(k1 = "v1", k2 = "v2"), __)
     }
 
@@ -211,7 +211,7 @@ class PlayObjectStoreClientSpec
 
       import InMemoryReads._
 
-      val obj = osClient.getObject[Obj](location).futureValue
+      val obj = osClient.getObject[Obj](location).futureValue.right.value
       obj.get.content shouldBe Obj(k1 = "v1", k2 = "v2")
     }
 
@@ -220,7 +220,7 @@ class PlayObjectStoreClientSpec
 
       initGetObjectStub(location, statusCode = 404, None)
 
-      osClient.getObject(location).futureValue shouldBe None
+      osClient.getObject(location).futureValue.right.value shouldBe None
     }
 
     "return an exception if object-store response is not successful" in {
@@ -228,7 +228,7 @@ class PlayObjectStoreClientSpec
 
       initGetObjectStub(location, statusCode = 401, None)
 
-      osClient.getObject(location).failed.futureValue shouldBe an[UpstreamErrorResponse]
+      osClient.getObject(location).futureValue.left.value shouldBe an[UpstreamErrorResponse]
     }
   }
 
@@ -238,7 +238,7 @@ class PlayObjectStoreClientSpec
 
       initDeleteObjectStub(location)
 
-      osClient.deleteObject(location).futureValue shouldBe (())
+      osClient.deleteObject(location).futureValue.right.value shouldBe (())
     }
 
     "return an exception if object-store response is not successful" in {
@@ -246,7 +246,7 @@ class PlayObjectStoreClientSpec
 
       initDeleteObjectStub(location, statusCode = 401)
 
-      osClient.deleteObject(location).failed.futureValue shouldBe an[UpstreamErrorResponse]
+      osClient.deleteObject(location).futureValue.left.value shouldBe an[UpstreamErrorResponse]
     }
   }
 
@@ -256,7 +256,7 @@ class PlayObjectStoreClientSpec
 
       initListObjectsStub(location, statusCode = 200, Some(objectListingJson))
 
-      osClient.listObjects(location).futureValue.objectSummaries shouldBe List(
+      osClient.listObjects(location).futureValue.right.value.objectSummaries shouldBe List(
         ObjectSummary(
           location      = "something/0993180f-8f31-41b2-905c-71f0273bb7d4",
           contentType   = "application/json",
@@ -279,7 +279,7 @@ class PlayObjectStoreClientSpec
 
       initListObjectsStub(location, statusCode = 200, Some(emptyObjectListingJson))
 
-      osClient.listObjects(location).futureValue shouldBe ObjectListing(List.empty)
+      osClient.listObjects(location).futureValue.right.value shouldBe ObjectListing(List.empty)
     }
 
     "return an exception if object-store response is not successful" in {
@@ -287,7 +287,7 @@ class PlayObjectStoreClientSpec
 
       initListObjectsStub(location, statusCode = 401, None)
 
-      osClient.listObjects(location).failed.futureValue shouldBe an[UpstreamErrorResponse]
+      osClient.listObjects(location).futureValue.left.value shouldBe an[UpstreamErrorResponse]
     }
   }
 
@@ -349,7 +349,6 @@ class PlayObjectStoreClientSpec
   private def initGetObjectStub(location: String, statusCode: Int, resBody: Option[String]): Unit = {
     val request = get(urlEqualTo(s"/object-store/object/$location"))
       .withHeader("Authorization", equalTo("AuthorizationToken"))
-
     val responseBuilder = aResponse.withStatus(statusCode)
     resBody.foreach { body =>
       responseBuilder

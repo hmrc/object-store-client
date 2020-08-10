@@ -24,38 +24,33 @@ import play.api.libs.json.{JsResult, JsValue, Json, Reads}
 import play.api.libs.ws.WSResponse
 import uk.gov.hmrc.objectstore.client.model.http.ObjectStoreContentRead
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
+import scala.util.{Failure, Success, Try}
 
 trait PlayObjectStoreContentReads {
-
-  implicit def akkaSourceContentRead: ObjectStoreContentRead[Future, WSResponse, Source[ByteString, NotUsed]] =
-    new ObjectStoreContentRead[Future, WSResponse, Source[ByteString, NotUsed]]{
-      override def readContent(response: WSResponse): Future[Source[ByteString, NotUsed]] =
-        Future.successful(response.bodyAsSource.mapMaterializedValue(_ => NotUsed))
+  implicit def akkaSourceContentRead(implicit ec: ExecutionContext): ObjectStoreContentRead[F, WSResponse, Source[ByteString, NotUsed]] =
+    new ObjectStoreContentRead[F, WSResponse, Source[ByteString, NotUsed]]{
+      override def readContent(response: WSResponse): F[Source[ByteString, NotUsed]] =
+        F.pure(response.bodyAsSource.mapMaterializedValue(_ => NotUsed))
     }
 }
 
 trait InMemoryPlayObjectStoreContentReads extends PlayObjectStoreContentReads {
-  implicit def stringContentRead(implicit ec: ExecutionContext, m: Materializer): ObjectStoreContentRead[Future, WSResponse, String] =
-    akkaSourceContentRead.mapF(_.map(_.utf8String).runReduce(_ + _))
 
-  // or we can just use a blocking implementation, avoiding the requirement for Materializer?
-  /*implicit val stringContentRead: ObjectStoreContentRead[Future, WSResponse, String] =
-    new ObjectStoreContentRead[Future, WSResponse, String]{
-      override def readContent(response: WSResponse): Future[String] =
-        Future.successful(response.body)
-    }*/
+  implicit def stringContentRead(implicit ec: ExecutionContext, m: Materializer): ObjectStoreContentRead[F, WSResponse, String] =
+    akkaSourceContentRead.mapF(src => F.liftFuture(src.map(_.utf8String).runReduce(_ + _)))
 
-  implicit def jsValueContentRead(implicit ec: ExecutionContext, m: Materializer): ObjectStoreContentRead[Future, WSResponse, JsValue] =
-    stringContentRead.map(Json.parse)
+  implicit def jsValueContentRead(implicit ec: ExecutionContext, m: Materializer): ObjectStoreContentRead[F, WSResponse, JsValue] =
+    stringContentRead.mapF(s =>
+      Try(Json.parse(s)) match {
+        case Failure(e) => F.raiseError(OtherError(s"Failed to parse Json: ${e.getMessage}"))
+        case Success(a) => F.pure(a)
+      }
+    )
 
-  implicit def jsResultContentRead[A : Reads](implicit ec: ExecutionContext, m: Materializer): ObjectStoreContentRead[Future, WSResponse, JsResult[A]] =
+  implicit def jsResultContentRead[A : Reads](implicit ec: ExecutionContext, m: Materializer): ObjectStoreContentRead[F, WSResponse, JsResult[A]] =
     jsValueContentRead.map(_.validate[A])
 
-  implicit def jsReadsRead[A : Reads](implicit ec: ExecutionContext, m: Materializer): ObjectStoreContentRead[Future, WSResponse, A] =
+  implicit def jsReadsRead[A : Reads](implicit ec: ExecutionContext, m: Materializer): ObjectStoreContentRead[F, WSResponse, A] =
     jsValueContentRead.map(_.as[A])
 }
-
-object PlayObjectStoreContentReads extends PlayObjectStoreContentReads
-
-case class UpstreamErrorResponse(message: String, statusCode: Int) extends Exception(message)

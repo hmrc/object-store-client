@@ -19,15 +19,18 @@ package uk.gov.hmrc.objectstore.client
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 import uk.gov.hmrc.objectstore.client.model.http.{HttpClient, ObjectStoreRead, ObjectStoreContentRead, ObjectStoreContentWrite}
 import uk.gov.hmrc.objectstore.client.model.objectstore.{Object, ObjectListing}
-import uk.gov.hmrc.objectstore.client.model.Monad
+import uk.gov.hmrc.objectstore.client.model.{Monad, NaturalTransformation}
 
 import scala.language.higherKinds
 
-class ObjectStoreClient[F[_], BODY, RES](
+class ObjectStoreClient[F[_], G[_], BODY, RES](
   client: HttpClient[F, BODY, RES],
   read  : ObjectStoreRead[F, RES],
   config: ObjectStoreClientConfig
-)(implicit F: Monad[F]) {
+)(implicit
+  F: Monad[F],
+  NT: NaturalTransformation[F, G]
+ ) {
 
   private val authorizationHeader: (String, String) =
     ("Authorization", config.authorizationToken)
@@ -39,10 +42,12 @@ class ObjectStoreClient[F[_], BODY, RES](
     content : CONTENT
   )(implicit
     w: ObjectStoreContentWrite[F, CONTENT, BODY]
-  ): F[Unit] =
-    F.flatMap(w.writeContent(content))(c =>
-      F.flatMap(client.put(s"$url/object/$location", c, List(authorizationHeader)))(
-        read.consume
+  ): G[Unit] =
+    NT.transform(
+      F.flatMap(w.writeContent(content))(c =>
+        F.flatMap(client.put(s"$url/object/$location", c, List(authorizationHeader)))(
+          read.consume
+        )
       )
     )
 
@@ -50,12 +55,18 @@ class ObjectStoreClient[F[_], BODY, RES](
     location: String
   )(implicit
     cr: ObjectStoreContentRead[F, RES, CONTENT]
-  ): F[Option[Object[CONTENT]]] =
-    F.flatMap(client.get(s"$url/object/$location", List(authorizationHeader)))(res => read.toObject(location, res, cr.readContent))
+  ): G[Option[Object[CONTENT]]] =
+    NT.transform(
+      F.flatMap(client.get(s"$url/object/$location", List(authorizationHeader)))(res => read.toObject(location, res, cr.readContent))
+    )
 
-  def deleteObject(location: String): F[Unit] =
-    F.flatMap(client.delete(s"$url/object/$location", List(authorizationHeader)))(read.consume)
+  def deleteObject(location: String): G[Unit] =
+    NT.transform(
+      F.flatMap(client.delete(s"$url/object/$location", List(authorizationHeader)))(read.consume)
+    )
 
-  def listObjects(location: String): F[ObjectListing] =
-    F.flatMap(client.get(s"$url/list/$location", List(authorizationHeader)))(read.toObjectListing)
+  def listObjects(location: String): G[ObjectListing] =
+    NT.transform(
+      F.flatMap(client.get(s"$url/list/$location", List(authorizationHeader)))(read.toObjectListing)
+    )
 }

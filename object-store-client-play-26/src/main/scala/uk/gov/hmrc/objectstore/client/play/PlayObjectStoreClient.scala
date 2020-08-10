@@ -19,20 +19,39 @@ package uk.gov.hmrc.objectstore.client.play
 import javax.inject.{Inject, Singleton}
 import uk.gov.hmrc.objectstore.client.ObjectStoreClient
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
+import uk.gov.hmrc.objectstore.client.model.NaturalTransformation
+
+import scala.concurrent.{ExecutionContext, Future}
+
+
+@Singleton
+class PlayObjectStoreClientEither @Inject()(
+  httpClient: PlayWSHttpClient,
+  read      : PlayObjectStoreReads,
+  config    : ObjectStoreClientConfig
+)(implicit ec: ExecutionContext
+) extends ObjectStoreClient[F, F, Request, Response](
+  httpClient, read, config
+)
 
 @Singleton
 class PlayObjectStoreClient @Inject()(
   httpClient: PlayWSHttpClient,
   read      : PlayObjectStoreReads,
   config    : ObjectStoreClientConfig
-)(implicit ec: scala.concurrent.ExecutionContext
-) extends ObjectStoreClient(httpClient, read, config)
+)(implicit ec: ExecutionContext
+) extends ObjectStoreClient[F, Future, Request, Response](
+  httpClient, read, config
+)(implicitly, PlayObjectStoreClient.fToFuture)
 
 object PlayObjectStoreClient {
-  object Implicits
-    extends PlayObjectStoreContentReads
-       with PlayObjectStoreContentWrites {
+  private def fToFuture(implicit ec: ExecutionContext): NaturalTransformation[F, Future] =
+    new NaturalTransformation[F, Future] {
+      override def transform[A](f: F[A]): Future[A] =
+        f.flatMap {
+          case Right(a) => Future.successful(a)
+          case Left(e)  => Future.failed(e)
+        }
+    }
 
-    object InMemoryReads extends InMemoryPlayObjectStoreContentReads
-  }
 }

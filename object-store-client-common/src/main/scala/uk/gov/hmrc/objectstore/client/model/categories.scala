@@ -35,23 +35,25 @@ trait Monad[F[_]] extends Functor[F] {
     flatMap(fa)(a => pure(fn(a)))
 }
 
-
-import scala.concurrent.{ExecutionContext, Future}
-
+trait MonadError[F[_], E] extends Monad[F] {
+  def raiseError[A](e: E): F[A]
+}
 
 object Monad {
-  implicit def monadForFuture(implicit ec: ExecutionContext): Monad[Future] = new Monad[Future] {
-    override def pure[A](a: A) =
-      Future.successful(a)
-
-    override def flatMap[A, B](fa: Future[A])(fn: A => Future[B]): Future[B] =
-      fa.flatMap(fn)
-
-    override def map[A, B](fa: Future[A])(fn: A => B): Future[B] =
-      fa.map(fn)
-  }
+  implicit def monadForMonadError[F[_], E](implicit F: MonadError[F, E]): Monad[F] = F
 }
 
 object Functor {
   implicit def functorForMonad[F[_]](implicit F: Monad[F]): Functor[F] = F
+}
+
+trait NaturalTransformation[F[_], G[_]] {
+  def transform[A](f: F[A]): G[A]
+}
+
+object NaturalTransformation {
+  implicit def identity[F[_]]: NaturalTransformation[F, F] =
+    new NaturalTransformation[F, F] {
+      override def transform[A](f: F[A]): F[A] = f
+    }
 }
