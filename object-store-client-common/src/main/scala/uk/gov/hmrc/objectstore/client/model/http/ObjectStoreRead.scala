@@ -19,8 +19,11 @@ package uk.gov.hmrc.objectstore.client.model.http
 import uk.gov.hmrc.objectstore.client.model.{Functor, Monad}
 import uk.gov.hmrc.objectstore.client.model.objectstore.{Object, ObjectListing}
 
+import scala.annotation.implicitNotFound
 import scala.language.higherKinds
 
+@implicitNotFound("""No implicits found for ObjectStoreRead[${F}, ${RES}].
+If you are using Future, you may be missing an implicit ExecutionContext""")
 trait ObjectStoreRead[F[_], RES] {
 
   def toObjectListing(response: RES): F[ObjectListing]

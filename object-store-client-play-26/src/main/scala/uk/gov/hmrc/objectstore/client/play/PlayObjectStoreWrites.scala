@@ -31,9 +31,9 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait PlayObjectStoreContentWrites {
 
-  implicit val payloadAkkaSourceContentWrite: ObjectStoreContentWrite[Future, Payload[Source[ByteString, NotUsed]], Request] =
-    new ObjectStoreContentWrite[Future, Payload[Source[ByteString, NotUsed]], Request] {
-      override def writeContent(payload: Payload[Source[ByteString, NotUsed]]): Future[Request] =
+  implicit def payloadAkkaSourceContentWrite[Mat <: Any]: ObjectStoreContentWrite[Future, Payload[Source[ByteString, Mat]], Request] =
+    new ObjectStoreContentWrite[Future, Payload[Source[ByteString, Mat]], Request] {
+      override def writeContent(payload: Payload[Source[ByteString, Mat]]): Future[Request] =
         Future.successful(
           HttpBody(
             length    = Some(payload.length),
@@ -53,9 +53,9 @@ trait PlayObjectStoreContentWrites {
       )
     }
 
-  implicit def akkaSourceContentWrite(implicit ec: ExecutionContext, m: Materializer): ObjectStoreContentWrite[Future, Source[ByteString, NotUsed], Request] =
-    new ObjectStoreContentWrite[Future, Source[ByteString, NotUsed], Request] {
-      override def writeContent(content: Source[ByteString, NotUsed]): Future[Request] = {
+  implicit def akkaSourceContentWrite[Mat <: Any](implicit ec: ExecutionContext, m: Materializer): ObjectStoreContentWrite[Future, Source[ByteString, Mat], Request] =
+    new ObjectStoreContentWrite[Future, Source[ByteString, Mat], Request] {
+      override def writeContent(content: Source[ByteString, Mat]): Future[Request] = {
         val tempFile = SingletonTemporaryFileCreator.create()
 
         val (uploadFinished, md5Finished) =

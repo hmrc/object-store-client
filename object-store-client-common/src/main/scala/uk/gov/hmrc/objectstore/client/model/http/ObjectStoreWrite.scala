@@ -18,8 +18,12 @@ package uk.gov.hmrc.objectstore.client.model.http
 
 import uk.gov.hmrc.objectstore.client.model.Monad
 
+import scala.annotation.implicitNotFound
+
 case class Payload[CONTENT](length: Long, md5Hash: String, content: CONTENT)
 
+@implicitNotFound("""No implicits found for ObjectStoreContentWrite[${F}, ${CONTENT}, ${BODY}].
+If you are using a Source[ByteString, _], you may be missing an implicit Materializer""")
 trait ObjectStoreContentWrite[F[_], CONTENT, BODY] { outer =>
   def writeContent(content: CONTENT): F[BODY]
 
