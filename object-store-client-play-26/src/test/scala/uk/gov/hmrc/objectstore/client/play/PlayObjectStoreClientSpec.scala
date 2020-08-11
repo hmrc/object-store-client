@@ -61,24 +61,48 @@ class PlayObjectStoreClientSpec
 
   "putObject" must {
 
-    "store an object as Source" in {
-      val body      = s"hello world! ${UUID.randomUUID().toString}"
-      val location  = generateLocation()
-      val md5Base64 = Md5Hash.fromBytes(body.getBytes)
+    "store an object as Source with NotUsed bound to Mat" in {
+      val body                                = s"hello world! ${UUID.randomUUID().toString}"
+      val location                            = generateLocation()
+      val md5Base64                           = Md5Hash.fromBytes(body.getBytes)
+      val source: Source[ByteString, NotUsed] = toSource(body)
 
       initPutObjectStub(location, statusCode = 201, body.getBytes, md5Base64)
 
-      osClient.putObject(location, toSource(body)).futureValue shouldBe (())
+      osClient.putObject(location, source).futureValue shouldBe (())
     }
 
-    "store an object as Source with known md5hash and length" in {
-      val body      = s"hello world! ${UUID.randomUUID().toString}"
-      val location  = generateLocation()
-      val md5Base64 = Md5Hash.fromBytes(body.getBytes)
+    "store an object as Source with Any bound to Mat" in {
+      val body                          = s"hello world! ${UUID.randomUUID().toString}"
+      val location                      = generateLocation()
+      val md5Base64                     = Md5Hash.fromBytes(body.getBytes)
+      val source: Source[ByteString, _] = toSource(body)
 
       initPutObjectStub(location, statusCode = 201, body.getBytes, md5Base64)
 
-      osClient.putObject(location, Payload(length = body.length, md5Hash = md5Base64, content = toSource(body))).futureValue shouldBe (())
+      osClient.putObject(location, source).futureValue shouldBe (())
+    }
+
+    "store an object as Source with NotUsed bound to Mat and known md5hash and length" in {
+      val body                                = s"hello world! ${UUID.randomUUID().toString}"
+      val location                            = generateLocation()
+      val md5Base64                           = Md5Hash.fromBytes(body.getBytes)
+      val source: Source[ByteString, NotUsed] = toSource(body)
+
+      initPutObjectStub(location, statusCode = 201, body.getBytes, md5Base64)
+
+      osClient.putObject(location, Payload(length = body.length, md5Hash = md5Base64, content = source)).futureValue shouldBe (())
+    }
+
+    "store an object as Source with Any bound to Mat and known md5hash and length" in {
+      val body                          = s"hello world! ${UUID.randomUUID().toString}"
+      val location                      = generateLocation()
+      val md5Base64                     = Md5Hash.fromBytes(body.getBytes)
+      val source: Source[ByteString, _] = toSource(body)
+
+      initPutObjectStub(location, statusCode = 201, body.getBytes, md5Base64)
+
+      osClient.putObject(location, Payload(length = body.length, md5Hash = md5Base64, content = source)).futureValue shouldBe (())
     }
 
     "store an object as Bytes" in {
