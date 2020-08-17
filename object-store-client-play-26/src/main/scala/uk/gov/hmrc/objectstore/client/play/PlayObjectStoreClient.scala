@@ -16,20 +16,21 @@
 
 package uk.gov.hmrc.objectstore.client.play
 
-import javax.inject.Inject
+import javax.inject.{Inject, Singleton}
 import uk.gov.hmrc.objectstore.client.ObjectStoreClient
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 
+@Singleton
 class PlayObjectStoreClient @Inject()(
   httpClient: PlayWSHttpClient,
+  read      : PlayObjectStoreReads,
   config    : ObjectStoreClientConfig
 )(implicit ec: scala.concurrent.ExecutionContext
-) extends ObjectStoreClient(httpClient, config)
+) extends ObjectStoreClient(httpClient, read, config)
 
 object PlayObjectStoreClient {
   object Implicits
-    extends PlayObjectStoreReads
-       with PlayObjectStoreContentReads
+    extends PlayObjectStoreContentReads
        with PlayObjectStoreContentWrites {
 
     object InMemoryReads extends InMemoryPlayObjectStoreContentReads
