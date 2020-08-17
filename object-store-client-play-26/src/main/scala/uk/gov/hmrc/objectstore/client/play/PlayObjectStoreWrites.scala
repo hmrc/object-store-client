@@ -72,7 +72,7 @@ trait PlayObjectStoreContentWrites {
           HttpBody(
             length    = Some(tempFile.path.toFile.length),
             md5       = Some(md5Hash),
-            writeBody = (req: WSRequest) => req.withBody(content),
+            writeBody = (req: WSRequest) => req.withBody(tempFile.path.toFile),
             release   = () => SingletonTemporaryFileCreator.delete(tempFile)
           )
       }
