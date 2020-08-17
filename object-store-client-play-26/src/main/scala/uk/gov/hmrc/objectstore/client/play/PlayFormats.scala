@@ -16,19 +16,18 @@
 
 package uk.gov.hmrc.objectstore.client.play
 
-import play.api.libs.functional.syntax.{unlift, _}
-import play.api.libs.json.Reads._
-import play.api.libs.json.{Format, _}
+import play.api.libs.functional.syntax._
+import play.api.libs.json.{Format, __}
 import uk.gov.hmrc.objectstore.client.model.objectstore.{ObjectListing, ObjectSummary}
 
 object PlayFormats {
 
-  val objectSummaryFormat: Format[ObjectSummary] = {
-    ((__ \ "location").format[String]
-      ~ (__ \ "contentLength").format[Long]
-      ~ (__ \ "contentMD5").format[String]
-      ~ (__ \ "lastModified").format[String])(ObjectSummary.apply, unlift(ObjectSummary.unapply))
-  }
+  val objectSummaryFormat: Format[ObjectSummary] =
+    ( (__ \ "location"     ).format[String]
+    ~ (__ \ "contentLength").format[Long]
+    ~ (__ \ "contentMD5"   ).format[String]
+    ~ (__ \ "lastModified" ).format[String]
+    )(ObjectSummary.apply, unlift(ObjectSummary.unapply))
 
   val objectListingFormat: Format[ObjectListing] = {
     implicit val osf: Format[ObjectSummary] = objectSummaryFormat
