@@ -23,50 +23,40 @@ import uk.gov.hmrc.objectstore.client.model.Monad
 
 import scala.language.higherKinds
 
-class ObjectStoreClient[F[_], BODY, RES](client: HttpClient[F, BODY, RES], config: ObjectStoreClientConfig)(implicit F: Monad[F]) {
-
+class ObjectStoreClient[F[_], BODY, RES, X](
+  client: HttpClient[BODY, RES],
+  r     : ObjectStoreRead[F, RES, X],
+  config: ObjectStoreClientConfig
+)(implicit F: Monad[F]) {
   private val authorizationHeader: (String, String) =
     ("Authorization", config.authorizationToken)
 
   private val url = s"${config.baseUrl}/object-store"
 
-  // implementation with curried types
-  def putObject: ObjectStoreClient.PutObject[F, BODY, RES] =
-    new ObjectStoreClient.PutObject(client, url, List(authorizationHeader))
+  def putObject[CONTENT](
+      location: String,
+      content : CONTENT
+    )(implicit
+      w: ObjectStoreContentWrite[F, CONTENT, BODY]
+    ): F[Unit] =
+    F.map(w.writeContent(content)){c =>
+      r.consume(client.put(s"$url/object/$location", c, List(authorizationHeader)))
+    }
 
   def getObject[CONTENT](
     location: String
   )(implicit
-    r: ObjectStoreRead[F, RES],
-    cr: ObjectStoreContentRead[F, RES, CONTENT]
+    cr: ObjectStoreContentRead[F, X, CONTENT]
   ): F[Option[Object[CONTENT]]] =
-    F.flatMap(client.get(s"$url/object/$location", List(authorizationHeader)))(res => r.toObject(res, cr.readContent))
+    F.flatMap(r.toObject(client.get(s"$url/object/$location", List(authorizationHeader)))){
+          maybeObj => maybeObj.fold[F[Option[Object[CONTENT]]]](F.pure(None)) { obj =>
+            F.map(cr.readContent(obj.content))(c => Some(obj.copy(content = c)))
+          }
+    }
 
-  def deleteObject(location: String)(implicit r: ObjectStoreRead[F, RES]): F[Unit] =
-    F.flatMap(client.delete(s"$url/object/$location", List(authorizationHeader)))(r.consume)
+  def deleteObject(location: String): F[Unit] =
+    r.consume(client.delete(s"$url/object/$location", List(authorizationHeader)))
 
-  def listObjects(location: String)(implicit r: ObjectStoreRead[F, RES]): F[ObjectListing] =
-    F.flatMap(client.get(s"$url/list/$location", List(authorizationHeader)))(r.toObjectListing)
-}
-
-object ObjectStoreClient {
-  private[client] final class PutObject[F[_], BODY, RES](
-    client : HttpClient[F, BODY, RES],
-    url    : String,
-    headers: List[(String, String)]
-  )(implicit F: Monad[F]
-  ) {
-    def apply[CONTENT](
-      location: String,
-      content : CONTENT
-    )(implicit
-      r: ObjectStoreRead[F, RES],
-      w: ObjectStoreContentWrite[F, CONTENT, BODY]
-    ): F[Unit] =
-      F.flatMap(w.writeContent(content))(c =>
-        F.flatMap(client.put(s"$url/object/$location", c, headers))(
-          r.consume
-        )
-      )
-  }
+  def listObjects(location: String): F[ObjectListing] =
+    r.toObjectListing(client.get(s"$url/list/$location", List(authorizationHeader)))
 }

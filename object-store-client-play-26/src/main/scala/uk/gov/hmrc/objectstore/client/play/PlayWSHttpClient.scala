@@ -20,7 +20,6 @@ import javax.inject.Inject
 import play.api.Logger
 import play.api.libs.ws.{WSClient, WSRequest, WSResponse}
 import uk.gov.hmrc.objectstore.client.model.http.HttpClient
-import uk.gov.hmrc.objectstore.client.play.PlayWSHttpClient.{Request, Response}
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ExecutionContext, Future}
@@ -29,10 +28,10 @@ case class HttpBody[BODY](length: Option[Long], md5: Option[String], writeBody: 
 
 object PlayWSHttpClient {
   type Request  = HttpBody[WSRequest => WSRequest]
-  type Response = WSResponse
+  type Response = Future[WSResponse]
 }
 class PlayWSHttpClient @Inject()(wsClient: WSClient)(implicit ec: ExecutionContext)
-    extends HttpClient[Future, Request, Response] {
+    extends HttpClient[Request, Future[WSResponse]] {
 
   private val logger: Logger = Logger(this.getClass)
 

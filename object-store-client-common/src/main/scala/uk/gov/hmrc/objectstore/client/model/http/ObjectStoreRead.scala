@@ -24,28 +24,28 @@ import scala.language.higherKinds
 
 @implicitNotFound("""No implicits found for ObjectStoreRead[${F}, ${RES}].
 If you are using Future, you may be missing an implicit ExecutionContext""")
-trait ObjectStoreRead[F[_], RES] {
+trait ObjectStoreRead[F[_], RES, CONTENT] {
 
   def toObjectListing(response: RES): F[ObjectListing]
 
-  def toObject[CONTENT](response: RES, toContent: RES => F[CONTENT]): F[Option[Object[CONTENT]]]
+  def toObject(response: RES): F[Option[Object[CONTENT]]] //todo might be a better way to represent this
 
   def consume(response: RES): F[Unit]
 }
 
-trait ObjectStoreContentRead[F[_], RES, CONTENT] { outer =>
+trait ObjectStoreContentRead[F[_], HTTP_RES, CONTENT] { outer =>
 
-  def readContent(response: RES): F[CONTENT]
+  def readContent(response: HTTP_RES): F[CONTENT] // todo CF can this just be CONTENT?
 
-  def map[CONTENT2](fn: CONTENT => CONTENT2)(implicit F: Functor[F]): ObjectStoreContentRead[F, RES, CONTENT2] =
-    new ObjectStoreContentRead[F, RES, CONTENT2] {
-      override def readContent(response: RES): F[CONTENT2] =
+  def map[CONTENT2](fn: CONTENT => CONTENT2)(implicit F: Functor[F]): ObjectStoreContentRead[F, HTTP_RES, CONTENT2] =
+    new ObjectStoreContentRead[F, HTTP_RES, CONTENT2] {
+      override def readContent(response: HTTP_RES): F[CONTENT2] =
         F.map(outer.readContent(response))(fn)
     }
 
-  def mapF[CONTENT2](fn: CONTENT => F[CONTENT2])(implicit F: Monad[F]): ObjectStoreContentRead[F, RES, CONTENT2] =
-    new ObjectStoreContentRead[F, RES, CONTENT2] {
-      override def readContent(response: RES): F[CONTENT2] =
+  def mapF[CONTENT2](fn: CONTENT => F[CONTENT2])(implicit F: Monad[F]): ObjectStoreContentRead[F, HTTP_RES, CONTENT2] =
+    new ObjectStoreContentRead[F, HTTP_RES, CONTENT2] {
+      override def readContent(response: HTTP_RES): F[CONTENT2] =
         F.flatMap(outer.readContent(response))(fn)
     }
 }

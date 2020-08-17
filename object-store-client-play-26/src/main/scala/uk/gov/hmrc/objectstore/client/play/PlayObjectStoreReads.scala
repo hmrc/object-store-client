@@ -16,75 +16,70 @@
 
 package uk.gov.hmrc.objectstore.client.play
 
-import akka.NotUsed
-import akka.stream.Materializer
-import akka.stream.scaladsl.Source
-import akka.util.ByteString
-import play.api.http.Status
-import play.api.libs.json.{JsResult, JsValue, Json, Reads}
-import play.api.libs.ws.WSResponse
-import uk.gov.hmrc.objectstore.client.model.http.{ObjectStoreRead, ObjectStoreContentRead}
+import _root_.play.api.http.Status
+import _root_.play.api.libs.json.{JsError, JsSuccess, JsValue}
+import _root_.play.api.libs.ws.WSResponse
+import uk.gov.hmrc.objectstore.client.model.http.ObjectStoreRead
 import uk.gov.hmrc.objectstore.client.model.objectstore.{Object, ObjectListing}
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.language.higherKinds
 
-trait PlayObjectStoreReads {
+object PlayObjectStoreReads {
 
-  implicit def futureRead(implicit ec: ExecutionContext): ObjectStoreRead[Future, WSResponse] =
-    new ObjectStoreRead[Future, WSResponse]{
-      override def toObjectListing(response: WSResponse): Future[ObjectListing] =
-        response match {
-          case r if Status.isSuccessful(r.status) => Future.successful(r.body[JsValue].as[ObjectListing](PlayFormats.objectListingFormat))
+  //todo CF can we combine these two?
+  //WSResponse could be Source
+  def future(implicit ec: ExecutionContext): ObjectStoreRead[Future, Future[WSResponse], WSResponse] =
+
+    new ObjectStoreRead[Future, Future[WSResponse], WSResponse]{
+      override def toObjectListing(response: Future[WSResponse]): Future[ObjectListing] =
+        response.flatMap {
+          case r if Status.isSuccessful(r.status) => r.body[JsValue].validate[ObjectListing](PlayFormats.objectListingFormat) match {
+            case JsSuccess(r, path) => Future.successful(r)
+            case JsError(errors) => Future.failed(OtherError(errors.toString))
+          }
           case r => Future.failed(UpstreamErrorResponse("Object store call failed", r.status))
         }
 
-      override def toObject[CONTENT](response: WSResponse, readContent: WSResponse => Future[CONTENT]): Future[Option[Object[CONTENT]]] =
-        response match {
-          case r if Status.isSuccessful(r.status) => readContent(r).map(c => Some(Object("", c))) // todo - location is empty?
+      override def toObject(response: Future[Response]): Future[Option[Object[WSResponse]]] =
+        response.flatMap {
+          case r if Status.isSuccessful(r.status) => Future.successful(Some(Object("", r)))// todo - location is empty?
           case r if r.status == Status.NOT_FOUND => Future.successful(None)
           case r => Future.failed(UpstreamErrorResponse("Object store call failed", r.status))
         }
 
-      override def consume(response: WSResponse): Future[Unit] =
-        response match {
+      override def consume(response: Future[WSResponse]): Future[Unit] = {
+        response.flatMap{
           case r if Status.isSuccessful(r.status) => Future.successful(())
           case r => Future.failed(UpstreamErrorResponse("Object store call failed", r.status))
         }
+      }
+    }
+
+  type FutureEither[A] = Future[Either[PlayObjectStoreException, A]]
+   def futureEither[F[_]](implicit ec: ExecutionContext): ObjectStoreRead[FutureEither, Future[WSResponse], WSResponse] =
+    new ObjectStoreRead[FutureEither, Future[WSResponse], WSResponse]{
+      override def toObjectListing(response: Future[Response]): FutureEither[ObjectListing] = {
+      response.map {
+          case r if Status.isSuccessful(r.status) => r.body[JsValue].validate[ObjectListing](PlayFormats.objectListingFormat) match {
+            case JsSuccess(r, path) => Right(r)
+            case JsError(errors) => Left(OtherError(errors.toString))
+          }
+          case r => Left(UpstreamErrorResponse("Object store call failed", r.status))
+        }
+      }
+
+      override def toObject(response: Future[Response]): FutureEither[Option[Object[Response]]] =
+        response.map {
+          case r if Status.isSuccessful(r.status) =>  Right(Some(Object("", r))) // todo - location is empty?
+          case r if r.status == Status.NOT_FOUND => Right(None)
+          case r => Left(UpstreamErrorResponse("Object store call failed", r.status))
+        }
+
+      override def consume(response: Future[Response]): FutureEither[Unit] =
+        response.map {
+          case r if Status.isSuccessful(r.status) => Right(())
+          case r => Left(UpstreamErrorResponse("Object store call failed", r.status))
+        }
     }
 }
-
-object PlayObjectStoreReads extends PlayObjectStoreReads
-
-trait PlayObjectStoreContentReads {
-
-  implicit def akkaSourceContentRead: ObjectStoreContentRead[Future, WSResponse, Source[ByteString, NotUsed]] =
-    new ObjectStoreContentRead[Future, WSResponse, Source[ByteString, NotUsed]]{
-      override def readContent(response: WSResponse): Future[Source[ByteString, NotUsed]] =
-        Future.successful(response.bodyAsSource.mapMaterializedValue(_ => NotUsed))
-    }
-}
-
-trait InMemoryPlayObjectStoreContentReads extends PlayObjectStoreContentReads {
-  implicit def stringContentRead(implicit ec: ExecutionContext, m: Materializer): ObjectStoreContentRead[Future, WSResponse, String] =
-    akkaSourceContentRead.mapF(_.map(_.utf8String).runReduce(_ + _))
-
-  // or we can just use a blocking implementation, avoiding the requirement for Materializer?
-  /*implicit val stringContentRead: ObjectStoreContentRead[Future, WSResponse, String] =
-    new ObjectStoreContentRead[Future, WSResponse, String]{
-      override def readContent(response: WSResponse): Future[String] =
-        Future.successful(response.body)
-    }*/
-
-  implicit def jsValueContentRead(implicit ec: ExecutionContext, m: Materializer): ObjectStoreContentRead[Future, WSResponse, JsValue] =
-    stringContentRead.map(Json.parse)
-
-  implicit def jsResultContentRead[A : Reads](implicit ec: ExecutionContext, m: Materializer): ObjectStoreContentRead[Future, WSResponse, JsResult[A]] =
-    jsValueContentRead.map(_.validate[A])
-
-  implicit def jsReadsRead[A : Reads](implicit ec: ExecutionContext, m: Materializer): ObjectStoreContentRead[Future, WSResponse, A] =
-    jsValueContentRead.map(_.as[A])
-}
-
-object PlayObjectStoreContentReads extends PlayObjectStoreContentReads
-
-case class UpstreamErrorResponse(message: String, statusCode: Int) extends Exception(message)

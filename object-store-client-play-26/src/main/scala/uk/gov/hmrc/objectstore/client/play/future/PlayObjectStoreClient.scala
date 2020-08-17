@@ -14,24 +14,21 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.objectstore.client.play
+package uk.gov.hmrc.objectstore.client.play.future
 
 import javax.inject.Inject
+import play.api.libs.ws.WSClient
 import uk.gov.hmrc.objectstore.client.ObjectStoreClient
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
+import uk.gov.hmrc.objectstore.client.play.PlayObjectStoreReads
+
+import scala.concurrent.ExecutionContext
 
 class PlayObjectStoreClient @Inject()(
   httpClient: PlayWSHttpClient,
   config    : ObjectStoreClientConfig
-)(implicit ec: scala.concurrent.ExecutionContext
-) extends ObjectStoreClient(httpClient, config)
+)(implicit ec: ExecutionContext
+) extends ObjectStoreClient(httpClient, PlayObjectStoreReads.future, config)
 
-object PlayObjectStoreClient {
-  object Implicits
-    extends PlayObjectStoreReads
-       with PlayObjectStoreContentReads
-       with PlayObjectStoreContentWrites {
-
-    object InMemoryReads extends InMemoryPlayObjectStoreContentReads
-  }
-}
+class PlayWSHttpClient @Inject()(wsClient: WSClient)(implicit ec: ExecutionContext)
+  extends uk.gov.hmrc.objectstore.client.play.PlayWSHttpClient(wsClient)
