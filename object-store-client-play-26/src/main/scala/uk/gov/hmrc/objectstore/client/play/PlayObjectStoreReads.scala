@@ -16,12 +16,16 @@
 
 package uk.gov.hmrc.objectstore.client.play
 
+
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME
+
 import javax.inject.{Inject, Singleton}
 import play.api.http.Status
 import play.api.libs.json.JsValue
 import play.api.libs.ws.WSResponse
 import uk.gov.hmrc.objectstore.client.model.http.ObjectStoreRead
-import uk.gov.hmrc.objectstore.client.model.objectstore.{Object, ObjectListing}
+import uk.gov.hmrc.objectstore.client.model.objectstore.{Object, ObjectListing, ObjectMetadata}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -35,7 +39,21 @@ class PlayObjectStoreReads @Inject()(implicit ec: ExecutionContext) extends Obje
 
   override def toObject[CONTENT](response: WSResponse, readContent: WSResponse => Future[CONTENT]): Future[Option[Object[CONTENT]]] =
     response match {
-      case r if Status.isSuccessful(r.status) => readContent(r).map(c => Some(Object("", c))) // todo - location is empty?
+      case r if Status.isSuccessful(r.status) => readContent(r).map { c =>
+        def header(k: String) =
+          r.header(k).getOrElse(sys.error(s"Missing header $k"))// TODO raise error as non-UpstreamErrorResponse
+
+        Some(Object(
+          location = header("Location"),
+          content  = c,
+          metadata = ObjectMetadata(
+            contentType   = r.contentType,
+            contentLength = header("Content-Length").toLong,
+            contentMd5    = header("Content-MD5"),
+            lastModified  = ZonedDateTime.parse(header("Last-Modified"), RFC_1123_DATE_TIME).toInstant,
+            userMetadata  = Map.empty[String, String] // TODO userMetadata?
+          )))
+      }
       case r if r.status == Status.NOT_FOUND => Future.successful(None)
       case r => Future.failed(UpstreamErrorResponse("Object store call failed", r.status))
     }

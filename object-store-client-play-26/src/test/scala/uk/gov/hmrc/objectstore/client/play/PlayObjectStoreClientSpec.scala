@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.objectstore.client.play
 
+import java.time.Instant
 import java.util.UUID
 
 import akka.NotUsed
@@ -257,15 +258,17 @@ class PlayObjectStoreClientSpec
       osClient.listObjects(location).futureValue.objectSummaries shouldBe List(
         ObjectSummary(
           location      = "something/0993180f-8f31-41b2-905c-71f0273bb7d4",
+          contentType   = "application/json",
           contentLength = 49,
           contentMd5    = "4033ff85a6fdc6a2f51e60d89236a244",
-          lastModified  = "2020-07-21T13:16:42.859Z"
+          lastModified  = Instant.parse("2020-07-21T13:16:42.859Z")
         ),
         ObjectSummary(
           location      = "something/23265eab-268e-4fcc-904f-775586b362c2",
+          contentType   = "application/json",
           contentLength = 49,
           contentMd5    = "a3c2f1e38701bd2c7b54ebd7b1cd0dbc",
-          lastModified  = "2020-07-21T13:16:41.226Z"
+          lastModified  = Instant.parse("2020-07-21T13:16:41.226Z")
         )
       )
     }
@@ -308,12 +311,14 @@ class PlayObjectStoreClientSpec
       |  "objects": [
       |    {
       |      "location": "something/0993180f-8f31-41b2-905c-71f0273bb7d4",
+      |      "contentType": "application/json",
       |      "contentLength": 49,
       |      "contentMD5": "4033ff85a6fdc6a2f51e60d89236a244",
       |      "lastModified": "2020-07-21T13:16:42.859Z"
       |    },
       |    {
       |      "location": "something/23265eab-268e-4fcc-904f-775586b362c2",
+      |      "contentType": "application/json",
       |      "contentLength": 49,
       |      "contentMD5": "a3c2f1e38701bd2c7b54ebd7b1cd0dbc",
       |      "lastModified": "2020-07-21T13:16:41.226Z"
@@ -329,10 +334,10 @@ class PlayObjectStoreClientSpec
   private def initPutObjectStub(location: String, statusCode: Int, reqBody: Array[Byte], md5Base64: String): Unit = {
     val request = put(urlEqualTo(s"/object-store/object/$location"))
       .withHeader("Authorization", equalTo("AuthorizationToken"))
-      .withHeader("content-length", equalTo("49"))
-      .withRequestBody(binaryEqualTo(reqBody))
+      .withHeader("Content-Length", equalTo("49"))
       .withHeader("Content-Type", equalTo("application/octet-stream"))
       .withHeader("Content-MD5", equalTo(md5Base64))
+      .withRequestBody(binaryEqualTo(reqBody))
 
     val response = aResponse().withStatus(statusCode)
     stubFor(
@@ -343,8 +348,17 @@ class PlayObjectStoreClientSpec
   private def initGetObjectStub(location: String, statusCode: Int, resBody: Option[String]): Unit = {
     val request = get(urlEqualTo(s"/object-store/object/$location"))
       .withHeader("Authorization", equalTo("AuthorizationToken"))
+
     val responseBuilder = aResponse.withStatus(statusCode)
-    resBody.foreach(responseBuilder.withBody)
+    resBody.foreach { body =>
+      responseBuilder
+        .withBody(body)
+        .withHeader("Content-Length", body.getBytes.length.toString)
+        .withHeader("Content-Type", "application/octet-stream")
+        .withHeader("Content-MD5", Md5Hash.fromBytes(body.getBytes))
+        .withHeader("Last-Modified", "Tue, 18 Aug 2020 10:15:30 GMT")
+        .withHeader("Location", s"/object-store/object/$location")
+    }
 
     stubFor(
       request
@@ -365,8 +379,9 @@ class PlayObjectStoreClientSpec
   private def initListObjectsStub(location: String, statusCode: Int, resBodyJson: Option[String]): Unit = {
     val request = get(urlEqualTo(s"/object-store/list/$location"))
       .withHeader("Authorization", equalTo("AuthorizationToken"))
+
     val responseBuilder = aResponse().withStatus(statusCode)
-    resBodyJson foreach { body =>
+    resBodyJson.foreach { body =>
       responseBuilder.withBody(body)
       responseBuilder.withHeader("Content-Type", "application/json")
     }
