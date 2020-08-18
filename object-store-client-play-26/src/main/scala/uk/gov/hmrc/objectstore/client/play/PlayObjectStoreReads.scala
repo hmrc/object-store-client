@@ -33,7 +33,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class PlayObjectStoreReads @Inject()(implicit ec: ExecutionContext) extends ObjectStoreRead[Future, WSResponse] {
   override def toObjectListing(response: WSResponse): Future[ObjectListing] =
     response match {
-      case r if Status.isSuccessful(r.status) => Future.successful(r.body[JsValue].as[ObjectListing](PlayFormats.objectListingFormat))
+      case r if Status.isSuccessful(r.status) => Future.successful(r.body[JsValue].as[ObjectListing](PlayFormats.objectListingRead))
       case r => Future.failed(UpstreamErrorResponse("Object store call failed", r.status))
     }
 

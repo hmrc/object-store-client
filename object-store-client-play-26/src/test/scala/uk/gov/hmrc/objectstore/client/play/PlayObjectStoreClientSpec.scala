@@ -310,14 +310,14 @@ class PlayObjectStoreClientSpec
     """{
       |  "objects": [
       |    {
-      |      "location": "something/0993180f-8f31-41b2-905c-71f0273bb7d4",
+      |      "location": "/object-store/object/something/0993180f-8f31-41b2-905c-71f0273bb7d4",
       |      "contentType": "application/json",
       |      "contentLength": 49,
       |      "contentMD5": "4033ff85a6fdc6a2f51e60d89236a244",
       |      "lastModified": "2020-07-21T13:16:42.859Z"
       |    },
       |    {
-      |      "location": "something/23265eab-268e-4fcc-904f-775586b362c2",
+      |      "location": "/object-store/object/something/23265eab-268e-4fcc-904f-775586b362c2",
       |      "contentType": "application/json",
       |      "contentLength": 49,
       |      "contentMD5": "a3c2f1e38701bd2c7b54ebd7b1cd0dbc",
