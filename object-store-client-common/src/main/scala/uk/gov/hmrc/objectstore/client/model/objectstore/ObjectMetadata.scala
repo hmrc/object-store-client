@@ -16,4 +16,12 @@
 
 package uk.gov.hmrc.objectstore.client.model.objectstore
 
-final case class ObjectMetadata(metadata: Map[String, String], userMetadata: Map[String, String])
+import java.time.Instant
+
+final case class ObjectMetadata(
+  contentType  : String,
+  contentLength: Long,
+  contentMd5   : String,
+  lastModified : Instant,
+  userMetadata : Map[String, String]
+)

@@ -20,7 +20,8 @@ object AppDependencies {
   val test = Seq(
     "org.mockito"            % "mockito-all"         % "1.10.19" % Test,
     "com.github.tomakehurst" % "wiremock-standalone" % "2.27.1"  % Test,
-    "org.pegdown"            % "pegdown"             % "1.6.0"   % Test
+    "org.pegdown"            % "pegdown"             % "1.6.0"   % Test,
+    "ch.qos.logback"         % "logback-classic"     % "1.2.3"   % Test
   )
   private val play26Version = "2.6.25"
   private val play27Version = "2.7.4"
