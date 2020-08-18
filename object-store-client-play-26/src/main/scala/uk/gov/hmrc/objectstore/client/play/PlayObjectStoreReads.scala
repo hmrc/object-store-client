@@ -37,14 +37,14 @@ class PlayObjectStoreReads @Inject()(implicit ec: ExecutionContext) extends Obje
       case r => Future.failed(UpstreamErrorResponse("Object store call failed", r.status))
     }
 
-  override def toObject[CONTENT](response: WSResponse, readContent: WSResponse => Future[CONTENT]): Future[Option[Object[CONTENT]]] =
+  override def toObject[CONTENT](location: String, response: WSResponse, readContent: WSResponse => Future[CONTENT]): Future[Option[Object[CONTENT]]] =
     response match {
       case r if Status.isSuccessful(r.status) => readContent(r).map { c =>
         def header(k: String) =
           r.header(k).getOrElse(sys.error(s"Missing header $k"))// TODO raise error as non-UpstreamErrorResponse
 
         Some(Object(
-          location = header("Location"),
+          location = location,
           content  = c,
           metadata = ObjectMetadata(
             contentType   = r.contentType,
