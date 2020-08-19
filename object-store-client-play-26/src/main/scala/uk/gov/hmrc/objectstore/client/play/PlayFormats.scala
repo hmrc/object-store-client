@@ -19,21 +19,21 @@ package uk.gov.hmrc.objectstore.client.play
 import java.time.Instant
 
 import play.api.libs.functional.syntax._
-import play.api.libs.json.{Format, __}
+import play.api.libs.json.{Reads, __}
 import uk.gov.hmrc.objectstore.client.model.objectstore.{ObjectListing, ObjectSummary}
 
 object PlayFormats {
 
-  val objectSummaryFormat: Format[ObjectSummary] =
-    ( (__ \ "location"     ).format[String]
-    ~ (__ \ "contentType"  ).format[String]
-    ~ (__ \ "contentLength").format[Long]
-    ~ (__ \ "contentMD5"   ).format[String]
-    ~ (__ \ "lastModified" ).format[Instant]
-    )(ObjectSummary.apply, unlift(ObjectSummary.unapply))
+  val objectSummaryRead: Reads[ObjectSummary] =
+    ( (__ \ "location"     ).read[String].map(_.stripPrefix("/object-store/object/"))
+    ~ (__ \ "contentType"  ).read[String]
+    ~ (__ \ "contentLength").read[Long]
+    ~ (__ \ "contentMD5"   ).read[String]
+    ~ (__ \ "lastModified" ).read[Instant]
+    )(ObjectSummary.apply _)
 
-  val objectListingFormat: Format[ObjectListing] = {
-    implicit val osf: Format[ObjectSummary] = objectSummaryFormat
-    Format.at[List[ObjectSummary]](__ \ "objects").inmap(ObjectListing.apply, _.objectSummaries)
+  val objectListingRead: Reads[ObjectListing] = {
+    implicit val osf: Reads[ObjectSummary] = objectSummaryRead
+    Reads.at[List[ObjectSummary]](__ \ "objects").map(ObjectListing.apply _)
   }
 }
