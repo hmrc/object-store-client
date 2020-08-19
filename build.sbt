@@ -12,7 +12,7 @@ lazy val commonResolvers = Seq(
 )
 
 lazy val commonSettings = Seq(
-  organization := "uk.gov.hmrc.objectstore",
+  organization := "uk.gov.hmrc",
   majorVersion := 0,
   scalaVersion := scala2_12,
   crossScalaVersions := Seq(scala2_11, scala2_12),
