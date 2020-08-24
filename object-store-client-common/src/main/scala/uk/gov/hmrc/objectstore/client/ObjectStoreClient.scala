@@ -17,19 +17,18 @@
 package uk.gov.hmrc.objectstore.client
 
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
-import uk.gov.hmrc.objectstore.client.model.http.{HttpClient, ObjectStoreRead, ObjectStoreContentRead, ObjectStoreContentWrite}
+import uk.gov.hmrc.objectstore.client.model.Monad
+import uk.gov.hmrc.objectstore.client.model.http.{HttpClient, ObjectStoreContentRead, ObjectStoreContentWrite, ObjectStoreRead}
 import uk.gov.hmrc.objectstore.client.model.objectstore.{Object, ObjectListing}
-import uk.gov.hmrc.objectstore.client.model.{Monad, NaturalTransformation}
 
 import scala.language.higherKinds
 
-class ObjectStoreClient[F[_], G[_], BODY, RES](
-  client: HttpClient[F, BODY, RES],
-  read  : ObjectStoreRead[F, RES],
+class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
+  client: HttpClient[REQ_BODY, RES],
+  read  : ObjectStoreRead[F, RES, RES_BODY],
   config: ObjectStoreClientConfig
 )(implicit
-  F: Monad[F],
-  NT: NaturalTransformation[F, G]
+  F: Monad[F]
  ) {
 
   private val authorizationHeader: (String, String) =
@@ -41,32 +40,23 @@ class ObjectStoreClient[F[_], G[_], BODY, RES](
     location: String,
     content : CONTENT
   )(implicit
-    w: ObjectStoreContentWrite[F, CONTENT, BODY]
-  ): G[Unit] =
-    NT.transform(
-      F.flatMap(w.writeContent(content))(c =>
-        F.flatMap(client.put(s"$url/object/$location", c, List(authorizationHeader)))(
-          read.consume
-        )
-      )
+    w: ObjectStoreContentWrite[F, CONTENT, REQ_BODY]
+  ): F[Unit] =
+    F.flatMap(w.writeContent(content))(
+      c => read.consume(client.put(s"$url/object/$location", c, List(authorizationHeader)))
     )
 
   def getObject[CONTENT](
     location: String
   )(implicit
-    cr: ObjectStoreContentRead[F, RES, CONTENT]
-  ): G[Option[Object[CONTENT]]] =
-    NT.transform(
-      F.flatMap(client.get(s"$url/object/$location", List(authorizationHeader)))(res => read.toObject(location, res, cr.readContent))
-    )
+    cr: ObjectStoreContentRead[F, RES_BODY, CONTENT]
+  ): F[Option[Object[CONTENT]]] =
+    cr.readContent(read.toObject(location, client.get(s"$url/object/$location", List(authorizationHeader))))
 
-  def deleteObject(location: String): G[Unit] =
-    NT.transform(
-      F.flatMap(client.delete(s"$url/object/$location", List(authorizationHeader)))(read.consume)
-    )
+  def deleteObject(location: String): F[Unit] = {
+    read.consume(client.delete(s"$url/object/$location", List(authorizationHeader)))
+  }
 
-  def listObjects(location: String): G[ObjectListing] =
-    NT.transform(
-      F.flatMap(client.get(s"$url/list/$location", List(authorizationHeader)))(read.toObjectListing)
-    )
+  def listObjects(location: String): F[ObjectListing] =
+    read.toObjectListing(client.get(s"$url/list/$location", List(authorizationHeader)))
 }

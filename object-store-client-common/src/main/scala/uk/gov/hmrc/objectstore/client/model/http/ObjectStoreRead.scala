@@ -20,11 +20,11 @@ import uk.gov.hmrc.objectstore.client.model.objectstore.{Object, ObjectListing}
 
 import scala.language.higherKinds
 
-trait ObjectStoreRead[F[_], RES] {
+trait ObjectStoreRead[F[_], RES, RES_BODY] { self =>
 
   def toObjectListing(response: RES): F[ObjectListing]
 
-  def toObject[CONTENT](location: String, response: RES, toContent: RES => F[CONTENT]): F[Option[Object[CONTENT]]]
+  def toObject(location: String, response: RES): F[Option[Object[RES_BODY]]]
 
   def consume(response: RES): F[Unit]
 }

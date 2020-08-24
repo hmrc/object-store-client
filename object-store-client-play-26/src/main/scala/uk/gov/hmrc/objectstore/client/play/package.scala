@@ -19,38 +19,18 @@ package uk.gov.hmrc.objectstore.client
 import _root_.play.api.libs.ws.{WSRequest, WSResponse}
 import uk.gov.hmrc.objectstore.client.model.{Monad, MonadError}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
 package object play {
   type Request  = HttpBody[WSRequest => WSRequest]
-  type Response = WSResponse
+  type Response = Future[WSResponse]
 
-  type F[A] = Future[Either[PlayObjectStoreException, A]]
-
-  implicit def F(implicit ec: ExecutionContext): PlayMonad[F] =
-    new PlayMonad[F] {
-      override def pure[A](a: A): F[A] =
-        Future.successful(Right(a))
-
-      override def flatMap[A, B](fa: F[A])(fn: A => F[B]): F[B] =
-        fa.flatMap {
-          case Right(a) => fn(a)
-          case Left(e)  => raiseError(e)
-        }
-
-      override def map[A, B](fa: F[A])(fn: A => B): F[B] =
-        fa.map(_.right.map(fn))
-
-      def raiseError[A](e: PlayObjectStoreException): F[A] =
-        Future.successful(Left(e))
-
-      def liftFuture[A](future: Future[A]): F[A] =
-        future.map(Right(_))
-    }
+  type FutureEither[A] = Future[Either[PlayObjectStoreException, A]]
 
   object Implicits
-    extends PlayObjectStoreContentReads
-       with PlayObjectStoreContentWrites {
+      extends PlayObjectStoreContentReads
+      with PlayObjectStoreContentWrites
+      with PlayMonads {
 
       object InMemoryReads extends InMemoryPlayObjectStoreContentReads
   }
