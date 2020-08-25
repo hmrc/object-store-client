@@ -155,7 +155,7 @@ class PlayObjectStoreClientSpec
 
       initGetObjectStub(location, statusCode = 200, Some(body))
 
-      import InMemoryReads._
+      import InMemoryReads.stringContentRead
 
       val obj = osClient.getObject[String](location).futureValue
       obj.get.content shouldBe body
@@ -173,7 +173,7 @@ class PlayObjectStoreClientSpec
 
       initGetObjectStub(location, statusCode = 200, Some(body))
 
-      import InMemoryReads._
+      import InMemoryReads.jsValueContentRead
 
       val obj = osClient.getObject[JsValue](location).futureValue
       obj.get.content shouldBe JsObject(Seq("k1" -> JsString("v1"), "k2" -> JsString("v2")))
@@ -186,7 +186,7 @@ class PlayObjectStoreClientSpec
 
       initGetObjectStub(location, statusCode = 200, Some(body))
 
-      import InMemoryReads._
+      import InMemoryReads.jsValueContentRead
 
       osClient.getObject[JsValue](location).failed.futureValue shouldBe an[Exception]
     }

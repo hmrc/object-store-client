@@ -17,6 +17,7 @@
 package uk.gov.hmrc.objectstore.client.model
 
 import scala.annotation.implicitNotFound
+import scala.language.higherKinds
 
 @implicitNotFound("""Cannot find an implicit Functor[${F}].
 If you are using Future, you may be missing an implicit ExecutionContext.""")
@@ -45,15 +46,4 @@ object Monad {
 
 object Functor {
   implicit def functorForMonad[F[_]](implicit F: Monad[F]): Functor[F] = F
-}
-
-trait NaturalTransformation[F[_], G[_]] {
-  def transform[A](f: F[A]): G[A]
-}
-
-object NaturalTransformation {
-  implicit def identity[F[_]]: NaturalTransformation[F, F] =
-    new NaturalTransformation[F, F] {
-      override def transform[A](f: F[A]): F[A] = f
-    }
 }

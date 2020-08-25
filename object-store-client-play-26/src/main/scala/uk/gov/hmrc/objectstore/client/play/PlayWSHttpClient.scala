@@ -22,16 +22,15 @@ import play.api.libs.ws.{WSClient, WSRequest, WSResponse}
 import uk.gov.hmrc.objectstore.client.model.http.HttpClient
 
 import scala.concurrent.duration.Duration
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class PlayWSHttpClient @Inject()(wsClient: WSClient)(implicit ec: ExecutionContext)
-  extends HttpClient[F, Request, Response] {
+  extends HttpClient[Request, Response] {
 
   private val logger: Logger = Logger(this.getClass)
 
-  override def put(url: String, body: Request, headers: List[(String, String)]): F[WSResponse] =
-    invoke(
+  override def put(url: String, body: Request, headers: List[(String, String)]): Response = invoke(
       url             = url,
       method          = "PUT",
       processResponse = identity,
@@ -39,7 +38,7 @@ class PlayWSHttpClient @Inject()(wsClient: WSClient)(implicit ec: ExecutionConte
       headers         = headers
     )
 
-  override def post(url: String, body: Request, headers: List[(String, String)]): F[WSResponse] = invoke(
+  override def post(url: String, body: Request, headers: List[(String, String)]): Response = invoke(
     url             = url,
     method          = "POST",
     processResponse = identity,
@@ -47,14 +46,14 @@ class PlayWSHttpClient @Inject()(wsClient: WSClient)(implicit ec: ExecutionConte
     headers         = headers
   )
 
-  override def get(url: String, headers: List[(String, String)]): F[WSResponse] = invoke(
+  override def get(url: String, headers: List[(String, String)]): Response = invoke(
     url             = url,
     method          = "GET",
     processResponse = identity,
     headers         = headers
   )
 
-  override def delete(url: String, headers: List[(String, String)]): F[WSResponse] = invoke(
+  override def delete(url: String, headers: List[(String, String)]): Response = invoke(
     url             = url,
     method          = "DELETE",
     processResponse = identity,
@@ -76,7 +75,7 @@ class PlayWSHttpClient @Inject()(wsClient: WSClient)(implicit ec: ExecutionConte
     headers        : List[(String, String)],
     queryParameters: List[(String, String)] = List.empty,
     body           : Request                = empty
-  ): F[T] = {
+  ): Future[T] = {
 
     logger.info(s"Request: Url: $url")
     val hdrs = headers ++
@@ -91,14 +90,12 @@ class PlayWSHttpClient @Inject()(wsClient: WSClient)(implicit ec: ExecutionConte
       .withQueryStringParameters(queryParameters: _*)
       .withRequestTimeout(Duration.Inf)
 
-    F.liftFuture(
       body
         .writeBody(wsRequest)
         .execute(method)
         .map(logResponse)
         .map(processResponse)
         .andThen { case _ => body.release() }
-    )
   }
 
   private def logResponse(response: WSResponse): WSResponse = {
