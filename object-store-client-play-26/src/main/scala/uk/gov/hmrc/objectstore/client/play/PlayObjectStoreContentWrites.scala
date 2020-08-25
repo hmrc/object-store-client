@@ -25,16 +25,14 @@ import akka.util.ByteString
 import play.api.libs.Files.SingletonTemporaryFileCreator
 import play.api.libs.ws.WSRequest
 import uk.gov.hmrc.objectstore.client.model.http.{ObjectStoreContentWrite, Payload}
-import uk.gov.hmrc.objectstore.client.play.PlayWSHttpClient.Request
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 
 trait PlayObjectStoreContentWrites {
-
-  implicit def payloadAkkaSourceContentWrite[Mat <: Any]: ObjectStoreContentWrite[Future, Payload[Source[ByteString, Mat]], Request] =
-    new ObjectStoreContentWrite[Future, Payload[Source[ByteString, Mat]], Request] {
-      override def writeContent(payload: Payload[Source[ByteString, Mat]]): Future[Request] =
-        Future.successful(
+  implicit def payloadAkkaSourceContentWrite[F[_], Mat <: Any](implicit ec: ExecutionContext, F: PlayMonad[F]): ObjectStoreContentWrite[F, Payload[Source[ByteString, Mat]], Request] =
+    new ObjectStoreContentWrite[F, Payload[Source[ByteString, Mat]], Request] {
+      override def writeContent(payload: Payload[Source[ByteString, Mat]]): F[Request] =
+        F.pure(
           HttpBody(
             length    = Some(payload.length),
             md5       = Some(payload.md5Hash),
@@ -44,8 +42,8 @@ trait PlayObjectStoreContentWrites {
         )
     }
 
-  implicit val fileWrite: ObjectStoreContentWrite[Future, File, Request] =
-    payloadAkkaSourceContentWrite.contramap { file =>
+  implicit def fileWrite[F[_]](implicit ec: ExecutionContext, F: PlayMonad[F]): ObjectStoreContentWrite[F, File, Request] =
+    payloadAkkaSourceContentWrite[F, NotUsed].contramap { file =>
       Payload(
         length  = file.length,
         md5Hash = Md5Hash.fromInputStream(new FileInputStream(file)),
@@ -53,9 +51,9 @@ trait PlayObjectStoreContentWrites {
       )
     }
 
-  implicit def akkaSourceContentWrite[Mat <: Any](implicit ec: ExecutionContext, m: Materializer): ObjectStoreContentWrite[Future, Source[ByteString, Mat], Request] =
-    new ObjectStoreContentWrite[Future, Source[ByteString, Mat], Request] {
-      override def writeContent(content: Source[ByteString, Mat]): Future[Request] = {
+  implicit def akkaSourceContentWrite[F[_], Mat <: Any](implicit ec: ExecutionContext, m: Materializer, F: PlayMonad[F]): ObjectStoreContentWrite[F, Source[ByteString, Mat], Request] =
+    new ObjectStoreContentWrite[F, Source[ByteString, Mat], Request] {
+      override def writeContent(content: Source[ByteString, Mat]): F[Request] = {
         val tempFile = SingletonTemporaryFileCreator.create()
 
         val (uploadFinished, md5Finished) =
@@ -65,16 +63,18 @@ trait PlayObjectStoreContentWrites {
             sink2  = Md5Hash.md5HashSink
           ).run()
 
-        for {
-          _       <- uploadFinished
-          md5Hash <- md5Finished
-        } yield
-          HttpBody(
-            length    = Some(tempFile.path.toFile.length),
-            md5       = Some(md5Hash),
-            writeBody = (req: WSRequest) => req.withBody(tempFile.path.toFile),
-            release   = () => SingletonTemporaryFileCreator.delete(tempFile)
-          )
+        F.liftFuture(
+          for {
+            _       <- uploadFinished
+            md5Hash <- md5Finished
+          } yield
+            HttpBody(
+              length    = Some(tempFile.path.toFile.length),
+              md5       = Some(md5Hash),
+              writeBody = (req: WSRequest) => req.withBody(tempFile.path.toFile),
+              release   = () => SingletonTemporaryFileCreator.delete(tempFile)
+            )
+        )
       }
     }
 
@@ -93,8 +93,8 @@ trait PlayObjectStoreContentWrites {
         ClosedShape
     })
 
-  implicit lazy val bytesWrite: ObjectStoreContentWrite[Future, Array[Byte], Request] =
-    payloadAkkaSourceContentWrite.contramap { bytes =>
+  implicit def bytesWrite[F[_]](implicit ec: ExecutionContext, F: PlayMonad[F]): ObjectStoreContentWrite[F, Array[Byte], Request] =
+    payloadAkkaSourceContentWrite[F, NotUsed].contramap { bytes =>
       Payload(
         length  = bytes.length,
         md5Hash = Md5Hash.fromBytes(bytes),
@@ -102,8 +102,6 @@ trait PlayObjectStoreContentWrites {
       )
     }
 
-  implicit lazy val stringWrite: ObjectStoreContentWrite[Future, String, Request] =
+  implicit def stringWrite[F[_]](implicit ec: ExecutionContext, F: PlayMonad[F]): ObjectStoreContentWrite[F, String, Request] =
     bytesWrite.contramap(_.getBytes)
 }
-
-object PlayObjectStoreContentWrites extends PlayObjectStoreContentWrites

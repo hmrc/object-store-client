@@ -16,23 +16,30 @@
 
 package uk.gov.hmrc.objectstore.client.play
 
+import akka.NotUsed
+import akka.stream.scaladsl.Source
+import akka.util.ByteString
 import javax.inject.{Inject, Singleton}
 import uk.gov.hmrc.objectstore.client.ObjectStoreClient
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
+import uk.gov.hmrc.objectstore.client.play.Implicits._
+
+import scala.concurrent.{ExecutionContext, Future}
+
+@Singleton
+class PlayObjectStoreClientEither @Inject()(
+  httpClient: PlayWSHttpClient,
+  config    : ObjectStoreClientConfig
+)(implicit ec  : ExecutionContext
+) extends ObjectStoreClient[FutureEither, Request, Response, Source[ByteString, NotUsed]](
+  httpClient, PlayObjectStoreReads.futureEitherReads, config
+)
 
 @Singleton
 class PlayObjectStoreClient @Inject()(
   httpClient: PlayWSHttpClient,
-  read      : PlayObjectStoreReads,
   config    : ObjectStoreClientConfig
-)(implicit ec: scala.concurrent.ExecutionContext
-) extends ObjectStoreClient(httpClient, read, config)
-
-object PlayObjectStoreClient {
-  object Implicits
-    extends PlayObjectStoreContentReads
-       with PlayObjectStoreContentWrites {
-
-    object InMemoryReads extends InMemoryPlayObjectStoreContentReads
-  }
-}
+)(implicit ec  : ExecutionContext
+) extends ObjectStoreClient[Future, Request, Response, Source[ByteString, NotUsed]](
+  httpClient, PlayObjectStoreReads.futureReads, config
+)
