@@ -23,22 +23,21 @@ import akka.util.ByteString
 import play.api.libs.json.{JsResult, JsValue, Json, Reads}
 import play.api.libs.ws.WSResponse
 import uk.gov.hmrc.objectstore.client.model.http.ObjectStoreContentRead
-import uk.gov.hmrc.objectstore.client.model.objectstore
 
 import scala.util.{Failure, Success, Try}
 
 trait PlayObjectStoreContentReads {
 
-  implicit def identity[F[_]]: ObjectStoreContentRead[F, Source[ByteString, NotUsed], Source[ByteString, NotUsed]] =
+  implicit def identity[F[_]](implicit F: PlayMonad[F]): ObjectStoreContentRead[F, Source[ByteString, NotUsed], Source[ByteString, NotUsed]] =
     new ObjectStoreContentRead[F, Source[ByteString, NotUsed], Source[ByteString, NotUsed]] {
-      override def readContent(response: F[Option[objectstore.Object[Source[ByteString, NotUsed]]]]): F[Option[objectstore.Object[Source[ByteString, NotUsed]]]] = response
+      override def readContent(response: Source[ByteString, NotUsed]): F[Source[ByteString, NotUsed]] =
+        F.pure(response)
     }
 
   implicit def akkaSourceContentRead[F[_]](implicit F: PlayMonad[F]): ObjectStoreContentRead[F, WSResponse, Source[ByteString, NotUsed]] =
     new ObjectStoreContentRead[F, WSResponse, Source[ByteString, NotUsed]] {
-      override def readContent(response: F[Option[objectstore.Object[WSResponse]]]): F[Option[objectstore.Object[Source[ByteString, NotUsed]]]] = {
-        F.map(response)(_.map(obj => obj.copy(content = obj.content.bodyAsSource.mapMaterializedValue(_ => NotUsed))))
-      }
+      override def readContent(response: WSResponse): F[Source[ByteString, NotUsed]] =
+        F.pure(response.bodyAsSource.mapMaterializedValue(_ => NotUsed))
     }
 }
 

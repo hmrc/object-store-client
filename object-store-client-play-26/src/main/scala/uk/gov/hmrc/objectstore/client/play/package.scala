@@ -23,7 +23,7 @@ import scala.concurrent.Future
 
 package object play {
   type Request  = HttpBody[WSRequest => WSRequest]
-  type Response = Future[WSResponse]
+  type Response = WSResponse
 
   type FutureEither[A] = Future[Either[PlayObjectStoreException, A]]
 
