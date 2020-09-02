@@ -38,7 +38,7 @@ object PlayObjectStoreReads {
       response.map {
         case r if Status.isSuccessful(r.status) => r.body[JsValue].validate[ObjectListing](PlayFormats.objectListingRead) match {
           case JsSuccess(r, path) => Right(r)
-          case JsError(errors) => Left(OtherError(errors.toString))
+          case JsError(errors) => Left(GenericError(errors.toString))
         }
         case r => Left(UpstreamErrorResponse(s"Object store call failed with status code: ${r.status}", r.status))
       }
@@ -47,12 +47,12 @@ object PlayObjectStoreReads {
       response.map {
         case resp@r if Status.isSuccessful(r.status) =>
           def header(k: String): Either[PlayObjectStoreException, String] =
-            r.header(k).map(Right(_)).getOrElse(Left(OtherError(s"Missing header $k")))
+            r.header(k).map(Right(_)).getOrElse(Left(GenericError(s"Missing header $k")))
 
           def attempt[A](h: String, v: => A): Either[PlayObjectStoreException, A] =
             Try(v) match {
               case Success(s) => Right(s)
-              case Failure(e) => Left(OtherError(s"Couldn't read header $h: ${e.getMessage}"))
+              case Failure(e) => Left(GenericError(s"Couldn't read header $h: ${e.getMessage}"))
             }
 
           for {
