@@ -29,7 +29,7 @@ import uk.gov.hmrc.objectstore.client.model.http.{ObjectStoreContentWrite, Paylo
 import scala.concurrent.ExecutionContext
 
 trait PlayObjectStoreContentWrites {
-  implicit def payloadAkkaSourceContentWrite[F[_], Mat <: Any](implicit ec: ExecutionContext, F: PlayMonad[F]): ObjectStoreContentWrite[F, Payload[Source[ByteString, Mat]], Request] =
+  implicit def payloadAkkaSourceContentWrite[F[_], Mat <: Any](implicit F: PlayMonad[F]): ObjectStoreContentWrite[F, Payload[Source[ByteString, Mat]], Request] =
     new ObjectStoreContentWrite[F, Payload[Source[ByteString, Mat]], Request] {
       override def writeContent(payload: Payload[Source[ByteString, Mat]]): F[Request] =
         F.pure(
@@ -42,7 +42,7 @@ trait PlayObjectStoreContentWrites {
         )
     }
 
-  implicit def fileWrite[F[_]](implicit ec: ExecutionContext, F: PlayMonad[F]): ObjectStoreContentWrite[F, File, Request] =
+  implicit def fileWrite[F[_]](implicit F: PlayMonad[F]): ObjectStoreContentWrite[F, File, Request] =
     payloadAkkaSourceContentWrite[F, NotUsed].contramap { file =>
       Payload(
         length  = file.length,
@@ -93,7 +93,7 @@ trait PlayObjectStoreContentWrites {
         ClosedShape
     })
 
-  implicit def bytesWrite[F[_]](implicit ec: ExecutionContext, F: PlayMonad[F]): ObjectStoreContentWrite[F, Array[Byte], Request] =
+  implicit def bytesWrite[F[_]](implicit F: PlayMonad[F]): ObjectStoreContentWrite[F, Array[Byte], Request] =
     payloadAkkaSourceContentWrite[F, NotUsed].contramap { bytes =>
       Payload(
         length  = bytes.length,
@@ -102,6 +102,6 @@ trait PlayObjectStoreContentWrites {
       )
     }
 
-  implicit def stringWrite[F[_]](implicit ec: ExecutionContext, F: PlayMonad[F]): ObjectStoreContentWrite[F, String, Request] =
+  implicit def stringWrite[F[_]](implicit F: PlayMonad[F]): ObjectStoreContentWrite[F, String, Request] =
     bytesWrite.contramap(_.getBytes)
 }

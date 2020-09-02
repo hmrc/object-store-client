@@ -25,17 +25,16 @@ import play.api.libs.ws.WSResponse
 import uk.gov.hmrc.objectstore.client.model.http.ObjectStoreContentRead
 import uk.gov.hmrc.objectstore.client.model.objectstore
 
-import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
 
 trait PlayObjectStoreContentReads {
 
-  implicit def identity[F[_]](implicit ec: ExecutionContext, F: PlayMonad[F]): ObjectStoreContentRead[F, Source[ByteString, NotUsed], Source[ByteString, NotUsed]] =
+  implicit def identity[F[_]]: ObjectStoreContentRead[F, Source[ByteString, NotUsed], Source[ByteString, NotUsed]] =
     new ObjectStoreContentRead[F, Source[ByteString, NotUsed], Source[ByteString, NotUsed]] {
       override def readContent(response: F[Option[objectstore.Object[Source[ByteString, NotUsed]]]]): F[Option[objectstore.Object[Source[ByteString, NotUsed]]]] = response
     }
 
-  implicit def akkaSourceContentRead[F[_]](implicit ec: ExecutionContext, F: PlayMonad[F]): ObjectStoreContentRead[F, WSResponse, Source[ByteString, NotUsed]] =
+  implicit def akkaSourceContentRead[F[_]](implicit F: PlayMonad[F]): ObjectStoreContentRead[F, WSResponse, Source[ByteString, NotUsed]] =
     new ObjectStoreContentRead[F, WSResponse, Source[ByteString, NotUsed]] {
       override def readContent(response: F[Option[objectstore.Object[WSResponse]]]): F[Option[objectstore.Object[Source[ByteString, NotUsed]]]] = {
         F.map(response)(_.map(obj => obj.copy(content = obj.content.bodyAsSource.mapMaterializedValue(_ => NotUsed))))
@@ -43,13 +42,12 @@ trait PlayObjectStoreContentReads {
     }
 }
 
-trait InMemoryPlayObjectStoreContentReads extends PlayObjectStoreContentReads {
+trait LowPriorityInMemoryPlayObjectStoreContentReads extends PlayObjectStoreContentReads {
 
-  implicit def stringContentRead[F[_]](implicit ec: ExecutionContext, m: Materializer, F: PlayMonad[F]): ObjectStoreContentRead[F, Source[ByteString, NotUsed], String] = {
+  def stringContentRead[F[_]](implicit m: Materializer, F: PlayMonad[F]): ObjectStoreContentRead[F, Source[ByteString, NotUsed], String] =
     identity.mapF(src => F.liftFuture(src.map(_.utf8String).runReduce(_ + _)))
-  }
 
-  implicit def jsValueContentRead[F[_]](implicit ec: ExecutionContext, m: Materializer, F: PlayMonad[F]): ObjectStoreContentRead[F, Source[ByteString, NotUsed], JsValue] =
+  def jsValueContentRead[F[_]](implicit m: Materializer, F: PlayMonad[F]): ObjectStoreContentRead[F, Source[ByteString, NotUsed], JsValue] =
     stringContentRead.mapF(s =>
       Try(Json.parse(s)) match {
         case Failure(e) => F.raiseError(OtherError(s"Failed to parse Json: ${e.getMessage}"))
@@ -57,9 +55,18 @@ trait InMemoryPlayObjectStoreContentReads extends PlayObjectStoreContentReads {
       }
     )
 
-  implicit def jsResultContentRead[F[_], A : Reads](implicit ec: ExecutionContext, m: Materializer, F: PlayMonad[F]): ObjectStoreContentRead[F, Source[ByteString, NotUsed], JsResult[A]] =
-    jsValueContentRead.map(_.validate[A])
-
-  implicit def jsReadsRead[F[_], A : Reads](implicit ec: ExecutionContext, m: Materializer, F: PlayMonad[F]): ObjectStoreContentRead[F, Source[ByteString, NotUsed], A] =
+  implicit def jsReadsRead[F[_], A : Reads](implicit m: Materializer, F: PlayMonad[F]): ObjectStoreContentRead[F, Source[ByteString, NotUsed], A] =
     jsValueContentRead.map(_.as[A])
+}
+
+trait InMemoryPlayObjectStoreContentReads extends LowPriorityInMemoryPlayObjectStoreContentReads {
+
+  override implicit def stringContentRead[F[_]](implicit m: Materializer, F: PlayMonad[F]): ObjectStoreContentRead[F, Source[ByteString, NotUsed], String] =
+    super.stringContentRead
+
+  override implicit def jsValueContentRead[F[_]](implicit m: Materializer, F: PlayMonad[F]): ObjectStoreContentRead[F, Source[ByteString, NotUsed], JsValue] =
+    super.jsValueContentRead
+
+  implicit def jsResultContentRead[F[_], A : Reads](implicit m: Materializer, F: PlayMonad[F]): ObjectStoreContentRead[F, Source[ByteString, NotUsed], JsResult[A]] =
+    jsValueContentRead.map(_.validate[A])
 }
