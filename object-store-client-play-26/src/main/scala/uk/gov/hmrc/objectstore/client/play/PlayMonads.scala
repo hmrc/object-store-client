@@ -49,9 +49,11 @@ trait PlayMonads {
 
       override def flatMap[A, B](fa: Future[A])(fn: A => Future[B]): Future[B] = fa.flatMap(fn)
 
+      override def map[A, B](fa: Future[A])(fn: A => B): Future[B] =
+        fa.map(fn)
+
       override def liftFuture[A](future: Future[A]): Future[A] = future
 
       override def raiseError[A](e: PlayObjectStoreException): Future[A] = Future.failed(e)
     }
-
 }

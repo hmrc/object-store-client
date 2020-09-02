@@ -26,20 +26,24 @@ import uk.gov.hmrc.objectstore.client.play.Implicits._
 
 import scala.concurrent.{ExecutionContext, Future}
 
+/** Client which returns responses within Future[Either[PlayObjectStoreException, *]]. */
 @Singleton
 class PlayObjectStoreClientEither @Inject()(
   httpClient: PlayWSHttpClient,
   config    : ObjectStoreClientConfig
-)(implicit ec  : ExecutionContext
+)(implicit ec: ExecutionContext
 ) extends ObjectStoreClient[FutureEither, Request, Response, Source[ByteString, NotUsed]](
   httpClient, PlayObjectStoreReads.futureEitherReads, config
 )
 
+/** Client which returns responses withing Future.
+  * To handle the client exceptions, you can recover the [[PlayObjectStoreException]]
+  */
 @Singleton
 class PlayObjectStoreClient @Inject()(
   httpClient: PlayWSHttpClient,
   config    : ObjectStoreClientConfig
-)(implicit ec  : ExecutionContext
+)(implicit ec: ExecutionContext
 ) extends ObjectStoreClient[Future, Request, Response, Source[ByteString, NotUsed]](
   httpClient, PlayObjectStoreReads.futureReads, config
 )
