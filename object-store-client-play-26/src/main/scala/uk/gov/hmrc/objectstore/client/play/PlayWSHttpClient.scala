@@ -16,6 +16,9 @@
 
 package uk.gov.hmrc.objectstore.client.play
 
+import java.net.ConnectException
+import java.util.concurrent.TimeoutException
+
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
 import play.api.libs.ws.{WSClient, WSRequest, WSResponse}
@@ -95,6 +98,10 @@ class PlayWSHttpClient @Inject()(wsClient: WSClient)(implicit ec: ExecutionConte
         .stream()
         .map(logResponse)
         .map(processResponse)
+        .recoverWith {
+          case e: TimeoutException => Future.failed(GatewayTimeoutException(e))
+          case e: ConnectException => Future.failed(BadGatewayException(e))
+        }
         .andThen { case _ => body.release() }
   }
 

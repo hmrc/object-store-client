@@ -53,9 +53,8 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
   ): F[Option[Object[CONTENT]]] =
     cr.readContent(read.toObject(location, client.get(s"$url/object/$location", List(authorizationHeader))))
 
-  def deleteObject(location: String): F[Unit] = {
+  def deleteObject(location: String): F[Unit] =
     read.consume(client.delete(s"$url/object/$location", List(authorizationHeader)))
-  }
 
   def listObjects(location: String): F[ObjectListing] =
     read.toObjectListing(client.get(s"$url/list/$location", List(authorizationHeader)))
