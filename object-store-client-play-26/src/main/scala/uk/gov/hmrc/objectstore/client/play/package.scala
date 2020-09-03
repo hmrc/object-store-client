@@ -17,6 +17,9 @@
 package uk.gov.hmrc.objectstore.client
 
 import _root_.play.api.libs.ws.{WSRequest, WSResponse}
+import akka.NotUsed
+import akka.stream.scaladsl.Source
+import akka.util.ByteString
 import uk.gov.hmrc.objectstore.client.model.{Monad, MonadError}
 
 import scala.concurrent.Future
@@ -24,6 +27,7 @@ import scala.concurrent.Future
 package object play {
   type Request  = HttpBody[WSRequest => WSRequest]
   type Response = WSResponse
+  type ResBody  = Source[ByteString, NotUsed]
 
   type FutureEither[A] = Future[Either[PlayObjectStoreException, A]]
 

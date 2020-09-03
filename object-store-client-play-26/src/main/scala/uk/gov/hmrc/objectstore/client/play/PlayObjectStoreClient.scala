@@ -16,9 +16,6 @@
 
 package uk.gov.hmrc.objectstore.client.play
 
-import akka.NotUsed
-import akka.stream.scaladsl.Source
-import akka.util.ByteString
 import javax.inject.{Inject, Singleton}
 import play.api.libs.ws.WSClient
 import uk.gov.hmrc.objectstore.client.ObjectStoreClient
@@ -33,7 +30,7 @@ class PlayObjectStoreClientEither @Inject()(
   wsClient: WSClient,
   config  : ObjectStoreClientConfig
 )(implicit ec: ExecutionContext
-) extends ObjectStoreClient[FutureEither, Request, Response, Source[ByteString, NotUsed]](
+) extends ObjectStoreClient[FutureEither, Request, Response, ResBody](
   new PlayWSHttpClient[FutureEither](wsClient),
   PlayObjectStoreReads.futureEitherReads, config
 )
@@ -44,9 +41,9 @@ class PlayObjectStoreClientEither @Inject()(
 @Singleton
 class PlayObjectStoreClient @Inject()(
   wsClient: WSClient,
-  config    : ObjectStoreClientConfig
+  config  : ObjectStoreClientConfig
 )(implicit ec: ExecutionContext
-) extends ObjectStoreClient[Future, Request, Response, Source[ByteString, NotUsed]](
+) extends ObjectStoreClient[Future, Request, Response, ResBody](
   new PlayWSHttpClient[Future](wsClient),
   PlayObjectStoreReads.futureReads, config
 )

@@ -46,7 +46,7 @@ object PlayObjectStoreReads {
           }
         )
 
-      override def toObject(location: String, response: Response): FutureEither[Option[Object[Source[ByteString, NotUsed]]]] =
+      override def toObject(location: String, response: Response): FutureEither[Option[Object[ResBody]]] =
         Future.successful(
           response match {
             case resp@r if Status.isSuccessful(r.status) =>
