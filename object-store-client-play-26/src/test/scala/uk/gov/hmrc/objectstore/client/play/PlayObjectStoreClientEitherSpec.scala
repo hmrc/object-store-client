@@ -55,9 +55,15 @@ class PlayObjectStoreClientEitherSpec
 
   protected val osClient: PlayObjectStoreClientEither = fakeApplication().injector.instanceOf(classOf[PlayObjectStoreClientEither])
 
+  lazy val serviceName = "my-service"
+
   override def fakeApplication(): Application =
     new GuiceApplicationBuilder()
-      .overrides(bind[ObjectStoreClientConfig].toInstance(ObjectStoreClientConfig(wireMockUrl, "AuthorizationToken")))
+      .overrides(bind[ObjectStoreClientConfig].toInstance(ObjectStoreClientConfig(
+          baseUrl            = wireMockUrl,
+          serviceName        = serviceName,
+          authorizationToken = "AuthorizationToken"
+        )))
       .build()
 
   import Implicits._
@@ -66,99 +72,108 @@ class PlayObjectStoreClientEitherSpec
 
     "store an object as Source with NotUsed bound to Mat" in {
       val body                                = s"hello world! ${UUID.randomUUID().toString}"
-      val location                            = generateLocation()
+      val path                                = generateString()
+      val fileName                            = generateString()
       val md5Base64                           = Md5Hash.fromBytes(body.getBytes)
       val source: Source[ByteString, NotUsed] = toSource(body)
 
-      initPutObjectStub(location, statusCode = 201, body.getBytes, md5Base64)
+      initPutObjectStub(path, fileName, statusCode = 201, body.getBytes, md5Base64)
 
-      osClient.putObject(location, source).futureValue.right.value shouldBe (())
+      osClient.putObject(path, fileName, source).futureValue.right.value shouldBe (())
     }
 
     "store an object as Source with Any bound to Mat" in {
       val body                          = s"hello world! ${UUID.randomUUID().toString}"
-      val location                      = generateLocation()
+      val path                          = generateString()
+      val fileName                      = generateString()
       val md5Base64                     = Md5Hash.fromBytes(body.getBytes)
       val source: Source[ByteString, _] = toSource(body)
 
-      initPutObjectStub(location, statusCode = 201, body.getBytes, md5Base64)
+      initPutObjectStub(path, fileName, statusCode = 201, body.getBytes, md5Base64)
 
-      osClient.putObject(location, source).futureValue.right.value shouldBe (())
+      osClient.putObject(path, fileName, source).futureValue.right.value shouldBe (())
     }
 
     "store an object as Source with NotUsed bound to Mat and known md5hash and length" in {
       val body                                = s"hello world! ${UUID.randomUUID().toString}"
-      val location                            = generateLocation()
+      val path                                = generateString()
+      val fileName                            = generateString()
       val md5Base64                           = Md5Hash.fromBytes(body.getBytes)
       val source: Source[ByteString, NotUsed] = toSource(body)
 
-      initPutObjectStub(location, statusCode = 201, body.getBytes, md5Base64)
+      initPutObjectStub(path, fileName, statusCode = 201, body.getBytes, md5Base64)
 
-      osClient.putObject(location, Payload(length = body.length, md5Hash = md5Base64, content = source)).futureValue.right.value shouldBe (())
+      osClient.putObject(path, fileName, Payload(length = body.length, md5Hash = md5Base64, content = source)).futureValue.right.value shouldBe (())
     }
 
     "store an object as Source with Any bound to Mat and known md5hash and length" in {
       val body                          = s"hello world! ${UUID.randomUUID().toString}"
-      val location                      = generateLocation()
+      val path                          = generateString()
+      val fileName                      = generateString()
       val md5Base64                     = Md5Hash.fromBytes(body.getBytes)
       val source: Source[ByteString, _] = toSource(body)
 
-      initPutObjectStub(location, statusCode = 201, body.getBytes, md5Base64)
+      initPutObjectStub(path, fileName, statusCode = 201, body.getBytes, md5Base64)
 
-      osClient.putObject(location, Payload(length = body.length, md5Hash = md5Base64, content = source)).futureValue.right.value shouldBe (())
+      osClient.putObject(path, fileName, Payload(length = body.length, md5Hash = md5Base64, content = source)).futureValue.right.value shouldBe (())
     }
 
     "store an object as Bytes" in {
       val body      = s"hello world! ${UUID.randomUUID().toString}".getBytes
-      val location  = generateLocation()
+      val path      = generateString()
+      val fileName  = generateString()
       val md5Base64 = Md5Hash.fromBytes(body)
 
-      initPutObjectStub(location, statusCode = 201, body, md5Base64)
+      initPutObjectStub(path, fileName, statusCode = 201, body, md5Base64)
 
-      osClient.putObject(location, body).futureValue.right.value shouldBe (())
+      osClient.putObject(path, fileName, body).futureValue.right.value shouldBe (())
     }
 
     "store an object as String" in {
       val body      = s"hello world! ${UUID.randomUUID().toString}"
-      val location  = generateLocation()
+      val path      = generateString()
+      val fileName  = generateString()
       val md5Base64 = Md5Hash.fromBytes(body.getBytes)
 
-      initPutObjectStub(location, statusCode = 201, body.getBytes, md5Base64)
+      initPutObjectStub(path, fileName, statusCode = 201, body.getBytes, md5Base64)
 
-      osClient.putObject(location, body).futureValue.right.value shouldBe (())
+      osClient.putObject(path, fileName, body).futureValue.right.value shouldBe (())
     }
 
     "return an exception if object-store response is not successful" in {
       val body      = s"hello world! ${UUID.randomUUID().toString}"
-      val location  = generateLocation()
+      val path      = generateString()
+      val fileName  = generateString()
       val md5Base64 = Md5Hash.fromBytes(body.getBytes)
 
-      initPutObjectStub(location, statusCode = 401, body.getBytes, md5Base64)
+      initPutObjectStub(path, fileName, statusCode = 401, body.getBytes, md5Base64)
 
-      osClient.putObject(location, toSource(body)).futureValue.left.value shouldBe an[UpstreamErrorResponse]
+      osClient.putObject(path, fileName, toSource(body)).futureValue.left.value shouldBe an[UpstreamErrorResponse]
     }
   }
 
   "getObject" must {
     "return an object that exists" in {
       val body     = "hello world! e36cb887-58ae-4422-9894-215faaf0aa35"
-      val location = generateLocation()
+      val path     = generateString()
+      val fileName = generateString()
 
-      initGetObjectStub(location, statusCode = 200, Some(body))
+      initGetObjectStub(path, fileName, statusCode = 200, Some(body))
 
-      val obj = osClient.getObject[Source[ByteString, NotUsed]](location).futureValue.right.value
+      val obj = osClient.getObject[Source[ByteString, NotUsed]](path, fileName).futureValue.right.value
       obj.get.content.asString() shouldBe body
     }
 
     "return an object that exists as String" in {
       val body     = "hello world! e36cb887-58ae-4422-9894-215faaf0aa35"
-      val location = generateLocation()
+      val path     = generateString()
+      val fileName = generateString()
 
-      initGetObjectStub(location, statusCode = 200, Some(body))
+      initGetObjectStub(path, fileName, statusCode = 200, Some(body))
 
       import InMemoryReads.stringContentRead
 
-      val obj = osClient.getObject[String](location).futureValue.right.value
+      val obj = osClient.getObject[String](path, fileName).futureValue.right.value
       obj.get.content shouldBe body
     }
 
@@ -170,93 +185,101 @@ class PlayObjectStoreClientEitherSpec
 
     "return an object that exists as JsValue" in {
       val body     = """{ "k1": "v1", "k2": "v2" }"""
-      val location = generateLocation()
+      val path     = generateString()
+      val fileName = generateString()
 
-      initGetObjectStub(location, statusCode = 200, Some(body))
+      initGetObjectStub(path, fileName, statusCode = 200, Some(body))
 
       import InMemoryReads.jsValueContentRead
 
-      val obj = osClient.getObject[JsValue](location).futureValue.right.value
+      val obj = osClient.getObject[JsValue](path, fileName).futureValue.right.value
       obj.get.content shouldBe JsObject(Seq("k1" -> JsString("v1"), "k2" -> JsString("v2")))
     }
 
     "fail with invalid json when reading as JsValue" in {
       val body     = """{ "k1": "v1", "k2": "v2""""
-      val location = generateLocation()
+      val path     = generateString()
+      val fileName = generateString()
 
-      initGetObjectStub(location, statusCode = 200, Some(body))
+      initGetObjectStub(path, fileName, statusCode = 200, Some(body))
 
       import InMemoryReads.jsValueContentRead
 
-      osClient.getObject[JsValue](location).futureValue.left.value shouldBe an[PlayObjectStoreException]
+      osClient.getObject[JsValue](path, fileName).futureValue.left.value shouldBe an[PlayObjectStoreException]
     }
 
     "return an object that exists as JsResult" in {
       val body     = """{ "k1": "v1", "k2": "v2" }"""
-      val location = generateLocation()
+      val path     = generateString()
+      val fileName = generateString()
 
-      initGetObjectStub(location, statusCode = 200, Some(body))
+      initGetObjectStub(path, fileName, statusCode = 200, Some(body))
 
       import InMemoryReads._
 
-      val obj = osClient.getObject[JsResult[Obj]](location).futureValue.right.value
+      val obj = osClient.getObject[JsResult[Obj]](path, fileName).futureValue.right.value
       obj.get.content shouldBe JsSuccess(Obj(k1 = "v1", k2 = "v2"), __)
     }
 
     "return an object that exists as JsReads" in {
       val body     = """{ "k1": "v1", "k2": "v2" }"""
-      val location = generateLocation()
+      val path     = generateString()
+      val fileName = generateString()
 
-      initGetObjectStub(location, statusCode = 200, Some(body))
+      initGetObjectStub(path, fileName, statusCode = 200, Some(body))
 
       import InMemoryReads._
 
-      val obj = osClient.getObject[Obj](location).futureValue.right.value
+      val obj = osClient.getObject[Obj](path, fileName).futureValue.right.value
       obj.get.content shouldBe Obj(k1 = "v1", k2 = "v2")
     }
 
     "return None for an object that doesn't exist" in {
-      val location = generateLocation()
+      val path     = generateString()
+      val fileName = generateString()
 
-      initGetObjectStub(location, statusCode = 404, None)
+      initGetObjectStub(path, fileName, statusCode = 404, None)
 
-      osClient.getObject(location).futureValue.right.value shouldBe None
+      osClient.getObject(path, fileName).futureValue.right.value shouldBe None
     }
 
     "return an exception if object-store response is not successful" in {
-      val location = generateLocation()
+      val path     = generateString()
+      val fileName = generateString()
 
-      initGetObjectStub(location, statusCode = 401, None)
+      initGetObjectStub(path, fileName, statusCode = 401, None)
 
-      osClient.getObject(location).futureValue.left.value shouldBe an[UpstreamErrorResponse]
+      osClient.getObject(path, fileName).futureValue.left.value shouldBe an[UpstreamErrorResponse]
     }
   }
 
   "deleteObject" must {
     "delete an object" in {
-      val location = generateLocation()
+      val path     = generateString()
+      val fileName = generateString()
 
-      initDeleteObjectStub(location)
+      initDeleteObjectStub(path, fileName)
 
-      osClient.deleteObject(location).futureValue.right.value shouldBe (())
+      osClient.deleteObject(path, fileName).futureValue.right.value shouldBe (())
     }
 
     "return an exception if object-store response is not successful" in {
-      val location = generateLocation()
+      val path     = generateString()
+      val fileName = generateString()
 
-      initDeleteObjectStub(location, statusCode = 401)
+      initDeleteObjectStub(path, fileName, statusCode = 401)
 
-      osClient.deleteObject(location).futureValue.left.value shouldBe an[UpstreamErrorResponse]
+      osClient.deleteObject(path, fileName).futureValue.left.value shouldBe an[UpstreamErrorResponse]
     }
   }
 
   "listObject" must {
     "return a ObjectListing with objectSummaries" in {
-      val location = generateLocation()
+      val path = generateString()
 
-      initListObjectsStub(location, statusCode = 200, Some(objectListingJson))
+      initListObjectsStub(path, statusCode = 200, Some(objectListingJson))
 
-      osClient.listObjects(location).futureValue.right.value.objectSummaries shouldBe List(
+      osClient.listObjects(path).futureValue.right.value.objectSummaries shouldBe List(
         ObjectSummary(
           location      = "something/0993180f-8f31-41b2-905c-71f0273bb7d4",
           contentLength = 49,
@@ -273,19 +296,19 @@ class PlayObjectStoreClientEitherSpec
     }
 
     "return a ObjectListing with no objectSummaries" in {
-      val location = generateLocation()
+      val path = generateString()
 
-      initListObjectsStub(location, statusCode = 200, Some(emptyObjectListingJson))
+      initListObjectsStub(path, statusCode = 200, Some(emptyObjectListingJson))
 
-      osClient.listObjects(location).futureValue.right.value shouldBe ObjectListing(List.empty)
+      osClient.listObjects(path).futureValue.right.value shouldBe ObjectListing(List.empty)
     }
 
     "return an exception if object-store response is not successful" in {
-      val location = generateLocation()
+      val path = generateString()
 
-      initListObjectsStub(location, statusCode = 401, None)
+      initListObjectsStub(path, statusCode = 401, None)
 
-      osClient.listObjects(location).futureValue.left.value shouldBe an[UpstreamErrorResponse]
+      osClient.listObjects(path).futureValue.left.value shouldBe an[UpstreamErrorResponse]
     }
   }
 
@@ -300,7 +323,7 @@ class PlayObjectStoreClientEitherSpec
       source.map(_.utf8String).runReduce(_ + _).futureValue
   }
 
-  private def generateLocation(): String = UUID.randomUUID().toString
+  private def generateString(): String = UUID.randomUUID().toString
 
   private def toSource(body: String): Source[ByteString, NotUsed] =
     Source.single(ByteString(body.getBytes("UTF-8")))
@@ -330,8 +353,8 @@ class PlayObjectStoreClientEitherSpec
       |    "objects": []
       |}""".stripMargin
 
-  private def initPutObjectStub(location: String, statusCode: Int, reqBody: Array[Byte], md5Base64: String): Unit = {
-    val request = put(urlEqualTo(s"/object-store/object/$location"))
+  private def initPutObjectStub(path: String, fileName: String, statusCode: Int, reqBody: Array[Byte], md5Base64: String): Unit = {
+    val request = put(urlEqualTo(s"/object-store/object/$serviceName/$path/$fileName"))
       .withHeader("Authorization", equalTo("AuthorizationToken"))
       .withHeader("Content-Length", equalTo("49"))
       .withHeader("Content-Type", equalTo("application/octet-stream"))
@@ -344,9 +367,10 @@ class PlayObjectStoreClientEitherSpec
         .willReturn(response))
   }
 
-  private def initGetObjectStub(location: String, statusCode: Int, resBody: Option[String]): Unit = {
-    val request = get(urlEqualTo(s"/object-store/object/$location"))
+  private def initGetObjectStub(path: String, fileName: String, statusCode: Int, resBody: Option[String]): Unit = {
+    val request = get(urlEqualTo(s"/object-store/object/$serviceName/$path/$fileName"))
       .withHeader("Authorization", equalTo("AuthorizationToken"))
+
     val responseBuilder = aResponse.withStatus(statusCode)
     resBody.foreach { body =>
       responseBuilder
@@ -355,7 +379,7 @@ class PlayObjectStoreClientEitherSpec
         .withHeader("Content-Type", "application/octet-stream")
         .withHeader("Content-MD5", Md5Hash.fromBytes(body.getBytes))
         .withHeader("Last-Modified", "Tue, 18 Aug 2020 10:15:30 GMT")
-        .withHeader("Location", s"/object-store/object/$location")
+        .withHeader("Location", s"/object-store/object/$path/$fileName")
     }
 
     stubFor(
@@ -363,8 +387,8 @@ class PlayObjectStoreClientEitherSpec
         .willReturn(responseBuilder))
   }
 
-  private def initDeleteObjectStub(location: String, statusCode: Int = 200): Unit = {
-    val request = delete(urlEqualTo(s"/object-store/object/$location"))
+  private def initDeleteObjectStub(path: String, fileName: String, statusCode: Int = 200): Unit = {
+    val request = delete(urlEqualTo(s"/object-store/object/$serviceName/$path/$fileName"))
       .withHeader("Authorization", equalTo("AuthorizationToken"))
     val response = aResponse()
       .withStatus(statusCode)
@@ -374,8 +398,8 @@ class PlayObjectStoreClientEitherSpec
         .willReturn(response))
   }
 
-  private def initListObjectsStub(location: String, statusCode: Int, resBodyJson: Option[String]): Unit = {
-    val request = get(urlEqualTo(s"/object-store/list/$location"))
+  private def initListObjectsStub(path: String, statusCode: Int, resBodyJson: Option[String]): Unit = {
+    val request = get(urlEqualTo(s"/object-store/list/$serviceName/$path"))
       .withHeader("Authorization", equalTo("AuthorizationToken"))
 
     val responseBuilder = aResponse().withStatus(statusCode)

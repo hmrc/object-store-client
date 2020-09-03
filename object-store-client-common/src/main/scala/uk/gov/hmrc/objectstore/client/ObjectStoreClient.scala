@@ -35,34 +35,68 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
     ("Authorization", config.authorizationToken)
 
   private val url = s"${config.baseUrl}/object-store"
+  private val serviceName = config.serviceName
 
   def putObject[CONTENT](
-    location: String,
+    path    : String,
+    fileName: String,
     content : CONTENT
   )(implicit
     w: ObjectStoreContentWrite[F, CONTENT, REQ_BODY]
   ): F[Unit] =
+    putObject[CONTENT](path, fileName, content, serviceName)
+
+  def putObject[CONTENT](
+    path       : String,
+    fileName   : String,
+    content    : CONTENT,
+    serviceName: String
+  )(implicit
+    w: ObjectStoreContentWrite[F, CONTENT, REQ_BODY]
+  ): F[Unit] =
     F.flatMap(w.writeContent(content))(c =>
-      F.flatMap(client.put(s"$url/object/$location", c, List(authorizationHeader)))(
+      F.flatMap(client.put(s"$url/object/$serviceName/$path/$fileName", c, List(authorizationHeader)))(
         read.consume
       )
     )
 
   def getObject[CONTENT](
-    location: String
+    path    : String,
+    fileName: String
   )(implicit
     cr: ObjectStoreContentRead[F, RES_BODY, CONTENT]
   ): F[Option[Object[CONTENT]]] =
-    F.flatMap(client.get(s"$url/object/$location", List(authorizationHeader)))(res =>
+    getObject(path, fileName, serviceName)
+
+  def getObject[CONTENT](
+    path       : String,
+    fileName   : String,
+    serviceName: String
+  )(implicit
+    cr: ObjectStoreContentRead[F, RES_BODY, CONTENT]
+  ): F[Option[Object[CONTENT]]] = {
+    val location = s"$url/object/$serviceName/$path/$fileName"
+    F.flatMap(client.get(location, List(authorizationHeader)))(res =>
       F.flatMap(read.toObject(location, res)){
         case Some(obj) => F.map(cr.readContent(obj.content))(c => Some(obj.copy(content = c)))
         case None      => F.pure(None)
       }
     )
+  }
 
-  def deleteObject(location: String): F[Unit] =
-    F.flatMap(client.delete(s"$url/object/$location", List(authorizationHeader)))(read.consume)
+  def deleteObject(
+    path    : String,
+    fileName: String
+  ): F[Unit] =
+    deleteObject(path, fileName, serviceName)
 
-  def listObjects(location: String): F[ObjectListing] =
-    F.flatMap(client.get(s"$url/list/$location", List(authorizationHeader)))(read.toObjectListing)
+  def deleteObject(
+    path       : String,
+    fileName   : String,
+    serviceName: String
+  ): F[Unit] =
+    F.flatMap(client.delete(s"$url/object/$serviceName/$path/$fileName", List(authorizationHeader)))(read.consume)
+
+  def listObjects(path: String): F[ObjectListing] =
+    F.flatMap(client.get(s"$url/list/$serviceName/$path", List(authorizationHeader)))(read.toObjectListing)
 }
