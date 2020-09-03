@@ -20,12 +20,13 @@ import java.time.Instant
 
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{Reads, __}
+import uk.gov.hmrc.objectstore.client.model.Path
 import uk.gov.hmrc.objectstore.client.model.objectstore.{ObjectListing, ObjectSummary}
 
 object PlayFormats {
 
   val objectSummaryRead: Reads[ObjectSummary] =
-    ( (__ \ "location"     ).read[String].map(_.stripPrefix("/object-store/object/"))
+    ( (__ \ "location"     ).read[String].map(_.stripPrefix("/object-store/object/")).map(Path.File.apply)
     ~ (__ \ "contentLength").read[Long]
     ~ (__ \ "contentMD5"   ).read[String]
     ~ (__ \ "lastModified" ).read[Instant]

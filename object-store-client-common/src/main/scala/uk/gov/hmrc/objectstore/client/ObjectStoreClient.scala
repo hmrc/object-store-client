@@ -17,7 +17,7 @@
 package uk.gov.hmrc.objectstore.client
 
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
-import uk.gov.hmrc.objectstore.client.model.Monad
+import uk.gov.hmrc.objectstore.client.model.{Monad, Path}
 import uk.gov.hmrc.objectstore.client.model.http.{HttpClient, ObjectStoreContentRead, ObjectStoreContentWrite, ObjectStoreRead}
 import uk.gov.hmrc.objectstore.client.model.objectstore.{Object, ObjectListing}
 
@@ -35,47 +35,42 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
     ("Authorization", config.authorizationToken)
 
   private val url = s"${config.baseUrl}/object-store"
-  private val owner = config.owner
 
   def putObject[CONTENT](
-    path    : String,
-    fileName: String,
+    path    : Path.File,
     content : CONTENT
   )(implicit
     w: ObjectStoreContentWrite[F, CONTENT, REQ_BODY]
   ): F[Unit] =
-    putObject[CONTENT](path, fileName, content, owner)
+    putObject[CONTENT](path, content, config.owner)
 
   def putObject[CONTENT](
-    path       : String,
-    fileName   : String,
+    path       : Path.File,
     content    : CONTENT,
     owner      : String
   )(implicit
     w: ObjectStoreContentWrite[F, CONTENT, REQ_BODY]
   ): F[Unit] =
     F.flatMap(w.writeContent(content))(c =>
-      F.flatMap(client.put(s"$url/object/$owner/$path/$fileName", c, List(authorizationHeader)))(
+      F.flatMap(client.put(s"$url/object/$owner/${path.asUri}", c, List(authorizationHeader)))(
         read.consume
       )
     )
 
   def getObject[CONTENT](
-    path    : String,
-    fileName: String
+    path: Path.File
   )(implicit
     cr: ObjectStoreContentRead[F, RES_BODY, CONTENT]
   ): F[Option[Object[CONTENT]]] =
-    getObject(path, fileName, owner)
+    getObject(path, config.owner)
 
   def getObject[CONTENT](
-    path    : String,
-    fileName: String,
-    owner   : String
+    path : Path.File,
+    owner: String
   )(implicit
     cr: ObjectStoreContentRead[F, RES_BODY, CONTENT]
   ): F[Option[Object[CONTENT]]] = {
-    val location = s"$url/object/$owner/$path/$fileName"
+    val location = s"$url/object/$owner/${path.asUri}"
     F.flatMap(client.get(location, List(authorizationHeader)))(res =>
       F.flatMap(read.toObject(location, res)){
         case Some(obj) => F.map(cr.readContent(obj.content))(c => Some(obj.copy(content = c)))
@@ -85,18 +80,24 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
   }
 
   def deleteObject(
-    path    : String,
-    fileName: String
+    path: Path.File
   ): F[Unit] =
-    deleteObject(path, fileName, owner)
+    deleteObject(path, config.owner)
 
   def deleteObject(
-    path    : String,
-    fileName: String,
+    path: Path.File,
     owner   : String
   ): F[Unit] =
-    F.flatMap(client.delete(s"$url/object/$owner/$path/$fileName", List(authorizationHeader)))(read.consume)
+    F.flatMap(client.delete(s"$url/object/$owner/${path.asUri}", List(authorizationHeader)))(read.consume)
 
-  def listObjects(path: String): F[ObjectListing] =
-    F.flatMap(client.get(s"$url/list/$owner/$path", List(authorizationHeader)))(read.toObjectListing)
+  def listObjects(
+    path: Path.Directory
+  ): F[ObjectListing] =
+    listObjects(path, config.owner)
+
+  def listObjects(
+    path : Path.Directory,
+    owner: String
+  ): F[ObjectListing] =
+    F.flatMap(client.get(s"$url/list/$owner/${path.asUri}", List(authorizationHeader)))(read.toObjectListing)
 }

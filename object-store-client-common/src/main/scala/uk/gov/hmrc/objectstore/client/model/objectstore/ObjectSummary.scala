@@ -16,10 +16,12 @@
 
 package uk.gov.hmrc.objectstore.client.model.objectstore
 
+import uk.gov.hmrc.objectstore.client.model.Path
+
 import java.time.Instant
 
 final case class ObjectSummary(
-  location     : String,
+  location     : Path.File,
   contentLength: Long,
   contentMd5   : String,
   lastModified : Instant
