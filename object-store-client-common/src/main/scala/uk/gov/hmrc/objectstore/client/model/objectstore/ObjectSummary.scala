@@ -20,7 +20,6 @@ import java.time.Instant
 
 final case class ObjectSummary(
   location     : String,
-  contentType  : String,
   contentLength: Long,
   contentMd5   : String,
   lastModified : Instant
