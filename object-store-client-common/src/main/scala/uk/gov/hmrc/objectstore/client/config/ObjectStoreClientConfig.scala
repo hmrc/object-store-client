@@ -18,6 +18,6 @@ package uk.gov.hmrc.objectstore.client.config
 
 final case class ObjectStoreClientConfig(
   baseUrl           : String,
-  serviceName       : String,
+  owner             : String,
   authorizationToken: String
 )

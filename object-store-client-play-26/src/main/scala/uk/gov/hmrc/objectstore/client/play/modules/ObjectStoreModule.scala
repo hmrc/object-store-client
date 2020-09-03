@@ -34,7 +34,7 @@ private class ObjectStoreClientConfigProvider @Inject()(configuration: Configura
 
   override def get(): ObjectStoreClientConfig = ObjectStoreClientConfig(
     baseUrl            = getBaseUrl(configuration.underlying),
-    serviceName        = getServiceName(configuration.underlying),
+    owner              = getOwner(configuration.underlying),
     authorizationToken = getAuthorizationHeader(configuration.underlying)
   )
 
@@ -51,7 +51,7 @@ private class ObjectStoreClientConfigProvider @Inject()(configuration: Configura
     s"$protocol://$host:$port"
   }
 
-  private def getServiceName(config: Config): String =
+  private def getOwner(config: Config): String =
     config.getString("appName")
 
   private def getAuthorizationHeader(config: Config): String =

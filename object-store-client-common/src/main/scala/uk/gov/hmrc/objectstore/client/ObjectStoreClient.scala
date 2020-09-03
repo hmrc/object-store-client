@@ -35,7 +35,7 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
     ("Authorization", config.authorizationToken)
 
   private val url = s"${config.baseUrl}/object-store"
-  private val serviceName = config.serviceName
+  private val owner = config.owner
 
   def putObject[CONTENT](
     path    : String,
@@ -44,18 +44,18 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
   )(implicit
     w: ObjectStoreContentWrite[F, CONTENT, REQ_BODY]
   ): F[Unit] =
-    putObject[CONTENT](path, fileName, content, serviceName)
+    putObject[CONTENT](path, fileName, content, owner)
 
   def putObject[CONTENT](
     path       : String,
     fileName   : String,
     content    : CONTENT,
-    serviceName: String
+    owner      : String
   )(implicit
     w: ObjectStoreContentWrite[F, CONTENT, REQ_BODY]
   ): F[Unit] =
     F.flatMap(w.writeContent(content))(c =>
-      F.flatMap(client.put(s"$url/object/$serviceName/$path/$fileName", c, List(authorizationHeader)))(
+      F.flatMap(client.put(s"$url/object/$owner/$path/$fileName", c, List(authorizationHeader)))(
         read.consume
       )
     )
@@ -66,16 +66,16 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
   )(implicit
     cr: ObjectStoreContentRead[F, RES_BODY, CONTENT]
   ): F[Option[Object[CONTENT]]] =
-    getObject(path, fileName, serviceName)
+    getObject(path, fileName, owner)
 
   def getObject[CONTENT](
-    path       : String,
-    fileName   : String,
-    serviceName: String
+    path    : String,
+    fileName: String,
+    owner   : String
   )(implicit
     cr: ObjectStoreContentRead[F, RES_BODY, CONTENT]
   ): F[Option[Object[CONTENT]]] = {
-    val location = s"$url/object/$serviceName/$path/$fileName"
+    val location = s"$url/object/$owner/$path/$fileName"
     F.flatMap(client.get(location, List(authorizationHeader)))(res =>
       F.flatMap(read.toObject(location, res)){
         case Some(obj) => F.map(cr.readContent(obj.content))(c => Some(obj.copy(content = c)))
@@ -88,15 +88,15 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
     path    : String,
     fileName: String
   ): F[Unit] =
-    deleteObject(path, fileName, serviceName)
+    deleteObject(path, fileName, owner)
 
   def deleteObject(
-    path       : String,
-    fileName   : String,
-    serviceName: String
+    path    : String,
+    fileName: String,
+    owner   : String
   ): F[Unit] =
-    F.flatMap(client.delete(s"$url/object/$serviceName/$path/$fileName", List(authorizationHeader)))(read.consume)
+    F.flatMap(client.delete(s"$url/object/$owner/$path/$fileName", List(authorizationHeader)))(read.consume)
 
   def listObjects(path: String): F[ObjectListing] =
-    F.flatMap(client.get(s"$url/list/$serviceName/$path", List(authorizationHeader)))(read.toObjectListing)
+    F.flatMap(client.get(s"$url/list/$owner/$path", List(authorizationHeader)))(read.toObjectListing)
 }

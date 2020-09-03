@@ -54,13 +54,13 @@ class PlayObjectStoreClientSpec
 
   protected val osClient: PlayObjectStoreClient = fakeApplication().injector.instanceOf(classOf[PlayObjectStoreClient])
 
-  lazy val serviceName = "my-service"
+  lazy val owner = "my-service"
 
   override def fakeApplication(): Application =
     new GuiceApplicationBuilder()
       .overrides(bind[ObjectStoreClientConfig].toInstance(ObjectStoreClientConfig(
           baseUrl            = wireMockUrl,
-          serviceName        = serviceName,
+          owner              = owner,
           authorizationToken = "AuthorizationToken"
         )))
       .build()
@@ -354,7 +354,7 @@ class PlayObjectStoreClientSpec
       |}""".stripMargin
 
   private def initPutObjectStub(path: String, fileName: String, statusCode: Int, reqBody: Array[Byte], md5Base64: String): Unit = {
-    val request = put(urlEqualTo(s"/object-store/object/$serviceName/$path/$fileName"))
+    val request = put(urlEqualTo(s"/object-store/object/$owner/$path/$fileName"))
       .withHeader("Authorization", equalTo("AuthorizationToken"))
       .withHeader("Content-Length", equalTo("49"))
       .withHeader("Content-Type", equalTo("application/octet-stream"))
@@ -368,7 +368,7 @@ class PlayObjectStoreClientSpec
   }
 
   private def initGetObjectStub(path: String, fileName: String, statusCode: Int, resBody: Option[String]): Unit = {
-    val request = get(urlEqualTo(s"/object-store/object/$serviceName/$path/$fileName"))
+    val request = get(urlEqualTo(s"/object-store/object/$owner/$path/$fileName"))
       .withHeader("Authorization", equalTo("AuthorizationToken"))
 
     val responseBuilder = aResponse.withStatus(statusCode)
@@ -388,7 +388,7 @@ class PlayObjectStoreClientSpec
   }
 
   private def initDeleteObjectStub(path: String, fileName: String, statusCode: Int = 200): Unit = {
-    val request = delete(urlEqualTo(s"/object-store/object/$serviceName/$path/$fileName"))
+    val request = delete(urlEqualTo(s"/object-store/object/$owner/$path/$fileName"))
       .withHeader("Authorization", equalTo("AuthorizationToken"))
     val response = aResponse()
       .withStatus(statusCode)
@@ -399,7 +399,7 @@ class PlayObjectStoreClientSpec
   }
 
   private def initListObjectsStub(path: String, statusCode: Int, resBodyJson: Option[String]): Unit = {
-    val request = get(urlEqualTo(s"/object-store/list/$serviceName/$path"))
+    val request = get(urlEqualTo(s"/object-store/list/$owner/$path"))
       .withHeader("Authorization", equalTo("AuthorizationToken"))
 
     val responseBuilder = aResponse().withStatus(statusCode)
