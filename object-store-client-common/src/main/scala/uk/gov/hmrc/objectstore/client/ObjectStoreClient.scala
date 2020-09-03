@@ -24,7 +24,7 @@ import uk.gov.hmrc.objectstore.client.model.objectstore.{Object, ObjectListing}
 import scala.language.higherKinds
 
 class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
-  client: HttpClient[REQ_BODY, RES],
+  client: HttpClient[F, REQ_BODY, RES],
   read  : ObjectStoreRead[F, RES, RES_BODY],
   config: ObjectStoreClientConfig
 )(implicit
@@ -42,8 +42,10 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
   )(implicit
     w: ObjectStoreContentWrite[F, CONTENT, REQ_BODY]
   ): F[Unit] =
-    F.flatMap(w.writeContent(content))(
-      c => read.consume(client.put(s"$url/object/$location", c, List(authorizationHeader)))
+    F.flatMap(w.writeContent(content))(c =>
+      F.flatMap(client.put(s"$url/object/$location", c, List(authorizationHeader)))(
+        read.consume
+      )
     )
 
   def getObject[CONTENT](
@@ -51,12 +53,16 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
   )(implicit
     cr: ObjectStoreContentRead[F, RES_BODY, CONTENT]
   ): F[Option[Object[CONTENT]]] =
-    cr.readContent(read.toObject(location, client.get(s"$url/object/$location", List(authorizationHeader))))
+    F.flatMap(client.get(s"$url/object/$location", List(authorizationHeader)))(res =>
+      F.flatMap(read.toObject(location, res)){
+        case Some(obj) => F.map(cr.readContent(obj.content))(c => Some(obj.copy(content = c)))
+        case None      => F.pure(None)
+      }
+    )
 
-  def deleteObject(location: String): F[Unit] = {
-    read.consume(client.delete(s"$url/object/$location", List(authorizationHeader)))
-  }
+  def deleteObject(location: String): F[Unit] =
+    F.flatMap(client.delete(s"$url/object/$location", List(authorizationHeader)))(read.consume)
 
   def listObjects(location: String): F[ObjectListing] =
-    read.toObjectListing(client.get(s"$url/list/$location", List(authorizationHeader)))
+    F.flatMap(client.get(s"$url/list/$location", List(authorizationHeader)))(read.toObjectListing)
 }

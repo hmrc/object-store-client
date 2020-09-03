@@ -16,28 +16,23 @@
 
 package uk.gov.hmrc.objectstore.client.model.http
 
-import uk.gov.hmrc.objectstore.client.model.objectstore.Object
 import uk.gov.hmrc.objectstore.client.model.{Functor, Monad}
 
 import scala.language.higherKinds
 
 trait ObjectStoreContentRead[F[_], RES_BODY, CONTENT] { outer =>
 
-  def readContent(response: F[Option[Object[RES_BODY]]]): F[Option[Object[CONTENT]]]
+  def readContent(response: RES_BODY): F[CONTENT]
 
   def map[CONTENT2](fn: CONTENT => CONTENT2)(implicit F: Functor[F]): ObjectStoreContentRead[F, RES_BODY, CONTENT2] =
     new ObjectStoreContentRead[F, RES_BODY, CONTENT2] {
-      override def readContent(response: F[Option[Object[RES_BODY]]]): F[Option[Object[CONTENT2]]] = {
-        F.map(outer.readContent(response))(_.map(obj => obj.copy(content = fn(obj.content))))
-      }
+      override def readContent(response: RES_BODY): F[CONTENT2] =
+        F.map(outer.readContent(response))(fn)
     }
 
   def mapF[CONTENT2](fn: CONTENT => F[CONTENT2])(implicit F: Monad[F]): ObjectStoreContentRead[F, RES_BODY, CONTENT2] =
     new ObjectStoreContentRead[F, RES_BODY, CONTENT2] {
-      override def readContent(response: F[Option[Object[RES_BODY]]]): F[Option[Object[CONTENT2]]] =
-        F.flatMap(outer.readContent(response)) {
-          case Some(obj) => F.map(fn(obj.content))(content => Some(obj.copy(content = content)))
-          case _ => F.pure(None)
-        }
+      override def readContent(response: RES_BODY): F[CONTENT2] =
+        F.flatMap(outer.readContent(response))(fn)
     }
 }
