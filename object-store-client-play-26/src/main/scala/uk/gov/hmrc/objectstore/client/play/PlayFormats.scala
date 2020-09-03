@@ -26,7 +26,6 @@ object PlayFormats {
 
   val objectSummaryRead: Reads[ObjectSummary] =
     ( (__ \ "location"     ).read[String].map(_.stripPrefix("/object-store/object/"))
-    ~ (__ \ "contentType"  ).read[String]
     ~ (__ \ "contentLength").read[Long]
     ~ (__ \ "contentMD5"   ).read[String]
     ~ (__ \ "lastModified" ).read[Instant]
