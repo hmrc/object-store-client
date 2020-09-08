@@ -19,13 +19,22 @@ package uk.gov.hmrc.objectstore.client.play
 import java.time.Instant
 
 import play.api.libs.functional.syntax._
-import play.api.libs.json.{Reads, __}
+import play.api.libs.json.{Format, Reads, __}
+import uk.gov.hmrc.objectstore.client.model.Path
 import uk.gov.hmrc.objectstore.client.model.objectstore.{ObjectListing, ObjectSummary}
 
 object PlayFormats {
 
+  val directoryFormat: Format[Path.Directory] =
+    implicitly[Format[String]]
+      .inmap(Path.Directory.apply, _.asUri)
+
+  val fileFormat: Format[Path.File] =
+    implicitly[Format[String]]
+      .inmap(Path.File.apply, _.asUri)
+
   val objectSummaryRead: Reads[ObjectSummary] =
-    ( (__ \ "location"     ).read[String].map(_.stripPrefix("/object-store/object/"))
+    ( (__ \ "location"     ).read[String].map(_.stripPrefix("/object-store/object/")).map(Path.File.apply)
     ~ (__ \ "contentLength").read[Long]
     ~ (__ \ "contentMD5"   ).read[String]
     ~ (__ \ "lastModified" ).read[Instant]

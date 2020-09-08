@@ -34,6 +34,7 @@ private class ObjectStoreClientConfigProvider @Inject()(configuration: Configura
 
   override def get(): ObjectStoreClientConfig = ObjectStoreClientConfig(
     baseUrl            = getBaseUrl(configuration.underlying),
+    owner              = getOwner(configuration.underlying),
     authorizationToken = getAuthorizationHeader(configuration.underlying)
   )
 
@@ -50,6 +51,9 @@ private class ObjectStoreClientConfigProvider @Inject()(configuration: Configura
     s"$protocol://$host:$port"
   }
 
+  private def getOwner(config: Config): String =
+    config.getString("appName")
+
   private def getAuthorizationHeader(config: Config): String =
-    config.getConfig("internal-auth").getString("token")
+    config.getString("internal-auth.token")
 }
