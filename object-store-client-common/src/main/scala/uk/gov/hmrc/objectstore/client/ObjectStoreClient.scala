@@ -16,10 +16,9 @@
 
 package uk.gov.hmrc.objectstore.client
 
+import uk.gov.hmrc.objectstore.client.category.Monad
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
-import uk.gov.hmrc.objectstore.client.model.{Monad, Path}
-import uk.gov.hmrc.objectstore.client.model.http.{HttpClient, ObjectStoreContentRead, ObjectStoreContentWrite, ObjectStoreRead}
-import uk.gov.hmrc.objectstore.client.model.objectstore.{Object, ObjectListing}
+import uk.gov.hmrc.objectstore.client.http.{HttpClient, ObjectStoreContentRead, ObjectStoreContentWrite, ObjectStoreRead}
 
 import scala.language.higherKinds
 

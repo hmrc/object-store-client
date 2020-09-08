@@ -14,15 +14,17 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.objectstore.client.model.http
+package uk.gov.hmrc.objectstore.client.http
 
-trait HttpClient[F[_], BODY, RES] {
+import uk.gov.hmrc.objectstore.client.{Object, ObjectListing}
 
-  def put(url: String, body: BODY, headers: List[(String, String)]): F[RES]
+import scala.language.higherKinds
 
-  def post(url: String, body: BODY, headers: List[(String, String)]): F[RES]
+trait ObjectStoreRead[F[_], RES, RES_BODY] { self =>
 
-  def get(url: String, headers: List[(String, String)]): F[RES]
+  def toObjectListing(response: RES): F[ObjectListing]
 
-  def delete(url: String, headers: List[(String, String)]): F[RES]
+  def toObject(location: String, response: RES): F[Option[Object[RES_BODY]]]
+
+  def consume(response: RES): F[Unit]
 }

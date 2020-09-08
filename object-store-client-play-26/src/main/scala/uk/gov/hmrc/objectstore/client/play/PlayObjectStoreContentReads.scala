@@ -21,7 +21,7 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import play.api.libs.json.{JsResult, JsValue, Json, Reads}
-import uk.gov.hmrc.objectstore.client.model.http.ObjectStoreContentRead
+import uk.gov.hmrc.objectstore.client.http.ObjectStoreContentRead
 
 import scala.util.{Failure, Success, Try}
 

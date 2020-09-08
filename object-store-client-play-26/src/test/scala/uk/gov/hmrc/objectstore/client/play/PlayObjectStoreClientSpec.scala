@@ -33,10 +33,9 @@ import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
+import uk.gov.hmrc.objectstore.client.{ObjectListing, ObjectSummary, Path}
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
-import uk.gov.hmrc.objectstore.client.model.Path
-import uk.gov.hmrc.objectstore.client.model.http.Payload
-import uk.gov.hmrc.objectstore.client.model.objectstore.{ObjectListing, ObjectSummary}
+import uk.gov.hmrc.objectstore.client.http.Payload
 
 import scala.concurrent.ExecutionContextExecutor
 

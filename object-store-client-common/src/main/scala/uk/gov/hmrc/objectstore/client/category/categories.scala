@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.objectstore.client.model
+package uk.gov.hmrc.objectstore.client.category
 
 import scala.annotation.implicitNotFound
 import scala.language.higherKinds
