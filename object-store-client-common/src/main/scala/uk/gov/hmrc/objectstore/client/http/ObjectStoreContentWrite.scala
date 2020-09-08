@@ -20,22 +20,26 @@ import uk.gov.hmrc.objectstore.client.category.Monad
 
 import scala.annotation.implicitNotFound
 
-case class Payload[CONTENT](length: Long, md5Hash: String, content: CONTENT)
+case class Payload[CONTENT](
+  length : Long,
+  md5Hash: String,
+  content: CONTENT
+)
 
 @implicitNotFound("""No implicits found for ObjectStoreContentWrite[${F}, ${CONTENT}, ${BODY}].
 If you are using a Source[ByteString, _], you may be missing an implicit Materializer""")
 trait ObjectStoreContentWrite[F[_], CONTENT, BODY] { outer =>
-  def writeContent(content: CONTENT): F[BODY]
+  def writeContent(content: CONTENT, contentType: Option[String]): F[BODY]
 
   def contramap[CONTENT2](f: CONTENT2 => CONTENT): ObjectStoreContentWrite[F, CONTENT2, BODY] =
     new ObjectStoreContentWrite[F, CONTENT2, BODY] {
-      override def writeContent(content: CONTENT2): F[BODY] =
-        outer.writeContent(f(content))
+      override def writeContent(content: CONTENT2, contentType: Option[String]): F[BODY] =
+        outer.writeContent(f(content), contentType)
     }
 
   def contramapF[CONTENT2](f: CONTENT2 => F[CONTENT])(implicit F: Monad[F]): ObjectStoreContentWrite[F, CONTENT2, BODY] =
     new ObjectStoreContentWrite[F, CONTENT2, BODY] {
-      override def writeContent(content: CONTENT2): F[BODY] =
-        F.flatMap(f(content))(outer.writeContent)
+      override def writeContent(content: CONTENT2, contentType: Option[String]): F[BODY] =
+        F.flatMap(f(content))(c => outer.writeContent(c, contentType))
     }
 }

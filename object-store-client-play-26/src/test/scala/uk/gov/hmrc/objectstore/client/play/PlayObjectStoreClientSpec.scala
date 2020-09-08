@@ -149,9 +149,21 @@ class PlayObjectStoreClientSpec
       val md5Base64 = Md5Hash.fromBytes(body.getBytes)
       val owner     = "my-owner"
 
-      initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner)
+      initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner = owner)
 
-      osClient.putObject(path, body, owner).futureValue shouldBe (())
+      osClient.putObject(path, body, owner = owner).futureValue shouldBe (())
+    }
+
+    "store an object with a specified content-type" in {
+      val body      = s"hello world! ${UUID.randomUUID().toString}"
+      val path      = generateFilePath()
+      val md5Base64 = Md5Hash.fromBytes(body.getBytes)
+      val contentType = "application/mycontenttype"
+      val owner     = "my-owner"
+
+      initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, contentType, owner)
+
+      osClient.putObject(path, body, contentType = Some(contentType), owner = owner).futureValue shouldBe (())
     }
   }
 
@@ -373,14 +385,12 @@ class PlayObjectStoreClientSpec
       |  "objects": [
       |    {
       |      "location": "/object-store/object/something/0993180f-8f31-41b2-905c-71f0273bb7d4",
-      |      "contentType": "application/json",
       |      "contentLength": 49,
       |      "contentMD5": "4033ff85a6fdc6a2f51e60d89236a244",
       |      "lastModified": "2020-07-21T13:16:42.859Z"
       |    },
       |    {
       |      "location": "/object-store/object/something/23265eab-268e-4fcc-904f-775586b362c2",
-      |      "contentType": "application/json",
       |      "contentLength": 49,
       |      "contentMD5": "a3c2f1e38701bd2c7b54ebd7b1cd0dbc",
       |      "lastModified": "2020-07-21T13:16:41.226Z"
@@ -398,12 +408,13 @@ class PlayObjectStoreClientSpec
     statusCode: Int,
     reqBody   : Array[Byte],
     md5Base64 : String,
+    contentType: String = "application/octet-stream",
     owner     : String = defaultOwner
   ): Unit = {
     val request = put(urlEqualTo(s"/object-store/object/$owner/${path.asUri}"))
       .withHeader("Authorization", equalTo("AuthorizationToken"))
       .withHeader("Content-Length", equalTo("49"))
-      .withHeader("Content-Type", equalTo("application/octet-stream"))
+      .withHeader("Content-Type", equalTo(contentType))
       .withHeader("Content-MD5", equalTo(md5Base64))
       .withRequestBody(binaryEqualTo(reqBody))
 

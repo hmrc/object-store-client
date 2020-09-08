@@ -25,18 +25,22 @@ import akka.util.ByteString
 import play.api.libs.Files.SingletonTemporaryFileCreator
 import play.api.libs.ws.WSRequest
 import uk.gov.hmrc.objectstore.client.http.{ObjectStoreContentWrite, Payload}
+import play.api.libs.ws.BodyWritable
 
 import scala.concurrent.ExecutionContext
 
 trait PlayObjectStoreContentWrites {
+  private def bodyWritable[T](contentType: Option[String])(implicit bw: BodyWritable[T]): BodyWritable[T] =
+    contentType.fold(bw)(ct => BodyWritable(bw.transform, ct))
+
   implicit def payloadAkkaSourceContentWrite[F[_], Mat <: Any](implicit F: PlayMonad[F]): ObjectStoreContentWrite[F, Payload[Source[ByteString, Mat]], Request] =
     new ObjectStoreContentWrite[F, Payload[Source[ByteString, Mat]], Request] {
-      override def writeContent(payload: Payload[Source[ByteString, Mat]]): F[Request] =
+      override def writeContent(payload: Payload[Source[ByteString, Mat]], contentType: Option[String]): F[Request] =
         F.pure(
           HttpBody(
             length    = Some(payload.length),
             md5       = Some(payload.md5Hash),
-            writeBody = (req: WSRequest) => req.withBody(payload.content),
+            writeBody = (req: WSRequest) => req.withBody(payload.content)(bodyWritable(contentType)),
             release   = () => ()
           )
         )
@@ -53,7 +57,7 @@ trait PlayObjectStoreContentWrites {
 
   implicit def akkaSourceContentWrite[F[_], Mat <: Any](implicit ec: ExecutionContext, m: Materializer, F: PlayMonad[F]): ObjectStoreContentWrite[F, Source[ByteString, Mat], Request] =
     new ObjectStoreContentWrite[F, Source[ByteString, Mat], Request] {
-      override def writeContent(content: Source[ByteString, Mat]): F[Request] = {
+      override def writeContent(content: Source[ByteString, Mat], contentType: Option[String]): F[Request] = {
         val tempFile = SingletonTemporaryFileCreator.create()
 
         val (uploadFinished, md5Finished) =
@@ -71,7 +75,7 @@ trait PlayObjectStoreContentWrites {
             HttpBody(
               length    = Some(tempFile.path.toFile.length),
               md5       = Some(md5Hash),
-              writeBody = (req: WSRequest) => req.withBody(tempFile.path.toFile),
+              writeBody = (req: WSRequest) => req.withBody(tempFile.path.toFile)(bodyWritable(contentType)),
               release   = () => SingletonTemporaryFileCreator.delete(tempFile)
             )
         )
