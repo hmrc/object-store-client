@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.objectstore.client.model
 
-import java.net.URLEncoder
+import java.net.{URLDecoder, URLEncoder}
 
 sealed trait Path { def asUri: String }
 
@@ -24,6 +24,9 @@ object Path {
   case class Directory(value: String) extends Path {
     override def asUri: String =
       if (value.endsWith("/")) value else value + "/"
+
+    def file(fileName: String): File =
+      File(this, fileName)
   }
 
   case class File(directory: Directory, fileName: String) extends Path {
@@ -34,9 +37,9 @@ object Path {
   }
 
   object File {
-    def apply(location: String): Path.File = {
-      val (directory, fileName) = location.splitAt(location.lastIndexOf("/"))
-      Path.File(Path.Directory(directory), fileName.stripPrefix("/"))
+    def apply(uri: String): Path.File = {
+      val (directory, fileName) = uri.splitAt(uri.lastIndexOf("/"))
+      Path.File(Path.Directory(directory), URLDecoder.decode(fileName.stripPrefix("/"), "UTF-8"))
     }
   }
 }
