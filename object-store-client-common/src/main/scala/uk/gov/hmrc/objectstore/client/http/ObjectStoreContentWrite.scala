@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.objectstore.client.model.http
+package uk.gov.hmrc.objectstore.client.http
 
-import uk.gov.hmrc.objectstore.client.model.Monad
+import uk.gov.hmrc.objectstore.client.category.Monad
 
 import scala.annotation.implicitNotFound
 

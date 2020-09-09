@@ -21,7 +21,7 @@ import java.util.concurrent.TimeoutException
 
 import play.api.Logger
 import play.api.libs.ws.{WSClient, WSRequest, WSResponse}
-import uk.gov.hmrc.objectstore.client.model.http.HttpClient
+import uk.gov.hmrc.objectstore.client.http.HttpClient
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.ExecutionContext

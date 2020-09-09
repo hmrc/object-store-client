@@ -24,8 +24,8 @@ import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import play.api.http.Status
 import play.api.libs.json.{JsError, JsSuccess, JsValue}
-import uk.gov.hmrc.objectstore.client.model.http.ObjectStoreRead
-import uk.gov.hmrc.objectstore.client.model.objectstore.{Object, ObjectListing, ObjectMetadata}
+import uk.gov.hmrc.objectstore.client.{Object, ObjectListing, ObjectMetadata}
+import uk.gov.hmrc.objectstore.client.http.ObjectStoreRead
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}

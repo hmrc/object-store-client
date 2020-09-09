@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.objectstore.client.model.http
+package uk.gov.hmrc.objectstore.client.http
 
-import uk.gov.hmrc.objectstore.client.model.{Functor, Monad}
+import uk.gov.hmrc.objectstore.client.category.{Functor, Monad}
 
 import scala.language.higherKinds
 

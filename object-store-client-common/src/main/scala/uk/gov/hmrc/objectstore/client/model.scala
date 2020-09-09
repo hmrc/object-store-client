@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.objectstore.client.model
+package uk.gov.hmrc.objectstore.client
 
 import java.net.{URLDecoder, URLEncoder}
+import java.time.Instant
 
 sealed trait Path { def asUri: String }
 
@@ -43,3 +44,29 @@ object Path {
     }
   }
 }
+
+
+case class Object[CONTENT](
+  location: String,
+  content : CONTENT,
+  metadata: ObjectMetadata
+)
+
+final case class ObjectListing(
+  objectSummaries: List[ObjectSummary]
+)
+
+final case class ObjectMetadata(
+  contentType  : String,
+  contentLength: Long,
+  contentMd5   : String,
+  lastModified : Instant,
+  userMetadata : Map[String, String]
+)
+
+final case class ObjectSummary(
+  location     : Path.File,
+  contentLength: Long,
+  contentMd5   : String,
+  lastModified : Instant
+)

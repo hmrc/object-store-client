@@ -20,8 +20,7 @@ import java.time.Instant
 
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{Format, Reads, __}
-import uk.gov.hmrc.objectstore.client.model.Path
-import uk.gov.hmrc.objectstore.client.model.objectstore.{ObjectListing, ObjectSummary}
+import uk.gov.hmrc.objectstore.client.{ObjectListing, ObjectSummary, Path}
 
 object PlayFormats {
 

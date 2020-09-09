@@ -24,7 +24,7 @@ import akka.stream.scaladsl.{Broadcast, FileIO, Flow, GraphDSL, RunnableGraph, S
 import akka.util.ByteString
 import play.api.libs.Files.SingletonTemporaryFileCreator
 import play.api.libs.ws.WSRequest
-import uk.gov.hmrc.objectstore.client.model.http.{ObjectStoreContentWrite, Payload}
+import uk.gov.hmrc.objectstore.client.http.{ObjectStoreContentWrite, Payload}
 
 import scala.concurrent.ExecutionContext
 

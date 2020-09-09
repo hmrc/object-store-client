@@ -20,7 +20,7 @@ import _root_.play.api.libs.ws.{WSRequest, WSResponse}
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import uk.gov.hmrc.objectstore.client.model.{Monad, MonadError}
+import uk.gov.hmrc.objectstore.client.category.{Monad, MonadError}
 
 import scala.concurrent.Future
 
