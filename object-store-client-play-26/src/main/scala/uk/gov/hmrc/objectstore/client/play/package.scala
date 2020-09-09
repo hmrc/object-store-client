@@ -49,7 +49,12 @@ package play {
 
   // TODO move this into common (and empty implementation) ?
   // relationship with Payload?
-  case class HttpBody[BODY](length: Option[Long], md5: Option[String], writeBody: BODY, release: () => Unit)
+  case class HttpBody[BODY](
+    length   : Option[Long],
+    md5      : Option[String],
+    writeBody: BODY,
+    release  : () => Unit
+  )
 
   // the play implementation operates over Future - this allows us to embed any Future into the operating F
   // without requiring a full Monad Transformer stack

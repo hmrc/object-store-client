@@ -36,36 +36,22 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
   private val url = s"${config.baseUrl}/object-store"
 
   def putObject[CONTENT](
-    path    : Path.File,
-    content : CONTENT
-  )(implicit
-    w: ObjectStoreContentWrite[F, CONTENT, REQ_BODY]
-  ): F[Unit] =
-    putObject[CONTENT](path, content, config.owner)
-
-  def putObject[CONTENT](
     path       : Path.File,
     content    : CONTENT,
-    owner      : String
+    contentType: Option[String] = None,
+    owner      : String         = config.owner
   )(implicit
     w: ObjectStoreContentWrite[F, CONTENT, REQ_BODY]
   ): F[Unit] =
-    F.flatMap(w.writeContent(content))(c =>
+    F.flatMap(w.writeContent(content, contentType))(c =>
       F.flatMap(client.put(s"$url/object/$owner/${path.asUri}", c, List(authorizationHeader)))(
         read.consume
       )
     )
 
   def getObject[CONTENT](
-    path: Path.File
-  )(implicit
-    cr: ObjectStoreContentRead[F, RES_BODY, CONTENT]
-  ): F[Option[Object[CONTENT]]] =
-    getObject(path, config.owner)
-
-  def getObject[CONTENT](
     path : Path.File,
-    owner: String
+    owner: String    = config.owner
   )(implicit
     cr: ObjectStoreContentRead[F, RES_BODY, CONTENT]
   ): F[Option[Object[CONTENT]]] = {
@@ -79,24 +65,14 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
   }
 
   def deleteObject(
-    path: Path.File
-  ): F[Unit] =
-    deleteObject(path, config.owner)
-
-  def deleteObject(
-    path: Path.File,
-    owner   : String
+    path : Path.File,
+    owner: String    = config.owner
   ): F[Unit] =
     F.flatMap(client.delete(s"$url/object/$owner/${path.asUri}", List(authorizationHeader)))(read.consume)
 
   def listObjects(
-    path: Path.Directory
-  ): F[ObjectListing] =
-    listObjects(path, config.owner)
-
-  def listObjects(
     path : Path.Directory,
-    owner: String
+    owner: String    = config.owner
   ): F[ObjectListing] =
     F.flatMap(client.get(s"$url/list/$owner/${path.asUri}", List(authorizationHeader)))(read.toObjectListing)
 }
