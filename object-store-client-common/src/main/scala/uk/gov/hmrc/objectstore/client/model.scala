@@ -34,7 +34,7 @@ object Path {
     if (fileName.isEmpty) throw new IllegalArgumentException(s"fileName cannot be empty")
 
     override def asUri: String =
-      s"$directory/${URLEncoder.encode(fileName, "UTF-8")}"
+      s"${directory.asUri}${URLEncoder.encode(fileName, "UTF-8")}"
   }
 
   object File {
@@ -45,10 +45,9 @@ object Path {
   }
 }
 
-
 case class Object[CONTENT](
   location: String,
-  content : CONTENT,
+  content: CONTENT,
   metadata: ObjectMetadata
 )
 
@@ -57,16 +56,16 @@ final case class ObjectListing(
 )
 
 final case class ObjectMetadata(
-  contentType  : String,
+  contentType: String,
   contentLength: Long,
-  contentMd5   : String,
-  lastModified : Instant,
-  userMetadata : Map[String, String]
+  contentMd5: String,
+  lastModified: Instant,
+  userMetadata: Map[String, String]
 )
 
 final case class ObjectSummary(
-  location     : Path.File,
+  location: Path.File,
   contentLength: Long,
-  contentMd5   : String,
-  lastModified : Instant
+  contentMd5: String,
+  lastModified: Instant
 )
