@@ -35,6 +35,7 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
 
   private val url = s"${config.baseUrl}/object-store"
 
+  /** Storing an object on an existing path will overwrite the previously stored object on that path. */
   def putObject[CONTENT](
     path       : Path.File,
     content    : CONTENT,
