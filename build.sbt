@@ -6,18 +6,12 @@ val name      = "object-store-client"
 val scala2_11 = "2.11.12"
 val scala2_12 = "2.12.10"
 
-lazy val commonResolvers = Seq(
-  Resolver.bintrayRepo("hmrc", "releases"),
-  Resolver.typesafeRepo("releases")
-)
-
 lazy val commonSettings = Seq(
   organization := "uk.gov.hmrc.objectstore",
   majorVersion := 0,
   scalaVersion := scala2_12,
   crossScalaVersions := Seq(scala2_11, scala2_12),
   makePublicallyAvailableOnBintray := true,
-  resolvers := commonResolvers
 )
 
 lazy val library = Project(name, file("."))
