@@ -36,7 +36,7 @@ import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 import uk.gov.hmrc.objectstore.client.http.Payload
 import uk.gov.hmrc.objectstore.client.utils.DirectoryUtils._
 import uk.gov.hmrc.objectstore.client.wiremock.WireMockHelper
-import uk.gov.hmrc.objectstore.client.wiremock.stubs.ObjectStoreStubs._
+import uk.gov.hmrc.objectstore.client.wiremock.ObjectStoreStubs._
 import uk.gov.hmrc.objectstore.client.{ObjectListing, ObjectSummary, Path}
 
 import scala.concurrent.ExecutionContextExecutor

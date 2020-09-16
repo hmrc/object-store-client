@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.objectstore.client.wiremock.stubs
+package uk.gov.hmrc.objectstore.client.wiremock
 
-import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, binaryEqualTo, delete, equalTo, get, put, stubFor, urlEqualTo}
+import com.github.tomakehurst.wiremock.client.WireMock._
 import uk.gov.hmrc.objectstore.client.Path
 import uk.gov.hmrc.objectstore.client.play.Md5Hash
 
