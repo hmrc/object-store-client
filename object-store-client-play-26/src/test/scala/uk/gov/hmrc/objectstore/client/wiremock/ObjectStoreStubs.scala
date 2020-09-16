@@ -43,13 +43,8 @@ object ObjectStoreStubs {
         .willReturn(response))
   }
 
-  def initListObjectsStub(
-    path: String,
-    statusCode: Int,
-    resBodyJson: Option[String],
-    owner: String
-  ): Unit = {
-    val request = get(urlEqualTo(s"/object-store/list/$owner/$path"))
+  def initListObjectsStub(path: String, statusCode: Int, resBodyJson: Option[String]) = {
+    val request = get(urlEqualTo(s"/object-store/list/$path"))
       .withHeader("Authorization", equalTo("AuthorizationToken"))
 
     val responseBuilder = aResponse().withStatus(statusCode)
@@ -61,7 +56,15 @@ object ObjectStoreStubs {
     stubFor(
       request
         .willReturn(responseBuilder))
+
   }
+
+  def initListObjectsStub(
+    path: Path.Directory,
+    statusCode: Int,
+    resBodyJson: Option[String],
+    owner: String
+  ): Unit = initListObjectsStub(path = s"$owner/${path.asUri}/", statusCode, resBodyJson)
 
   def initDeleteObjectStub(
     path: Path.File,
@@ -97,6 +100,5 @@ object ObjectStoreStubs {
       request
         .willReturn(responseBuilder))
   }
-
 
 }

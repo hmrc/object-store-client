@@ -310,7 +310,7 @@ class PlayObjectStoreClientSpec
     "return an ObjectListing with objectSummaries" in {
       val path = directoryPath()
 
-      initListObjectsStub(s"${path.asUri}/", statusCode = 200, Some(objectListingJson), owner = defaultOwner)
+      initListObjectsStub(path, statusCode = 200, Some(objectListingJson), owner = defaultOwner)
 
       osClient.listObjects(path).futureValue.objectSummaries shouldBe List(
         ObjectSummary(
@@ -331,7 +331,7 @@ class PlayObjectStoreClientSpec
     "return an ObjectListing with objectSummaries for owner's root directory" in {
       val path = Path.Directory("")
 
-      initListObjectsStub("", statusCode = 200, Some(objectListingJson), owner = defaultOwner)
+      initListObjectsStub(s"$defaultOwner/", statusCode = 200, Some(objectListingJson))
 
       osClient.listObjects(path).futureValue.objectSummaries shouldBe List(
         ObjectSummary(
@@ -352,7 +352,7 @@ class PlayObjectStoreClientSpec
     "return a ObjectListing with no objectSummaries" in {
       val path = directoryPath()
 
-      initListObjectsStub(s"${path.asUri}/", statusCode = 200, Some(emptyObjectListingJson), owner = defaultOwner)
+      initListObjectsStub(path, statusCode = 200, Some(emptyObjectListingJson), owner = defaultOwner)
 
       osClient.listObjects(path).futureValue shouldBe ObjectListing(List.empty)
     }
@@ -360,7 +360,7 @@ class PlayObjectStoreClientSpec
     "return an exception if object-store response is not successful" in {
       val path = directoryPath()
 
-      initListObjectsStub(s"${path.asUri}/", statusCode = 401, None, owner = defaultOwner)
+      initListObjectsStub(path, statusCode = 401, None, owner = defaultOwner)
 
       osClient.listObjects(path).failed.futureValue shouldBe an[UpstreamErrorResponse]
     }
@@ -369,7 +369,7 @@ class PlayObjectStoreClientSpec
       val path  = directoryPath()
       val owner = "my-owner"
 
-      initListObjectsStub(s"${path.asUri}/", statusCode = 200, Some(objectListingJson), owner)
+      initListObjectsStub(path, statusCode = 200, Some(objectListingJson), owner)
 
       osClient.listObjects(path, owner).futureValue.objectSummaries shouldBe List(
         ObjectSummary(

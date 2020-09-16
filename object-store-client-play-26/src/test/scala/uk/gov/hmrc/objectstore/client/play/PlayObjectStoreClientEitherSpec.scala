@@ -262,7 +262,7 @@ class PlayObjectStoreClientEitherSpec
     "return a ObjectListing with objectSummaries" in {
       val path = directoryPath()
 
-      initListObjectsStub(s"${path.asUri}/", statusCode = 200, Some(objectListingJson), owner = owner)
+      initListObjectsStub(path, statusCode = 200, Some(objectListingJson), owner = owner)
 
       osClient.listObjects(path).futureValue.right.value.objectSummaries shouldBe List(
         ObjectSummary(
@@ -283,7 +283,7 @@ class PlayObjectStoreClientEitherSpec
     "return an ObjectListing with objectSummaries for owner's root directory" in {
       val path = Path.Directory("")
 
-      initListObjectsStub("", statusCode = 200, Some(objectListingJson), owner = owner)
+      initListObjectsStub(s"$owner/", statusCode = 200, Some(objectListingJson))
 
       osClient.listObjects(path).futureValue.right.value.objectSummaries shouldBe List(
         ObjectSummary(
@@ -305,7 +305,7 @@ class PlayObjectStoreClientEitherSpec
     "return a ObjectListing with no objectSummaries" in {
       val path = directoryPath()
 
-      initListObjectsStub(s"${path.asUri}/", statusCode = 200, Some(emptyObjectListingJson), owner = owner)
+      initListObjectsStub(path, statusCode = 200, Some(emptyObjectListingJson), owner = owner)
 
       osClient.listObjects(path).futureValue.right.value shouldBe ObjectListing(List.empty)
     }
@@ -313,7 +313,7 @@ class PlayObjectStoreClientEitherSpec
     "return an exception if object-store response is not successful" in {
       val path = directoryPath()
 
-      initListObjectsStub(s"${path.asUri}/", statusCode = 401, None, owner = owner)
+      initListObjectsStub(path, statusCode = 401, None, owner = owner)
 
       osClient.listObjects(path).futureValue.left.value shouldBe an[UpstreamErrorResponse]
     }
