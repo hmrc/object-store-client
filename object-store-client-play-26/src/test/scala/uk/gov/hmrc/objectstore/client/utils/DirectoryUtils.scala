@@ -16,14 +16,14 @@
 
 package uk.gov.hmrc.objectstore.client.utils
 
-import java.util.UUID
+import java.util.UUID.randomUUID
 
 import uk.gov.hmrc.objectstore.client.Path
 
 object DirectoryUtils {
-  def generateDirectoryPath(): Path.Directory =
-    Path.Directory(UUID.randomUUID().toString)
+  def directoryPath(path: String = randomUUID().toString): Path.Directory =
+    Path.Directory(path)
 
-  def generateFilePath(): Path.File =
-    Path.File(generateDirectoryPath(), UUID.randomUUID().toString)
+  def filePath(directory: Path.Directory = directoryPath(), fileName: String = randomUUID().toString): Path.File =
+    directory.file(fileName)
 }
