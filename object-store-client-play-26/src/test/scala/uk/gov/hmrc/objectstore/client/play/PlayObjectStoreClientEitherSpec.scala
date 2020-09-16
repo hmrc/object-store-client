@@ -384,7 +384,7 @@ class PlayObjectStoreClientEitherSpec
   }
 
   private def initListObjectsStub(path: Path.Directory, statusCode: Int, resBodyJson: Option[String]): Unit = {
-    val request = get(urlEqualTo(s"/object-store/list/$owner/${path.asUri}"))
+    val request = get(urlEqualTo(s"/object-store/list/$owner/${path.asUri}/"))
       .withHeader("Authorization", equalTo("AuthorizationToken"))
 
     val responseBuilder = aResponse().withStatus(statusCode)

@@ -470,7 +470,7 @@ class PlayObjectStoreClientSpec
     resBodyJson: Option[String],
     owner      : String = defaultOwner
   ): Unit = {
-    val request = get(urlEqualTo(s"/object-store/list/$owner/${path.asUri}"))
+    val request = get(urlEqualTo(s"/object-store/list/$owner/${path.asUri}/"))
       .withHeader("Authorization", equalTo("AuthorizationToken"))
 
     val responseBuilder = aResponse().withStatus(statusCode)
