@@ -17,26 +17,25 @@
 package uk.gov.hmrc.objectstore.client
 
 import org.scalatest.{Matchers, WordSpec}
-import uk.gov.hmrc.objectstore.client.utils.DirectoryUtils._
 
 class PathSpec extends WordSpec with Matchers {
   "Path asUri" must {
     "generate a directory uri correctly" in {
       val rawDirectoryPath = "directory"
-      val directory   = directoryPath(rawDirectoryPath)
+      val directory   = Path.Directory(rawDirectoryPath)
       val uri         = directory.asUri
       assertResult("directory")(uri)
     }
 
     "remove the trailing slash from the directory path" in {
       val rawDirectoryPath = "directory/"
-      val directory   = directoryPath(rawDirectoryPath)
+      val directory   = Path.Directory(rawDirectoryPath)
       val uri         = directory.asUri
       assertResult("directory")(uri)
     }
 
     "generate a file uri correctly" in {
-      val file        = filePath(directoryPath("directory"), "file")
+      val file        = Path.Directory("directory").file("file")
       val uri         = file.asUri
       assertResult("directory/file")(uri)
     }

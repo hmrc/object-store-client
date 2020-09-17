@@ -34,7 +34,7 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 import uk.gov.hmrc.objectstore.client.http.Payload
-import uk.gov.hmrc.objectstore.client.utils.DirectoryUtils._
+import uk.gov.hmrc.objectstore.client.utils.PathUtils._
 import uk.gov.hmrc.objectstore.client.wiremock.WireMockHelper
 import uk.gov.hmrc.objectstore.client.wiremock.ObjectStoreStubs._
 import uk.gov.hmrc.objectstore.client.{ObjectListing, ObjectSummary, Path}
@@ -74,7 +74,7 @@ class PlayObjectStoreClientEitherSpec
 
     "store an object as Source with NotUsed bound to Mat" in {
       val body                                = s"hello world! ${UUID.randomUUID().toString}"
-      val path                                = filePath()
+      val path                                = generateFilePath()
       val md5Base64                           = Md5Hash.fromBytes(body.getBytes)
       val source: Source[ByteString, NotUsed] = toSource(body)
 
@@ -85,7 +85,7 @@ class PlayObjectStoreClientEitherSpec
 
     "store an object as Source with Any bound to Mat" in {
       val body                          = s"hello world! ${UUID.randomUUID().toString}"
-      val path                          = filePath()
+      val path                          = generateFilePath()
       val md5Base64                     = Md5Hash.fromBytes(body.getBytes)
       val source: Source[ByteString, _] = toSource(body)
 
@@ -96,7 +96,7 @@ class PlayObjectStoreClientEitherSpec
 
     "store an object as Source with NotUsed bound to Mat and known md5hash and length" in {
       val body                                = s"hello world! ${UUID.randomUUID().toString}"
-      val path                                = filePath()
+      val path                                = generateFilePath()
       val md5Base64                           = Md5Hash.fromBytes(body.getBytes)
       val source: Source[ByteString, NotUsed] = toSource(body)
 
@@ -107,7 +107,7 @@ class PlayObjectStoreClientEitherSpec
 
     "store an object as Source with Any bound to Mat and known md5hash and length" in {
       val body                          = s"hello world! ${UUID.randomUUID().toString}"
-      val path                          = filePath()
+      val path                          = generateFilePath()
       val md5Base64                     = Md5Hash.fromBytes(body.getBytes)
       val source: Source[ByteString, _] = toSource(body)
 
@@ -118,7 +118,7 @@ class PlayObjectStoreClientEitherSpec
 
     "store an object as Bytes" in {
       val body      = s"hello world! ${UUID.randomUUID().toString}".getBytes
-      val path      = filePath()
+      val path      = generateFilePath()
       val md5Base64 = Md5Hash.fromBytes(body)
 
       initPutObjectStub(path, statusCode = 201, body, md5Base64, owner = owner)
@@ -128,7 +128,7 @@ class PlayObjectStoreClientEitherSpec
 
     "store an object as String" in {
       val body      = s"hello world! ${UUID.randomUUID().toString}"
-      val path      = filePath()
+      val path      = generateFilePath()
       val md5Base64 = Md5Hash.fromBytes(body.getBytes)
 
       initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner = owner)
@@ -138,7 +138,7 @@ class PlayObjectStoreClientEitherSpec
 
     "return an exception if object-store response is not successful" in {
       val body      = s"hello world! ${UUID.randomUUID().toString}"
-      val path      = filePath()
+      val path      = generateFilePath()
       val md5Base64 = Md5Hash.fromBytes(body.getBytes)
 
       initPutObjectStub(path, statusCode = 401, body.getBytes, md5Base64, owner = owner)
@@ -150,7 +150,7 @@ class PlayObjectStoreClientEitherSpec
   "getObject" must {
     "return an object that exists" in {
       val body     = "hello world! e36cb887-58ae-4422-9894-215faaf0aa35"
-      val path     = filePath()
+      val path     = generateFilePath()
 
       initGetObjectStub(path, statusCode = 200, Some(body), owner = owner)
 
@@ -160,7 +160,7 @@ class PlayObjectStoreClientEitherSpec
 
     "return an object that exists as String" in {
       val body     = "hello world! e36cb887-58ae-4422-9894-215faaf0aa35"
-      val path     = filePath()
+      val path     = generateFilePath()
 
       initGetObjectStub(path, statusCode = 200, Some(body), owner = owner)
 
@@ -178,7 +178,7 @@ class PlayObjectStoreClientEitherSpec
 
     "return an object that exists as JsValue" in {
       val body     = """{ "k1": "v1", "k2": "v2" }"""
-      val path     = filePath()
+      val path     = generateFilePath()
 
       initGetObjectStub(path, statusCode = 200, Some(body), owner = owner)
 
@@ -190,7 +190,7 @@ class PlayObjectStoreClientEitherSpec
 
     "fail with invalid json when reading as JsValue" in {
       val body     = """{ "k1": "v1", "k2": "v2""""
-      val path     = filePath()
+      val path     = generateFilePath()
 
       initGetObjectStub(path, statusCode = 200, Some(body), owner = owner)
 
@@ -201,7 +201,7 @@ class PlayObjectStoreClientEitherSpec
 
     "return an object that exists as JsResult" in {
       val body     = """{ "k1": "v1", "k2": "v2" }"""
-      val path     = filePath()
+      val path     = generateFilePath()
 
       initGetObjectStub(path, statusCode = 200, Some(body), owner = owner)
 
@@ -213,7 +213,7 @@ class PlayObjectStoreClientEitherSpec
 
     "return an object that exists as JsReads" in {
       val body     = """{ "k1": "v1", "k2": "v2" }"""
-      val path     = filePath()
+      val path     = generateFilePath()
 
       initGetObjectStub(path, statusCode = 200, Some(body), owner = owner)
 
@@ -224,7 +224,7 @@ class PlayObjectStoreClientEitherSpec
     }
 
     "return None for an object that doesn't exist" in {
-      val path     = filePath()
+      val path     = generateFilePath()
 
       initGetObjectStub(path, statusCode = 404, None, owner = owner)
 
@@ -232,7 +232,7 @@ class PlayObjectStoreClientEitherSpec
     }
 
     "return an exception if object-store response is not successful" in {
-      val path     = filePath()
+      val path     = generateFilePath()
 
       initGetObjectStub(path, statusCode = 401, None, owner = owner)
 
@@ -242,7 +242,7 @@ class PlayObjectStoreClientEitherSpec
 
   "deleteObject" must {
     "delete an object" in {
-      val path     = filePath()
+      val path     = generateFilePath()
 
       initDeleteObjectStub(path, owner = owner)
 
@@ -250,7 +250,7 @@ class PlayObjectStoreClientEitherSpec
     }
 
     "return an exception if object-store response is not successful" in {
-      val path     = filePath()
+      val path     = generateFilePath()
 
       initDeleteObjectStub(path, statusCode = 401, owner = owner)
 
@@ -260,7 +260,7 @@ class PlayObjectStoreClientEitherSpec
 
   "listObject" must {
     "return a ObjectListing with objectSummaries" in {
-      val path = directoryPath()
+      val path = generateDirectoryPath()
 
       initListObjectsStub(path, statusCode = 200, Some(objectListingJson), owner = owner)
 
@@ -303,7 +303,7 @@ class PlayObjectStoreClientEitherSpec
 
 
     "return a ObjectListing with no objectSummaries" in {
-      val path = directoryPath()
+      val path = generateDirectoryPath()
 
       initListObjectsStub(path, statusCode = 200, Some(emptyObjectListingJson), owner = owner)
 
@@ -311,7 +311,7 @@ class PlayObjectStoreClientEitherSpec
     }
 
     "return an exception if object-store response is not successful" in {
-      val path = directoryPath()
+      val path = generateDirectoryPath()
 
       initListObjectsStub(path, statusCode = 401, None, owner = owner)
 

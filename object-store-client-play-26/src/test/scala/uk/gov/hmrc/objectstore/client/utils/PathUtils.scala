@@ -20,10 +20,8 @@ import java.util.UUID.randomUUID
 
 import uk.gov.hmrc.objectstore.client.Path
 
-object DirectoryUtils {
-  def directoryPath(path: String = randomUUID().toString): Path.Directory =
-    Path.Directory(path)
+object PathUtils {
+  def generateDirectoryPath(): Path.Directory = Path.Directory(randomUUID().toString)
 
-  def filePath(directory: Path.Directory = directoryPath(), fileName: String = randomUUID().toString): Path.File =
-    directory.file(fileName)
+  def generateFilePath(): Path.File = generateDirectoryPath().file(randomUUID().toString)
 }
