@@ -74,7 +74,6 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
     path: Path.Directory,
     owner: String = config.owner
   ): F[ObjectListing] = {
-    val effectivePath = if (path.asUri.isEmpty) "" else s"${path.asUri}/"
-    F.flatMap(client.get(s"$url/list/$owner/$effectivePath", List(authorizationHeader)))(read.toObjectListing)
+    F.flatMap(client.get(s"$url/list/$owner/${path.asUri}", List(authorizationHeader)))(read.toObjectListing)
   }
 }

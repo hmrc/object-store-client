@@ -54,7 +54,8 @@ class PlayObjectStoreClientSpec
   implicit val system: ActorSystem          = ActorSystem()
   implicit val m: ActorMaterializer         = ActorMaterializer()
 
-  protected val osClient: PlayObjectStoreClient = fakeApplication().injector.instanceOf(classOf[PlayObjectStoreClient])
+  private val application: Application = fakeApplication()
+  protected val osClient: PlayObjectStoreClient = application.injector.instanceOf(classOf[PlayObjectStoreClient])
 
   lazy val defaultOwner = "my-service"
 
@@ -331,7 +332,7 @@ class PlayObjectStoreClientSpec
     "return an ObjectListing with objectSummaries for owner's root directory" in {
       val path = Path.Directory("")
 
-      initListObjectsStub(s"$defaultOwner/", statusCode = 200, Some(objectListingJson))
+      initListObjectsStub(path, statusCode = 200, Some(objectListingJson), defaultOwner)
 
       osClient.listObjects(path).futureValue.objectSummaries shouldBe List(
         ObjectSummary(
@@ -390,6 +391,7 @@ class PlayObjectStoreClientSpec
 
   override def afterAll: Unit = {
     super.afterAll
+    application.stop()
     system.terminate()
   }
 

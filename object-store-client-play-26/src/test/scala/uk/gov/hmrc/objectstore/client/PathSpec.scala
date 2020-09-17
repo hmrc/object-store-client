@@ -20,18 +20,25 @@ import org.scalatest.{Matchers, WordSpec}
 
 class PathSpec extends WordSpec with Matchers {
   "Path asUri" must {
-    "generate a directory uri correctly" in {
+    "generate a directory uri correctly with a trailing slash if absent" in {
       val rawDirectoryPath = "directory"
       val directory   = Path.Directory(rawDirectoryPath)
       val uri         = directory.asUri
-      assertResult("directory")(uri)
+      assertResult("directory/")(uri)
     }
 
-    "remove the trailing slash from the directory path" in {
+    "generate a directory uri correctly with a trailing slash if already present" in {
       val rawDirectoryPath = "directory/"
       val directory   = Path.Directory(rawDirectoryPath)
       val uri         = directory.asUri
-      assertResult("directory")(uri)
+      assertResult("directory/")(uri)
+    }
+
+    "generate a directory uri when raw path is empty string" in {
+      val rawDirectoryPath = ""
+      val directory   = Path.Directory(rawDirectoryPath)
+      val uri         = directory.asUri
+      assertResult("")(uri)
     }
 
     "generate a file uri correctly" in {
