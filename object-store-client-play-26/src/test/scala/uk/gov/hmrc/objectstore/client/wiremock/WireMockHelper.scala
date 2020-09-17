@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.objectstore.client.play
+package uk.gov.hmrc.objectstore.client.wiremock
 
 import java.net.ServerSocket
 

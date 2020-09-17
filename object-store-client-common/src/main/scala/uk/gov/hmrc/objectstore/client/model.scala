@@ -23,17 +23,15 @@ sealed trait Path { def asUri: String }
 
 object Path {
   case class Directory(value: String) extends Path {
-    override def asUri: String =
-      if (value.endsWith("/")) value else value + "/"
+    override val asUri: String = (if (value.endsWith("/")) value else value + "/").stripPrefix("/")
 
-    def file(fileName: String): File =
-      File(this, fileName)
+    def file(fileName: String): File = File(this, fileName)
   }
 
   case class File(directory: Directory, fileName: String) extends Path {
     if (fileName.isEmpty) throw new IllegalArgumentException(s"fileName cannot be empty")
 
-    override def asUri: String =
+    override val asUri: String =
       s"${directory.asUri}${URLEncoder.encode(fileName, "UTF-8")}"
   }
 

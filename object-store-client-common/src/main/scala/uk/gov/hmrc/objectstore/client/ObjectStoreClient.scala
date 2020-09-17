@@ -24,11 +24,11 @@ import scala.language.higherKinds
 
 class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
   client: HttpClient[F, REQ_BODY, RES],
-  read  : ObjectStoreRead[F, RES, RES_BODY],
+  read: ObjectStoreRead[F, RES, RES_BODY],
   config: ObjectStoreClientConfig
-)(implicit
-  F: Monad[F]
- ) {
+)(
+  implicit
+  F: Monad[F]) {
 
   private val authorizationHeader: (String, String) =
     ("Authorization", config.authorizationToken)
@@ -37,43 +37,43 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
 
   /** Storing an object on an existing path will overwrite the previously stored object on that path. */
   def putObject[CONTENT](
-    path       : Path.File,
-    content    : CONTENT,
+    path: Path.File,
+    content: CONTENT,
     contentType: Option[String] = None,
-    owner      : String         = config.owner
-  )(implicit
-    w: ObjectStoreContentWrite[F, CONTENT, REQ_BODY]
-  ): F[Unit] =
-    F.flatMap(w.writeContent(content, contentType))(c =>
-      F.flatMap(client.put(s"$url/object/$owner/${path.asUri}", c, List(authorizationHeader)))(
-        read.consume
-      )
-    )
+    owner: String               = config.owner
+  )(
+    implicit
+    w: ObjectStoreContentWrite[F, CONTENT, REQ_BODY]): F[Unit] =
+    F.flatMap(w.writeContent(content, contentType))(
+      c =>
+        F.flatMap(client.put(s"$url/object/$owner/${path.asUri}", c, List(authorizationHeader)))(
+          read.consume
+      ))
 
   def getObject[CONTENT](
-    path : Path.File,
-    owner: String    = config.owner
-  )(implicit
-    cr: ObjectStoreContentRead[F, RES_BODY, CONTENT]
-  ): F[Option[Object[CONTENT]]] = {
+    path: Path.File,
+    owner: String = config.owner
+  )(
+    implicit
+    cr: ObjectStoreContentRead[F, RES_BODY, CONTENT]): F[Option[Object[CONTENT]]] = {
     val location = s"$url/object/$owner/${path.asUri}"
     F.flatMap(client.get(location, List(authorizationHeader)))(res =>
-      F.flatMap(read.toObject(location, res)){
+      F.flatMap(read.toObject(location, res)) {
         case Some(obj) => F.map(cr.readContent(obj.content))(c => Some(obj.copy(content = c)))
         case None      => F.pure(None)
-      }
-    )
+    })
   }
 
   def deleteObject(
-    path : Path.File,
-    owner: String    = config.owner
+    path: Path.File,
+    owner: String = config.owner
   ): F[Unit] =
     F.flatMap(client.delete(s"$url/object/$owner/${path.asUri}", List(authorizationHeader)))(read.consume)
 
   def listObjects(
-    path : Path.Directory,
-    owner: String    = config.owner
-  ): F[ObjectListing] =
+    path: Path.Directory,
+    owner: String = config.owner
+  ): F[ObjectListing] = {
     F.flatMap(client.get(s"$url/list/$owner/${path.asUri}", List(authorizationHeader)))(read.toObjectListing)
+  }
 }
