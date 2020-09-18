@@ -32,6 +32,7 @@ import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
+import uk.gov.hmrc.objectstore.client.ObjectRetentionPolicy.ONE_WEEK
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 import uk.gov.hmrc.objectstore.client.http.Payload
 import uk.gov.hmrc.objectstore.client.wiremock.WireMockHelper
@@ -82,7 +83,7 @@ class PlayObjectStoreClientSpec
 
       initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner = defaultOwner)
 
-      osClient.putObject(path, source).futureValue shouldBe (())
+      osClient.putObject(path, source, ONE_WEEK).futureValue shouldBe (())
     }
 
     "store an object as Source with Any bound to Mat" in {
@@ -93,7 +94,7 @@ class PlayObjectStoreClientSpec
 
       initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner = defaultOwner)
 
-      osClient.putObject(path, source).futureValue shouldBe (())
+      osClient.putObject(path, source, ONE_WEEK).futureValue shouldBe (())
     }
 
     "store an object as Source with NotUsed bound to Mat and known md5hash and length" in {
@@ -105,7 +106,7 @@ class PlayObjectStoreClientSpec
       initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner = defaultOwner)
 
       osClient
-        .putObject(path, Payload(length = body.length, md5Hash = md5Base64, content = source))
+        .putObject(path, Payload(length = body.length, md5Hash = md5Base64, content = source), ONE_WEEK)
         .futureValue shouldBe (())
     }
 
@@ -118,7 +119,7 @@ class PlayObjectStoreClientSpec
       initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner = defaultOwner)
 
       osClient
-        .putObject(path, Payload(length = body.length, md5Hash = md5Base64, content = source))
+        .putObject(path, Payload(length = body.length, md5Hash = md5Base64, content = source), ONE_WEEK)
         .futureValue shouldBe (())
     }
 
@@ -129,7 +130,7 @@ class PlayObjectStoreClientSpec
 
       initPutObjectStub(path, statusCode = 201, body, md5Base64, owner = defaultOwner)
 
-      osClient.putObject(path, body).futureValue shouldBe (())
+      osClient.putObject(path, body, ONE_WEEK).futureValue shouldBe (())
     }
 
     "store an object as String" in {
@@ -139,7 +140,7 @@ class PlayObjectStoreClientSpec
 
       initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner = defaultOwner)
 
-      osClient.putObject(path, body).futureValue shouldBe (())
+      osClient.putObject(path, body, ONE_WEEK).futureValue shouldBe (())
     }
 
     "return an exception if object-store response is not successful" in {
@@ -149,7 +150,7 @@ class PlayObjectStoreClientSpec
 
       initPutObjectStub(path, statusCode = 401, body.getBytes, md5Base64, owner = defaultOwner)
 
-      osClient.putObject(path, toSource(body)).failed.futureValue shouldBe an[UpstreamErrorResponse]
+      osClient.putObject(path, toSource(body), ONE_WEEK).failed.futureValue shouldBe an[UpstreamErrorResponse]
     }
 
     "store an object with differerent owner" in {
@@ -160,7 +161,7 @@ class PlayObjectStoreClientSpec
 
       initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner = owner)
 
-      osClient.putObject(path, body, owner = owner).futureValue shouldBe (())
+      osClient.putObject(path, body, ONE_WEEK, owner = owner).futureValue shouldBe (())
     }
 
     "store an object with a specified content-type" in {
@@ -170,9 +171,9 @@ class PlayObjectStoreClientSpec
       val contentType = "application/mycontenttype"
       val owner       = "my-owner"
 
-      initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, contentType, owner)
+      initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner, contentType = contentType)
 
-      osClient.putObject(path, body, contentType = Some(contentType), owner = owner).futureValue shouldBe (())
+      osClient.putObject(path, body, ONE_WEEK, contentType = Some(contentType), owner = owner).futureValue shouldBe (())
     }
   }
 

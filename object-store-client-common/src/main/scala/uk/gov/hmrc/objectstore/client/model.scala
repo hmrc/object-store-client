@@ -67,3 +67,8 @@ final case class ObjectSummary(
   contentMd5: String,
   lastModified: Instant
 )
+
+object ObjectRetentionPolicy extends Enumeration {
+  type ObjectRetentionPolicy = Value
+  val ONE_WEEK, ONE_MONTH, SIX_MONTHS, ONE_YEAR, SEVEN_YEARS, TEN_YEARS = Value
+}
