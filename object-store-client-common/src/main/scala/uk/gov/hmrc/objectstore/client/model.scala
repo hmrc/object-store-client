@@ -68,7 +68,7 @@ final case class ObjectSummary(
   lastModified: Instant
 )
 
-object ObjectRetentionPolicy extends Enumeration {
-  type ObjectRetentionPolicy = Value
-  val ONE_WEEK, ONE_MONTH, SIX_MONTHS, ONE_YEAR, SEVEN_YEARS, TEN_YEARS = Value
+object ObjectExpirationPeriod extends Enumeration {
+  type ObjectExpirationPeriod = Value
+  val one_week, one_month, six_months, one_year, seven_years, ten_years = Value
 }

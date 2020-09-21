@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.objectstore.client
 
-import uk.gov.hmrc.objectstore.client.ObjectRetentionPolicy.ObjectRetentionPolicy
+import uk.gov.hmrc.objectstore.client.ObjectExpirationPeriod.ObjectExpirationPeriod
 import uk.gov.hmrc.objectstore.client.category.Monad
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 import uk.gov.hmrc.objectstore.client.http.{HttpClient, ObjectStoreContentRead, ObjectStoreContentWrite, ObjectStoreRead}
@@ -34,8 +34,8 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
   private val authorizationHeader: (String, String) =
     ("Authorization", config.authorizationToken)
 
-  private def retentionPolicyHeader(retentionPolicy: ObjectRetentionPolicy): (String, String) =
-    "X-OBJECT-RETENTION-POLICY" -> retentionPolicy.toString
+  private def expirationPeriodHeader(expirationPeriod: ObjectExpirationPeriod): (String, String) =
+    "X-EXPIRE-AFTER" -> expirationPeriod.toString
 
   private val url = s"${config.baseUrl}/object-store"
 
@@ -43,7 +43,7 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
   def putObject[CONTENT](
     path: Path.File,
     content: CONTENT,
-    retentionPolicy: ObjectRetentionPolicy,
+    expirationPeriod: ObjectExpirationPeriod,
     contentType: Option[String] = None,
     owner: String               = config.owner
   )(
@@ -55,7 +55,7 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
           client.put(
             s"$url/object/$owner/${path.asUri}",
             c,
-            List(authorizationHeader, retentionPolicyHeader(retentionPolicy))))(
+            List(authorizationHeader, expirationPeriodHeader(expirationPeriod))))(
           read.consume
       ))
 
