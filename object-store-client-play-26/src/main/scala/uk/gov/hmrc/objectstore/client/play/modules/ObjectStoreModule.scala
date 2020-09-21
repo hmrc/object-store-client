@@ -25,6 +25,8 @@ import uk.gov.hmrc.objectstore.client.ObjectRetentionPeriod
 import uk.gov.hmrc.objectstore.client.ObjectRetentionPeriod.ObjectRetentionPeriod
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 
+import scala.util.Try
+
 class ObjectStoreModule() extends Module {
   override def bindings(environment: Environment, configuration: Configuration): Seq[Binding[_]] = Seq(
     bind[ObjectStoreClientConfig].toProvider[ObjectStoreClientConfigProvider]
@@ -61,5 +63,10 @@ private class ObjectStoreClientConfigProvider @Inject()(configuration: Configura
     config.getString("internal-auth.token")
 
   private def getDefaultRetentionPeriod(config: Config): ObjectRetentionPeriod =
-    ObjectRetentionPeriod.withName(config.getString("object-store.default-retention-period"))
+    Try(
+      ObjectRetentionPeriod
+        .withName(config.getString("object-store.default-retention-period"))).getOrElse(
+      throw new IllegalStateException(
+        s"Allowed values for object-store.default-retention-period are [${ObjectRetentionPeriod.values.map(_.toString).mkString(",")}]")
+    )
 }
