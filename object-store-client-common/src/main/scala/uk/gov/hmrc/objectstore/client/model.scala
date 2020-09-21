@@ -68,7 +68,12 @@ final case class ObjectSummary(
   lastModified: Instant
 )
 
-object ObjectExpirationPeriod extends Enumeration {
-  type ObjectExpirationPeriod = Value
-  val one_week, one_month, six_months, one_year, seven_years, ten_years = Value
+object ObjectRetentionPeriod extends Enumeration {
+  type ObjectRetentionPeriod = Value
+  val OneWeek    = Value("1_week")
+  val OneMonth   = Value("1_month")
+  val SixMonths  = Value("6_months")
+  val OneYear    = Value("1_year")
+  val SevenYears = Value("7_years")
+  val TenYears   = Value("10_years")
 }

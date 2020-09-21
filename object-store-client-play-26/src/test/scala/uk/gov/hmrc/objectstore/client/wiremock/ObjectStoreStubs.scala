@@ -17,27 +17,27 @@
 package uk.gov.hmrc.objectstore.client.wiremock
 
 import com.github.tomakehurst.wiremock.client.WireMock._
-import uk.gov.hmrc.objectstore.client.ObjectExpirationPeriod.{ObjectExpirationPeriod, one_week}
+import uk.gov.hmrc.objectstore.client.ObjectRetentionPeriod.{ObjectRetentionPeriod, OneWeek}
 import uk.gov.hmrc.objectstore.client.Path
 import uk.gov.hmrc.objectstore.client.play.Md5Hash
 
 object ObjectStoreStubs {
 
   def initPutObjectStub(
-                         path: Path.File,
-                         statusCode: Int,
-                         reqBody: Array[Byte],
-                         md5Base64: String,
-                         owner: String,
-                         expirationPeriod: ObjectExpirationPeriod = one_week,
-                         contentType: String                      = "application/octet-stream"
+    path: Path.File,
+    statusCode: Int,
+    reqBody: Array[Byte],
+    md5Base64: String,
+    owner: String,
+    retentionPeriod: ObjectRetentionPeriod = OneWeek,
+    contentType: String                    = "application/octet-stream"
   ): Unit = {
     val request = put(urlEqualTo(s"/object-store/object/$owner/${path.asUri}"))
       .withHeader("Authorization", equalTo("AuthorizationToken"))
       .withHeader("Content-Length", equalTo("49"))
       .withHeader("Content-Type", equalTo(contentType))
       .withHeader("Content-MD5", equalTo(md5Base64))
-      .withHeader("X-EXPIRE-AFTER", equalTo(expirationPeriod.toString))
+      .withHeader("X-Retention-Period", equalTo(retentionPeriod.toString))
       .withRequestBody(binaryEqualTo(reqBody))
 
     val response = aResponse().withStatus(statusCode)

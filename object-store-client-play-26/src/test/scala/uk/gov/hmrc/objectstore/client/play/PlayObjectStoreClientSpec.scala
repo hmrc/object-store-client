@@ -32,7 +32,7 @@ import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
-import uk.gov.hmrc.objectstore.client.ObjectExpirationPeriod.one_week
+import uk.gov.hmrc.objectstore.client.ObjectRetentionPeriod.OneWeek
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 import uk.gov.hmrc.objectstore.client.http.Payload
 import uk.gov.hmrc.objectstore.client.wiremock.WireMockHelper
@@ -83,7 +83,7 @@ class PlayObjectStoreClientSpec
 
       initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner = defaultOwner)
 
-      osClient.putObject(path, source, one_week).futureValue shouldBe (())
+      osClient.putObject(path, source, OneWeek).futureValue shouldBe (())
     }
 
     "store an object as Source with Any bound to Mat" in {
@@ -94,7 +94,7 @@ class PlayObjectStoreClientSpec
 
       initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner = defaultOwner)
 
-      osClient.putObject(path, source, one_week).futureValue shouldBe (())
+      osClient.putObject(path, source, OneWeek).futureValue shouldBe (())
     }
 
     "store an object as Source with NotUsed bound to Mat and known md5hash and length" in {
@@ -106,7 +106,7 @@ class PlayObjectStoreClientSpec
       initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner = defaultOwner)
 
       osClient
-        .putObject(path, Payload(length = body.length, md5Hash = md5Base64, content = source), one_week)
+        .putObject(path, Payload(length = body.length, md5Hash = md5Base64, content = source), OneWeek)
         .futureValue shouldBe (())
     }
 
@@ -119,7 +119,7 @@ class PlayObjectStoreClientSpec
       initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner = defaultOwner)
 
       osClient
-        .putObject(path, Payload(length = body.length, md5Hash = md5Base64, content = source), one_week)
+        .putObject(path, Payload(length = body.length, md5Hash = md5Base64, content = source), OneWeek)
         .futureValue shouldBe (())
     }
 
@@ -130,7 +130,7 @@ class PlayObjectStoreClientSpec
 
       initPutObjectStub(path, statusCode = 201, body, md5Base64, owner = defaultOwner)
 
-      osClient.putObject(path, body, one_week).futureValue shouldBe (())
+      osClient.putObject(path, body, OneWeek).futureValue shouldBe (())
     }
 
     "store an object as String" in {
@@ -140,7 +140,7 @@ class PlayObjectStoreClientSpec
 
       initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner = defaultOwner)
 
-      osClient.putObject(path, body, one_week).futureValue shouldBe (())
+      osClient.putObject(path, body, OneWeek).futureValue shouldBe (())
     }
 
     "return an exception if object-store response is not successful" in {
@@ -150,7 +150,7 @@ class PlayObjectStoreClientSpec
 
       initPutObjectStub(path, statusCode = 401, body.getBytes, md5Base64, owner = defaultOwner)
 
-      osClient.putObject(path, toSource(body), one_week).failed.futureValue shouldBe an[UpstreamErrorResponse]
+      osClient.putObject(path, toSource(body), OneWeek).failed.futureValue shouldBe an[UpstreamErrorResponse]
     }
 
     "store an object with differerent owner" in {
@@ -161,7 +161,7 @@ class PlayObjectStoreClientSpec
 
       initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner = owner)
 
-      osClient.putObject(path, body, one_week, owner = owner).futureValue shouldBe (())
+      osClient.putObject(path, body, OneWeek, owner = owner).futureValue shouldBe (())
     }
 
     "store an object with a specified content-type" in {
@@ -173,7 +173,7 @@ class PlayObjectStoreClientSpec
 
       initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner, contentType = contentType)
 
-      osClient.putObject(path, body, one_week, contentType = Some(contentType), owner = owner).futureValue shouldBe (())
+      osClient.putObject(path, body, OneWeek, contentType = Some(contentType), owner = owner).futureValue shouldBe (())
     }
   }
 
