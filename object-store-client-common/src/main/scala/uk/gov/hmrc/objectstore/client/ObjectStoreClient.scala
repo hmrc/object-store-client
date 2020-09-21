@@ -43,9 +43,9 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
   def putObject[CONTENT](
     path: Path.File,
     content: CONTENT,
-    retentionPeriod: ObjectRetentionPeriod,
-    contentType: Option[String] = None,
-    owner: String               = config.owner
+    retentionPeriod: ObjectRetentionPeriod = config.defaultRetentionPeriod,
+    contentType: Option[String]            = None,
+    owner: String                          = config.owner
   )(
     implicit
     w: ObjectStoreContentWrite[F, CONTENT, REQ_BODY]): F[Unit] =
