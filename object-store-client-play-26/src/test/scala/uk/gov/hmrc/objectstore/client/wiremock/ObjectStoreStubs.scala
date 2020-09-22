@@ -17,8 +17,8 @@
 package uk.gov.hmrc.objectstore.client.wiremock
 
 import com.github.tomakehurst.wiremock.client.WireMock._
-import uk.gov.hmrc.objectstore.client.ObjectRetentionPeriod.{ObjectRetentionPeriod, OneWeek}
-import uk.gov.hmrc.objectstore.client.Path
+import uk.gov.hmrc.objectstore.client.ObjectRetentionPeriod.OneWeek
+import uk.gov.hmrc.objectstore.client.{ObjectRetentionPeriod, Path}
 import uk.gov.hmrc.objectstore.client.play.Md5Hash
 
 object ObjectStoreStubs {

@@ -22,10 +22,7 @@ import javax.inject.Provider
 import play.api.inject.{Binding, Module}
 import play.api.{Configuration, Environment}
 import uk.gov.hmrc.objectstore.client.ObjectRetentionPeriod
-import uk.gov.hmrc.objectstore.client.ObjectRetentionPeriod.ObjectRetentionPeriod
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
-
-import scala.util.Try
 
 class ObjectStoreModule() extends Module {
   override def bindings(environment: Environment, configuration: Configuration): Seq[Binding[_]] = Seq(
@@ -63,10 +60,7 @@ private class ObjectStoreClientConfigProvider @Inject()(configuration: Configura
     config.getString("internal-auth.token")
 
   private def getDefaultRetentionPeriod(config: Config): ObjectRetentionPeriod =
-    Try(
-      ObjectRetentionPeriod
-        .withName(config.getString("object-store.default-retention-period"))).getOrElse(
-      throw new IllegalStateException(
-        s"Allowed values for object-store.default-retention-period are [${ObjectRetentionPeriod.values.map(_.toString).mkString(",")}]")
-    )
+    ObjectRetentionPeriod
+      .parse(config.getString("object-store.default-retention-period"))
+      .fold(throw new IllegalStateException, identity)
 }
