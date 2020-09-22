@@ -71,12 +71,12 @@ final case class ObjectSummary(
 sealed abstract class ObjectRetentionPeriod(private val value: String)
 
 object ObjectRetentionPeriod {
-  case object OneWeek extends ObjectRetentionPeriod("1_week")
-  case object OneMonth extends ObjectRetentionPeriod("1_month")
-  case object SixMonths extends ObjectRetentionPeriod("6_months")
-  case object OneYear extends ObjectRetentionPeriod("1_year")
-  case object SevenYears extends ObjectRetentionPeriod("7_years")
-  case object TenYears extends ObjectRetentionPeriod("10_years")
+  case object OneWeek extends ObjectRetentionPeriod("1-week")
+  case object OneMonth extends ObjectRetentionPeriod("1-month")
+  case object SixMonths extends ObjectRetentionPeriod("6-months")
+  case object OneYear extends ObjectRetentionPeriod("1-year")
+  case object SevenYears extends ObjectRetentionPeriod("7-years")
+  case object TenYears extends ObjectRetentionPeriod("10-years")
 
   private val allValues: Set[ObjectRetentionPeriod] = Set(OneWeek, OneMonth, SixMonths, OneYear, SevenYears, TenYears)
 
