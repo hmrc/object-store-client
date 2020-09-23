@@ -34,7 +34,7 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
     ("Authorization", config.authorizationToken)
 
   private def retentionPeriodHeader(retentionPeriod: ObjectRetentionPeriod): (String, String) =
-    "X-Retention-Period" -> retentionPeriod.toString
+    "X-Retention-Period" -> retentionPeriod.value
 
   private val url = s"${config.baseUrl}/object-store"
 

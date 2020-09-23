@@ -68,7 +68,7 @@ final case class ObjectSummary(
   lastModified: Instant
 )
 
-sealed abstract class ObjectRetentionPeriod(private val value: String)
+sealed abstract class ObjectRetentionPeriod(val value: String)
 
 object ObjectRetentionPeriod {
   case object OneWeek extends ObjectRetentionPeriod("1-week")

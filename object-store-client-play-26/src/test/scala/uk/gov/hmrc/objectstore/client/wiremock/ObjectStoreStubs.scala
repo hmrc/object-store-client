@@ -37,7 +37,7 @@ object ObjectStoreStubs {
       .withHeader("Content-Length", equalTo("49"))
       .withHeader("Content-Type", equalTo(contentType))
       .withHeader("Content-MD5", equalTo(md5Base64))
-      .withHeader("X-Retention-Period", equalTo(retentionPeriod.toString))
+      .withHeader("X-Retention-Period", equalTo(retentionPeriod.value))
       .withRequestBody(binaryEqualTo(reqBody))
 
     val response = aResponse().withStatus(statusCode)
