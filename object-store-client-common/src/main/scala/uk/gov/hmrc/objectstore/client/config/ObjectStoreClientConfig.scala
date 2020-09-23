@@ -16,8 +16,11 @@
 
 package uk.gov.hmrc.objectstore.client.config
 
+import uk.gov.hmrc.objectstore.client.RetentionPeriod
+
 final case class ObjectStoreClientConfig(
-  baseUrl           : String,
-  owner             : String,
-  authorizationToken: String
+  baseUrl: String,
+  owner: String,
+  authorizationToken: String,
+  defaultRetentionPeriod: RetentionPeriod
 )

@@ -33,20 +33,28 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
   private val authorizationHeader: (String, String) =
     ("Authorization", config.authorizationToken)
 
+  private def retentionPeriodHeader(retentionPeriod: RetentionPeriod): (String, String) =
+    "X-Retention-Period" -> retentionPeriod.value
+
   private val url = s"${config.baseUrl}/object-store"
 
   /** Storing an object on an existing path will overwrite the previously stored object on that path. */
   def putObject[CONTENT](
-    path: Path.File,
-    content: CONTENT,
-    contentType: Option[String] = None,
-    owner: String               = config.owner
+                          path: Path.File,
+                          content: CONTENT,
+                          retentionPeriod: RetentionPeriod = config.defaultRetentionPeriod,
+                          contentType: Option[String]            = None,
+                          owner: String                          = config.owner
   )(
     implicit
     w: ObjectStoreContentWrite[F, CONTENT, REQ_BODY]): F[Unit] =
     F.flatMap(w.writeContent(content, contentType))(
       c =>
-        F.flatMap(client.put(s"$url/object/$owner/${path.asUri}", c, List(authorizationHeader)))(
+        F.flatMap(
+          client.put(
+            s"$url/object/$owner/${path.asUri}",
+            c,
+            List(authorizationHeader, retentionPeriodHeader(retentionPeriod))))(
           read.consume
       ))
 
@@ -73,7 +81,6 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
   def listObjects(
     path: Path.Directory,
     owner: String = config.owner
-  ): F[ObjectListing] = {
+  ): F[ObjectListing] =
     F.flatMap(client.get(s"$url/list/$owner/${path.asUri}", List(authorizationHeader)))(read.toObjectListing)
-  }
 }

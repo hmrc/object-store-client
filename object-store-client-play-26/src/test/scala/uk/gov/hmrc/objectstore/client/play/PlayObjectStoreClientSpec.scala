@@ -32,11 +32,12 @@ import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
+import uk.gov.hmrc.objectstore.client.RetentionPeriod.OneWeek
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 import uk.gov.hmrc.objectstore.client.http.Payload
 import uk.gov.hmrc.objectstore.client.wiremock.WireMockHelper
 import uk.gov.hmrc.objectstore.client.wiremock.ObjectStoreStubs._
-import uk.gov.hmrc.objectstore.client.{ObjectListing, ObjectSummary, Path}
+import uk.gov.hmrc.objectstore.client.{ObjectListing, RetentionPeriod, ObjectSummary, Path}
 
 import scala.concurrent.ExecutionContextExecutor
 import uk.gov.hmrc.objectstore.client.utils.PathUtils._
@@ -66,7 +67,8 @@ class PlayObjectStoreClientSpec
           ObjectStoreClientConfig(
             baseUrl            = wireMockUrl,
             owner              = defaultOwner,
-            authorizationToken = "AuthorizationToken"
+            authorizationToken = "AuthorizationToken",
+            defaultRetentionPeriod = RetentionPeriod.OneWeek
           )))
       .build()
 
@@ -132,6 +134,16 @@ class PlayObjectStoreClientSpec
       osClient.putObject(path, body).futureValue shouldBe (())
     }
 
+    "store an object with explicit retention period" in {
+      val body      = s"hello world! ${UUID.randomUUID().toString}".getBytes
+      val path      = generateFilePath()
+      val md5Base64 = Md5Hash.fromBytes(body)
+
+      initPutObjectStub(path, statusCode = 201, body, md5Base64, owner = defaultOwner, retentionPeriod = RetentionPeriod.OneMonth)
+
+      osClient.putObject(path, body, RetentionPeriod.OneMonth).futureValue shouldBe (())
+    }
+
     "store an object as String" in {
       val body      = s"hello world! ${UUID.randomUUID().toString}"
       val path      = generateFilePath()
@@ -139,7 +151,7 @@ class PlayObjectStoreClientSpec
 
       initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner = defaultOwner)
 
-      osClient.putObject(path, body).futureValue shouldBe (())
+      osClient.putObject(path, body, OneWeek).futureValue shouldBe (())
     }
 
     "return an exception if object-store response is not successful" in {
@@ -170,7 +182,7 @@ class PlayObjectStoreClientSpec
       val contentType = "application/mycontenttype"
       val owner       = "my-owner"
 
-      initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, contentType, owner)
+      initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner, contentType = contentType)
 
       osClient.putObject(path, body, contentType = Some(contentType), owner = owner).futureValue shouldBe (())
     }
