@@ -17,20 +17,20 @@
 package uk.gov.hmrc.objectstore.client.wiremock
 
 import com.github.tomakehurst.wiremock.client.WireMock._
-import uk.gov.hmrc.objectstore.client.ObjectRetentionPeriod.OneWeek
-import uk.gov.hmrc.objectstore.client.{ObjectRetentionPeriod, Path}
+import uk.gov.hmrc.objectstore.client.RetentionPeriod.OneWeek
+import uk.gov.hmrc.objectstore.client.{RetentionPeriod, Path}
 import uk.gov.hmrc.objectstore.client.play.Md5Hash
 
 object ObjectStoreStubs {
 
   def initPutObjectStub(
-    path: Path.File,
-    statusCode: Int,
-    reqBody: Array[Byte],
-    md5Base64: String,
-    owner: String,
-    retentionPeriod: ObjectRetentionPeriod = OneWeek,
-    contentType: String                    = "application/octet-stream"
+                         path: Path.File,
+                         statusCode: Int,
+                         reqBody: Array[Byte],
+                         md5Base64: String,
+                         owner: String,
+                         retentionPeriod: RetentionPeriod = OneWeek,
+                         contentType: String                    = "application/octet-stream"
   ): Unit = {
     val request = put(urlEqualTo(s"/object-store/object/$owner/${path.asUri}"))
       .withHeader("Authorization", equalTo("AuthorizationToken"))

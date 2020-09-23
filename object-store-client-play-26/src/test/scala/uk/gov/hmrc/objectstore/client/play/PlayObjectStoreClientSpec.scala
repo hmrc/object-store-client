@@ -32,12 +32,12 @@ import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
-import uk.gov.hmrc.objectstore.client.ObjectRetentionPeriod.OneWeek
+import uk.gov.hmrc.objectstore.client.RetentionPeriod.OneWeek
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 import uk.gov.hmrc.objectstore.client.http.Payload
 import uk.gov.hmrc.objectstore.client.wiremock.WireMockHelper
 import uk.gov.hmrc.objectstore.client.wiremock.ObjectStoreStubs._
-import uk.gov.hmrc.objectstore.client.{ObjectListing, ObjectRetentionPeriod, ObjectSummary, Path}
+import uk.gov.hmrc.objectstore.client.{ObjectListing, RetentionPeriod, ObjectSummary, Path}
 
 import scala.concurrent.ExecutionContextExecutor
 import uk.gov.hmrc.objectstore.client.utils.PathUtils._
@@ -68,7 +68,7 @@ class PlayObjectStoreClientSpec
             baseUrl            = wireMockUrl,
             owner              = defaultOwner,
             authorizationToken = "AuthorizationToken",
-            defaultRetentionPeriod = ObjectRetentionPeriod.OneWeek
+            defaultRetentionPeriod = RetentionPeriod.OneWeek
           )))
       .build()
 
@@ -139,9 +139,9 @@ class PlayObjectStoreClientSpec
       val path      = generateFilePath()
       val md5Base64 = Md5Hash.fromBytes(body)
 
-      initPutObjectStub(path, statusCode = 201, body, md5Base64, owner = defaultOwner, retentionPeriod = ObjectRetentionPeriod.OneMonth)
+      initPutObjectStub(path, statusCode = 201, body, md5Base64, owner = defaultOwner, retentionPeriod = RetentionPeriod.OneMonth)
 
-      osClient.putObject(path, body, ObjectRetentionPeriod.OneMonth).futureValue shouldBe (())
+      osClient.putObject(path, body, RetentionPeriod.OneMonth).futureValue shouldBe (())
     }
 
     "store an object as String" in {

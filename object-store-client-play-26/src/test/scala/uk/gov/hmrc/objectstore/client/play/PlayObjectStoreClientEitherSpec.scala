@@ -37,7 +37,7 @@ import uk.gov.hmrc.objectstore.client.http.Payload
 import uk.gov.hmrc.objectstore.client.utils.PathUtils._
 import uk.gov.hmrc.objectstore.client.wiremock.ObjectStoreStubs._
 import uk.gov.hmrc.objectstore.client.wiremock.WireMockHelper
-import uk.gov.hmrc.objectstore.client.{ObjectListing, ObjectRetentionPeriod, ObjectSummary, Path}
+import uk.gov.hmrc.objectstore.client.{ObjectListing, RetentionPeriod, ObjectSummary, Path}
 
 import scala.concurrent.ExecutionContextExecutor
 
@@ -66,7 +66,7 @@ class PlayObjectStoreClientEitherSpec
           baseUrl            = wireMockUrl,
           owner              = owner,
           authorizationToken = "AuthorizationToken",
-          defaultRetentionPeriod = ObjectRetentionPeriod.OneWeek
+          defaultRetentionPeriod = RetentionPeriod.OneWeek
         )))
       .build()
 
@@ -133,9 +133,9 @@ class PlayObjectStoreClientEitherSpec
       val path      = generateFilePath()
       val md5Base64 = Md5Hash.fromBytes(body)
 
-      initPutObjectStub(path, statusCode = 201, body, md5Base64, owner = owner, retentionPeriod = ObjectRetentionPeriod.OneMonth)
+      initPutObjectStub(path, statusCode = 201, body, md5Base64, owner = owner, retentionPeriod = RetentionPeriod.OneMonth)
 
-      osClient.putObject(path, body, ObjectRetentionPeriod.OneMonth).futureValue.right.value shouldBe (())
+      osClient.putObject(path, body, RetentionPeriod.OneMonth).futureValue.right.value shouldBe (())
     }
 
     "store an object as String" in {

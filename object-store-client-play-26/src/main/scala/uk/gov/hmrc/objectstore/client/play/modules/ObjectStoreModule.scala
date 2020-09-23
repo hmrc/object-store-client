@@ -21,7 +21,7 @@ import com.typesafe.config.Config
 import javax.inject.Provider
 import play.api.inject.{Binding, Module}
 import play.api.{Configuration, Environment}
-import uk.gov.hmrc.objectstore.client.ObjectRetentionPeriod
+import uk.gov.hmrc.objectstore.client.RetentionPeriod
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 
 class ObjectStoreModule() extends Module {
@@ -59,8 +59,8 @@ private class ObjectStoreClientConfigProvider @Inject()(configuration: Configura
   private def getAuthorizationHeader(config: Config): String =
     config.getString("internal-auth.token")
 
-  private def getDefaultRetentionPeriod(config: Config): ObjectRetentionPeriod =
-    ObjectRetentionPeriod
+  private def getDefaultRetentionPeriod(config: Config): RetentionPeriod =
+    RetentionPeriod
       .parse(config.getString("object-store.default-retention-period"))
       .fold(throw new IllegalStateException, identity)
 }

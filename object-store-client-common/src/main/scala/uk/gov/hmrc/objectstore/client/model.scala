@@ -68,19 +68,19 @@ final case class ObjectSummary(
   lastModified: Instant
 )
 
-sealed abstract class ObjectRetentionPeriod(val value: String)
+sealed abstract class RetentionPeriod(val value: String)
 
-object ObjectRetentionPeriod {
-  case object OneWeek extends ObjectRetentionPeriod("1-week")
-  case object OneMonth extends ObjectRetentionPeriod("1-month")
-  case object SixMonths extends ObjectRetentionPeriod("6-months")
-  case object OneYear extends ObjectRetentionPeriod("1-year")
-  case object SevenYears extends ObjectRetentionPeriod("7-years")
-  case object TenYears extends ObjectRetentionPeriod("10-years")
+object RetentionPeriod {
+  case object OneWeek extends RetentionPeriod("1-week")
+  case object OneMonth extends RetentionPeriod("1-month")
+  case object SixMonths extends RetentionPeriod("6-months")
+  case object OneYear extends RetentionPeriod("1-year")
+  case object SevenYears extends RetentionPeriod("7-years")
+  case object TenYears extends RetentionPeriod("10-years")
 
-  private val allValues: Set[ObjectRetentionPeriod] = Set(OneWeek, OneMonth, SixMonths, OneYear, SevenYears, TenYears)
+  private val allValues: Set[RetentionPeriod] = Set(OneWeek, OneMonth, SixMonths, OneYear, SevenYears, TenYears)
 
-  def parse(value: String): Either[String, ObjectRetentionPeriod] =
+  def parse(value: String): Either[String, RetentionPeriod] =
     allValues
       .find(_.value == value)
       .toRight(s"Invalid object-store retention period. Valid values - [${allValues.map(_.value).mkString(", ")}]")

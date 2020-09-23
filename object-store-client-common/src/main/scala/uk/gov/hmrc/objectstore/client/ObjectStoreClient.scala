@@ -33,18 +33,18 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
   private val authorizationHeader: (String, String) =
     ("Authorization", config.authorizationToken)
 
-  private def retentionPeriodHeader(retentionPeriod: ObjectRetentionPeriod): (String, String) =
+  private def retentionPeriodHeader(retentionPeriod: RetentionPeriod): (String, String) =
     "X-Retention-Period" -> retentionPeriod.value
 
   private val url = s"${config.baseUrl}/object-store"
 
   /** Storing an object on an existing path will overwrite the previously stored object on that path. */
   def putObject[CONTENT](
-    path: Path.File,
-    content: CONTENT,
-    retentionPeriod: ObjectRetentionPeriod = config.defaultRetentionPeriod,
-    contentType: Option[String]            = None,
-    owner: String                          = config.owner
+                          path: Path.File,
+                          content: CONTENT,
+                          retentionPeriod: RetentionPeriod = config.defaultRetentionPeriod,
+                          contentType: Option[String]            = None,
+                          owner: String                          = config.owner
   )(
     implicit
     w: ObjectStoreContentWrite[F, CONTENT, REQ_BODY]): F[Unit] =
