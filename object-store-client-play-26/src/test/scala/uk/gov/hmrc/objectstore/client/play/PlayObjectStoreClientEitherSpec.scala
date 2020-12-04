@@ -18,7 +18,6 @@ package uk.gov.hmrc.objectstore.client.play
 
 import java.time.Instant
 import java.util.UUID
-
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
@@ -32,13 +31,16 @@ import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.logging.Authorization
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 import uk.gov.hmrc.objectstore.client.http.Payload
 import uk.gov.hmrc.objectstore.client.utils.PathUtils._
 import uk.gov.hmrc.objectstore.client.wiremock.ObjectStoreStubs._
 import uk.gov.hmrc.objectstore.client.wiremock.WireMockHelper
-import uk.gov.hmrc.objectstore.client.{ObjectListing, RetentionPeriod, ObjectSummary, Path}
+import uk.gov.hmrc.objectstore.client.{ObjectListing, ObjectSummary, Path, RetentionPeriod}
 
+import java.util.UUID.randomUUID
 import scala.concurrent.ExecutionContextExecutor
 
 class PlayObjectStoreClientEitherSpec
@@ -82,7 +84,7 @@ class PlayObjectStoreClientEitherSpec
 
       initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner = owner)
 
-      osClient.putObject(path, source).futureValue.right.value shouldBe (())
+      osClient.putObject(path, source).futureValue.right.value shouldBe ()
     }
 
     "store an object as Source with Any bound to Mat" in {
@@ -93,7 +95,7 @@ class PlayObjectStoreClientEitherSpec
 
       initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner = owner)
 
-      osClient.putObject(path, source).futureValue.right.value shouldBe (())
+      osClient.putObject(path, source).futureValue.right.value shouldBe ()
     }
 
     "store an object as Source with NotUsed bound to Mat and known md5hash and length" in {
@@ -104,7 +106,7 @@ class PlayObjectStoreClientEitherSpec
 
       initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner = owner)
 
-      osClient.putObject(path, Payload(length = body.length, md5Hash = md5Base64, content = source)).futureValue.right.value shouldBe (())
+      osClient.putObject(path, Payload(length = body.length, md5Hash = md5Base64, content = source)).futureValue.right.value shouldBe ()
     }
 
     "store an object as Source with Any bound to Mat and known md5hash and length" in {
@@ -115,7 +117,7 @@ class PlayObjectStoreClientEitherSpec
 
       initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner = owner)
 
-      osClient.putObject(path, Payload(length = body.length, md5Hash = md5Base64, content = source)).futureValue.right.value shouldBe (())
+      osClient.putObject(path, Payload(length = body.length, md5Hash = md5Base64, content = source)).futureValue.right.value shouldBe ()
     }
 
     "store an object as Bytes" in {
@@ -125,7 +127,7 @@ class PlayObjectStoreClientEitherSpec
 
       initPutObjectStub(path, statusCode = 201, body, md5Base64, owner = owner)
 
-      osClient.putObject(path, body).futureValue.right.value shouldBe (())
+      osClient.putObject(path, body).futureValue.right.value shouldBe ()
     }
 
     "store an object with explicit retention period" in {
@@ -135,7 +137,7 @@ class PlayObjectStoreClientEitherSpec
 
       initPutObjectStub(path, statusCode = 201, body, md5Base64, owner = owner, retentionPeriod = RetentionPeriod.OneMonth)
 
-      osClient.putObject(path, body, RetentionPeriod.OneMonth).futureValue.right.value shouldBe (())
+      osClient.putObject(path, body, RetentionPeriod.OneMonth).futureValue.right.value shouldBe ()
     }
 
     "store an object as String" in {
@@ -145,7 +147,7 @@ class PlayObjectStoreClientEitherSpec
 
       initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner = owner)
 
-      osClient.putObject(path, body).futureValue.right.value shouldBe (())
+      osClient.putObject(path, body).futureValue.right.value shouldBe ()
     }
 
     "return an exception if object-store response is not successful" in {
@@ -258,7 +260,7 @@ class PlayObjectStoreClientEitherSpec
 
       initDeleteObjectStub(path, owner = owner)
 
-      osClient.deleteObject(path).futureValue.right.value shouldBe (())
+      osClient.deleteObject(path).futureValue.right.value shouldBe ()
     }
 
     "return an exception if object-store response is not successful" in {
@@ -330,6 +332,8 @@ class PlayObjectStoreClientEitherSpec
       osClient.listObjects(path).futureValue.left.value shouldBe an[UpstreamErrorResponse]
     }
   }
+
+  private implicit val hc: HeaderCarrier = HeaderCarrier(authorization = Option(Authorization(randomUUID().toString)))
 
   override def afterAll: Unit = {
     super.afterAll

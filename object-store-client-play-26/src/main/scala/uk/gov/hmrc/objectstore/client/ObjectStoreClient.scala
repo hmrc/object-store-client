@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.objectstore.client
 
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.logging.Authorization
 import uk.gov.hmrc.objectstore.client.category.Monad
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 import uk.gov.hmrc.objectstore.client.http.{HttpClient, ObjectStoreContentRead, ObjectStoreContentWrite, ObjectStoreRead}
@@ -30,9 +32,6 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
   implicit
   F: Monad[F]) {
 
-  private val authorizationHeader: (String, String) =
-    ("Authorization", config.authorizationToken)
-
   private def retentionPeriodHeader(retentionPeriod: RetentionPeriod): (String, String) =
     "X-Retention-Period" -> retentionPeriod.value
 
@@ -40,21 +39,22 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
 
   /** Storing an object on an existing path will overwrite the previously stored object on that path. */
   def putObject[CONTENT](
-                          path: Path.File,
-                          content: CONTENT,
-                          retentionPeriod: RetentionPeriod = config.defaultRetentionPeriod,
-                          contentType: Option[String]            = None,
-                          owner: String                          = config.owner
+    path: Path.File,
+    content: CONTENT,
+    retentionPeriod: RetentionPeriod = config.defaultRetentionPeriod,
+    contentType: Option[String]      = None,
+    owner: String                    = config.owner
   )(
     implicit
-    w: ObjectStoreContentWrite[F, CONTENT, REQ_BODY]): F[Unit] =
+    w: ObjectStoreContentWrite[F, CONTENT, REQ_BODY],
+    hc: HeaderCarrier): F[Unit] =
     F.flatMap(w.writeContent(content, contentType))(
       c =>
         F.flatMap(
           client.put(
             s"$url/object/$owner/${path.asUri}",
             c,
-            List(authorizationHeader, retentionPeriodHeader(retentionPeriod))))(
+            headers(retentionPeriodHeader(retentionPeriod))))(
           read.consume
       ))
 
@@ -63,9 +63,10 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
     owner: String = config.owner
   )(
     implicit
-    cr: ObjectStoreContentRead[F, RES_BODY, CONTENT]): F[Option[Object[CONTENT]]] = {
+    cr: ObjectStoreContentRead[F, RES_BODY, CONTENT],
+    hc: HeaderCarrier): F[Option[Object[CONTENT]]] = {
     val location = s"$url/object/$owner/${path.asUri}"
-    F.flatMap(client.get(location, List(authorizationHeader)))(res =>
+    F.flatMap(client.get(location, headers()))(res =>
       F.flatMap(read.toObject(location, res)) {
         case Some(obj) => F.map(cr.readContent(obj.content))(c => Some(obj.copy(content = c)))
         case None      => F.pure(None)
@@ -75,12 +76,15 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
   def deleteObject(
     path: Path.File,
     owner: String = config.owner
-  ): F[Unit] =
-    F.flatMap(client.delete(s"$url/object/$owner/${path.asUri}", List(authorizationHeader)))(read.consume)
+  )(implicit hc: HeaderCarrier): F[Unit] =
+    F.flatMap(client.delete(s"$url/object/$owner/${path.asUri}", headers()))(read.consume)
 
   def listObjects(
     path: Path.Directory,
     owner: String = config.owner
-  ): F[ObjectListing] =
-    F.flatMap(client.get(s"$url/list/$owner/${path.asUri}", List(authorizationHeader)))(read.toObjectListing)
+  )(implicit hc: HeaderCarrier): F[ObjectListing] =
+    F.flatMap(client.get(s"$url/list/$owner/${path.asUri}", headers()))(read.toObjectListing)
+
+  private def headers(additionalHeaders: (String, String)*)(implicit hc: HeaderCarrier): List[(String, String)] =
+    hc.copy(authorization = Some(Authorization(config.authorizationToken))).headers.toList ++ additionalHeaders
 }
