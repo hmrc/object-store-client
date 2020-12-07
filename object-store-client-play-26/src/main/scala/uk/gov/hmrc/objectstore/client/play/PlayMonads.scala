@@ -35,7 +35,7 @@ trait PlayMonads {
       override def map[A, B](fa: FutureEither[A])(fn: A => B): FutureEither[B] =
         fa.map(_.right.map(fn))
 
-      def raiseError[A](e: PlayObjectStoreException): FutureEither[A] =
+      def raiseError[A](e: Exception): FutureEither[A] =
         Future.successful(Left(e))
 
       def liftFuture[A](future: Future[A]): FutureEither[A] =
@@ -54,6 +54,6 @@ trait PlayMonads {
 
       override def liftFuture[A](future: Future[A]): Future[A] = future
 
-      override def raiseError[A](e: PlayObjectStoreException): Future[A] = Future.failed(e)
+      override def raiseError[A](e: Exception): Future[A] = Future.failed(e)
     }
 }

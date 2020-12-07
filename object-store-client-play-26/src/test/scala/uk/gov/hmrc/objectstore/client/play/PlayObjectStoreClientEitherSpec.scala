@@ -31,7 +31,7 @@ import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
-import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
 import uk.gov.hmrc.http.logging.Authorization
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 import uk.gov.hmrc.objectstore.client.http.Payload
@@ -84,7 +84,7 @@ class PlayObjectStoreClientEitherSpec
 
       initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner = owner)
 
-      osClient.putObject(path, source).futureValue.right.value shouldBe ()
+      osClient.putObject(path, source).futureValue.right.value shouldBe (())
     }
 
     "store an object as Source with Any bound to Mat" in {
@@ -95,7 +95,7 @@ class PlayObjectStoreClientEitherSpec
 
       initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner = owner)
 
-      osClient.putObject(path, source).futureValue.right.value shouldBe ()
+      osClient.putObject(path, source).futureValue.right.value shouldBe (())
     }
 
     "store an object as Source with NotUsed bound to Mat and known md5hash and length" in {
@@ -106,7 +106,7 @@ class PlayObjectStoreClientEitherSpec
 
       initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner = owner)
 
-      osClient.putObject(path, Payload(length = body.length, md5Hash = md5Base64, content = source)).futureValue.right.value shouldBe ()
+      osClient.putObject(path, Payload(length = body.length, md5Hash = md5Base64, content = source)).futureValue.right.value shouldBe (())
     }
 
     "store an object as Source with Any bound to Mat and known md5hash and length" in {
@@ -117,7 +117,7 @@ class PlayObjectStoreClientEitherSpec
 
       initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner = owner)
 
-      osClient.putObject(path, Payload(length = body.length, md5Hash = md5Base64, content = source)).futureValue.right.value shouldBe ()
+      osClient.putObject(path, Payload(length = body.length, md5Hash = md5Base64, content = source)).futureValue.right.value shouldBe (())
     }
 
     "store an object as Bytes" in {
@@ -127,7 +127,7 @@ class PlayObjectStoreClientEitherSpec
 
       initPutObjectStub(path, statusCode = 201, body, md5Base64, owner = owner)
 
-      osClient.putObject(path, body).futureValue.right.value shouldBe ()
+      osClient.putObject(path, body).futureValue.right.value shouldBe (())
     }
 
     "store an object with explicit retention period" in {
@@ -137,7 +137,7 @@ class PlayObjectStoreClientEitherSpec
 
       initPutObjectStub(path, statusCode = 201, body, md5Base64, owner = owner, retentionPeriod = RetentionPeriod.OneMonth)
 
-      osClient.putObject(path, body, RetentionPeriod.OneMonth).futureValue.right.value shouldBe ()
+      osClient.putObject(path, body, RetentionPeriod.OneMonth).futureValue.right.value shouldBe (())
     }
 
     "store an object as String" in {
@@ -147,7 +147,7 @@ class PlayObjectStoreClientEitherSpec
 
       initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner = owner)
 
-      osClient.putObject(path, body).futureValue.right.value shouldBe ()
+      osClient.putObject(path, body).futureValue.right.value shouldBe (())
     }
 
     "return an exception if object-store response is not successful" in {
@@ -210,7 +210,7 @@ class PlayObjectStoreClientEitherSpec
 
       import InMemoryReads.jsValueContentRead
 
-      osClient.getObject[JsValue](path).futureValue.left.value shouldBe an[PlayObjectStoreException]
+      osClient.getObject[JsValue](path).futureValue.left.value shouldBe an[Exception]
     }
 
     "return an object that exists as JsResult" in {
@@ -260,7 +260,7 @@ class PlayObjectStoreClientEitherSpec
 
       initDeleteObjectStub(path, owner = owner)
 
-      osClient.deleteObject(path).futureValue.right.value shouldBe ()
+      osClient.deleteObject(path).futureValue.right.value shouldBe (())
     }
 
     "return an exception if object-store response is not successful" in {

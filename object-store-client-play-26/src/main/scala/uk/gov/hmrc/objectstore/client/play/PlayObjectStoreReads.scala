@@ -16,20 +16,19 @@
 
 package uk.gov.hmrc.objectstore.client.play
 
-import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME
-
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import play.api.http.Status
 import play.api.libs.json.{JsError, JsSuccess, JsValue}
-import uk.gov.hmrc.objectstore.client.{Object, ObjectListing, ObjectMetadata}
+import uk.gov.hmrc.http.UpstreamErrorResponse
 import uk.gov.hmrc.objectstore.client.http.ObjectStoreRead
+import uk.gov.hmrc.objectstore.client.{Object, ObjectListing, ObjectMetadata}
 
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
-
 
 object PlayObjectStoreReads {
 
@@ -39,8 +38,8 @@ object PlayObjectStoreReads {
         Future.successful(
           response match {
             case r if Status.isSuccessful(r.status) => r.body[JsValue].validate[ObjectListing](PlayFormats.objectListingRead) match {
-              case JsSuccess(r, path) => Right(r)
-              case JsError(errors) => Left(GenericError(errors.toString))
+              case JsSuccess(r, _) => Right(r)
+              case JsError(errors) => Left(new RuntimeException(s"Attempt to convert json to ${classOf[ObjectListing].getName} gave errors: $errors"))
             }
             case r => Left(UpstreamErrorResponse(s"Object store call failed with status code: ${r.status}", r.status))
           }
@@ -50,13 +49,13 @@ object PlayObjectStoreReads {
         Future.successful(
           response match {
             case resp@r if Status.isSuccessful(r.status) =>
-              def header(k: String): Either[PlayObjectStoreException, String] =
-                r.header(k).map(Right(_)).getOrElse(Left(GenericError(s"Missing header $k")))
+              def header(k: String): Either[Exception, String] =
+                r.header(k).map(Right(_)).getOrElse(Left(new RuntimeException(s"Missing header $k")))
 
-              def attempt[A](h: String, v: => A): Either[PlayObjectStoreException, A] =
+              def attempt[A](h: String, v: => A): Either[Exception, A] =
                 Try(v) match {
                   case Success(s) => Right(s)
-                  case Failure(e) => Left(GenericError(s"Couldn't read header $h: ${e.getMessage}"))
+                  case Failure(e) => Left(new RuntimeException(s"Couldn't read header $h: ${e.getMessage}"))
                 }
 
               for {

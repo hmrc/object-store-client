@@ -16,15 +16,15 @@
 
 package uk.gov.hmrc.objectstore.client.play
 
-import java.net.ConnectException
-import java.util.concurrent.TimeoutException
-
 import play.api.Logger
 import play.api.libs.ws.{WSClient, WSRequest, WSResponse}
+import uk.gov.hmrc.http.{BadGatewayException, GatewayTimeoutException, HttpException}
 import uk.gov.hmrc.objectstore.client.http.HttpClient
 
-import scala.concurrent.duration.Duration
+import java.net.ConnectException
+import java.util.concurrent.TimeoutException
 import scala.concurrent.ExecutionContext
+import scala.concurrent.duration.Duration
 
 class PlayWSHttpClient[F[_]](wsClient: WSClient)(implicit ec: ExecutionContext, F: PlayMonad[F])
   extends HttpClient[F, Request, Response] {
@@ -95,10 +95,10 @@ class PlayWSHttpClient[F[_]](wsClient: WSClient)(implicit ec: ExecutionContext, 
           .writeBody(wsRequest)
           .stream()
           .map(logResponse)
-          .map(Right(_): Either[PlayObjectStoreException, WSResponse])
+          .map(Right(_): Either[HttpException, WSResponse])
           .recover {
-            case e: TimeoutException => Left(GatewayTimeoutException(e))
-            case e: ConnectException => Left(BadGatewayException(e))
+            case e: TimeoutException => Left(new GatewayTimeoutException(s"$method of '$url' timed out with message '${e.getMessage}'"))
+            case e: ConnectException => Left(new BadGatewayException(s"$method of '$url' failed. Caused by: '${e.getMessage}'"))
           }
           .andThen { case _ => body.release() }
 

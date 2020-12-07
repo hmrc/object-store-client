@@ -29,7 +29,7 @@ package object play {
   type Response = WSResponse
   type ResBody  = Source[ByteString, NotUsed]
 
-  type FutureEither[A] = Future[Either[PlayObjectStoreException, A]]
+  type FutureEither[A] = Future[Either[Exception, A]]
 
   object Implicits
       extends PlayObjectStoreContentReads
@@ -41,11 +41,6 @@ package object play {
 }
 
 package play {
-  sealed abstract class PlayObjectStoreException(message: String) extends Exception(message)
-  case class UpstreamErrorResponse(message: String, statusCode: Int) extends PlayObjectStoreException(message)
-  case class BadGatewayException(e: Exception) extends PlayObjectStoreException(s"Bad Gateway: '${e.getMessage}'")
-  case class GatewayTimeoutException(e: Exception) extends PlayObjectStoreException(s"Gateway Timeout: '${e.getMessage}'")
-  case class GenericError(message: String) extends PlayObjectStoreException(message)
 
   // TODO move this into common (and empty implementation) ?
   // relationship with Payload?
@@ -63,5 +58,5 @@ package play {
   }
 
   // simplify by unifying the type classes required for the Play implementations
-  trait PlayMonad[F[_]] extends MonadError[F, PlayObjectStoreException] with MonadFuture[F]
+  trait PlayMonad[F[_]] extends MonadError[F, Exception] with MonadFuture[F]
 }
