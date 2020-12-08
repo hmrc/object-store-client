@@ -16,9 +16,6 @@
 
 package uk.gov.hmrc.objectstore.client.play
 
-import java.time.Instant
-import java.util.UUID
-
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
@@ -32,15 +29,19 @@ import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
+import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
+import uk.gov.hmrc.http.logging.Authorization
 import uk.gov.hmrc.objectstore.client.RetentionPeriod.OneWeek
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 import uk.gov.hmrc.objectstore.client.http.Payload
-import uk.gov.hmrc.objectstore.client.wiremock.WireMockHelper
-import uk.gov.hmrc.objectstore.client.wiremock.ObjectStoreStubs._
-import uk.gov.hmrc.objectstore.client.{ObjectListing, RetentionPeriod, ObjectSummary, Path}
-
-import scala.concurrent.ExecutionContextExecutor
 import uk.gov.hmrc.objectstore.client.utils.PathUtils._
+import uk.gov.hmrc.objectstore.client.wiremock.ObjectStoreStubs._
+import uk.gov.hmrc.objectstore.client.wiremock.WireMockHelper
+import uk.gov.hmrc.objectstore.client.{ObjectListing, ObjectSummary, Path, RetentionPeriod}
+
+import java.time.Instant
+import java.util.UUID.randomUUID
+import scala.concurrent.ExecutionContextExecutor
 
 class PlayObjectStoreClientSpec
     extends WordSpec
@@ -77,7 +78,7 @@ class PlayObjectStoreClientSpec
   "putObject" must {
 
     "store an object as Source with NotUsed bound to Mat" in {
-      val body                                = s"hello world! ${UUID.randomUUID().toString}"
+      val body                                = s"hello world! ${randomUUID().toString}"
       val path                                = generateFilePath()
       val md5Base64                           = Md5Hash.fromBytes(body.getBytes)
       val source: Source[ByteString, NotUsed] = toSource(body)
@@ -88,7 +89,7 @@ class PlayObjectStoreClientSpec
     }
 
     "store an object as Source with Any bound to Mat" in {
-      val body                          = s"hello world! ${UUID.randomUUID().toString}"
+      val body                          = s"hello world! ${randomUUID().toString}"
       val path                          = generateFilePath()
       val md5Base64                     = Md5Hash.fromBytes(body.getBytes)
       val source: Source[ByteString, _] = toSource(body)
@@ -99,7 +100,7 @@ class PlayObjectStoreClientSpec
     }
 
     "store an object as Source with NotUsed bound to Mat and known md5hash and length" in {
-      val body                                = s"hello world! ${UUID.randomUUID().toString}"
+      val body                                = s"hello world! ${randomUUID().toString}"
       val path                                = generateFilePath()
       val md5Base64                           = Md5Hash.fromBytes(body.getBytes)
       val source: Source[ByteString, NotUsed] = toSource(body)
@@ -112,7 +113,7 @@ class PlayObjectStoreClientSpec
     }
 
     "store an object as Source with Any bound to Mat and known md5hash and length" in {
-      val body                          = s"hello world! ${UUID.randomUUID().toString}"
+      val body                          = s"hello world! ${randomUUID().toString}"
       val path                          = generateFilePath()
       val md5Base64                     = Md5Hash.fromBytes(body.getBytes)
       val source: Source[ByteString, _] = toSource(body)
@@ -125,7 +126,7 @@ class PlayObjectStoreClientSpec
     }
 
     "store an object as Bytes" in {
-      val body      = s"hello world! ${UUID.randomUUID().toString}".getBytes
+      val body      = s"hello world! ${randomUUID().toString}".getBytes
       val path      = generateFilePath()
       val md5Base64 = Md5Hash.fromBytes(body)
 
@@ -135,7 +136,7 @@ class PlayObjectStoreClientSpec
     }
 
     "store an object with explicit retention period" in {
-      val body      = s"hello world! ${UUID.randomUUID().toString}".getBytes
+      val body      = s"hello world! ${randomUUID().toString}".getBytes
       val path      = generateFilePath()
       val md5Base64 = Md5Hash.fromBytes(body)
 
@@ -145,7 +146,7 @@ class PlayObjectStoreClientSpec
     }
 
     "store an object as String" in {
-      val body      = s"hello world! ${UUID.randomUUID().toString}"
+      val body      = s"hello world! ${randomUUID().toString}"
       val path      = generateFilePath()
       val md5Base64 = Md5Hash.fromBytes(body.getBytes)
 
@@ -155,7 +156,7 @@ class PlayObjectStoreClientSpec
     }
 
     "return an exception if object-store response is not successful" in {
-      val body      = s"hello world! ${UUID.randomUUID().toString}"
+      val body      = s"hello world! ${randomUUID().toString}"
       val path      = generateFilePath()
       val md5Base64 = Md5Hash.fromBytes(body.getBytes)
 
@@ -165,7 +166,7 @@ class PlayObjectStoreClientSpec
     }
 
     "store an object with differerent owner" in {
-      val body      = s"hello world! ${UUID.randomUUID().toString}"
+      val body      = s"hello world! ${randomUUID().toString}"
       val path      = generateFilePath()
       val md5Base64 = Md5Hash.fromBytes(body.getBytes)
       val owner     = "my-owner"
@@ -176,7 +177,7 @@ class PlayObjectStoreClientSpec
     }
 
     "store an object with a specified content-type" in {
-      val body        = s"hello world! ${UUID.randomUUID().toString}"
+      val body        = s"hello world! ${randomUUID().toString}"
       val path        = generateFilePath()
       val md5Base64   = Md5Hash.fromBytes(body.getBytes)
       val contentType = "application/mycontenttype"
@@ -400,6 +401,8 @@ class PlayObjectStoreClientSpec
       )
     }
   }
+
+  private implicit val hc: HeaderCarrier = HeaderCarrier(authorization = Option(Authorization(randomUUID().toString)))
 
   override def afterAll: Unit = {
     super.afterAll

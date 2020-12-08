@@ -42,7 +42,7 @@ trait LowPriorityInMemoryPlayObjectStoreContentReads extends PlayObjectStoreCont
   def jsValueContentRead[F[_]](implicit m: Materializer, F: PlayMonad[F]): ObjectStoreContentRead[F, ResBody, JsValue] =
     stringContentRead.mapF(s =>
       Try(Json.parse(s)) match {
-        case Failure(e) => F.raiseError(GenericError(s"Failed to parse Json: ${e.getMessage}"))
+        case Failure(e) => F.raiseError(new RuntimeException(s"Failed to parse Json: ${e.getMessage}"))
         case Success(a) => F.pure(a)
       }
     )

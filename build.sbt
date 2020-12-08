@@ -46,7 +46,7 @@ lazy val objectStoreClientPlay26 = Project("object-store-client-play-26", file("
   .enablePlugins(SbtAutoBuildPlugin, SbtArtifactory)
   .settings(
     commonSettings,
-    libraryDependencies ++= AppDependencies.objectStoreClienPlay26
+    libraryDependencies ++= AppDependencies.objectStoreClientPlay26
   )
   .dependsOn(objectStoreClientCommon)
 
@@ -55,6 +55,6 @@ lazy val objectStoreClientPlay27 = Project("object-store-client-play-27", file("
   .settings(
     commonSettings,
     copySources(objectStoreClientPlay26),
-    libraryDependencies ++= AppDependencies.objectStoreClienPlay27
+    libraryDependencies ++= AppDependencies.objectStoreClientPlay27
   )
   .dependsOn(objectStoreClientCommon)

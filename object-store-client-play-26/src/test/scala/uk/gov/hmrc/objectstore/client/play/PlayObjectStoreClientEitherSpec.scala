@@ -18,7 +18,6 @@ package uk.gov.hmrc.objectstore.client.play
 
 import java.time.Instant
 import java.util.UUID
-
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
@@ -32,13 +31,16 @@ import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
+import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
+import uk.gov.hmrc.http.logging.Authorization
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 import uk.gov.hmrc.objectstore.client.http.Payload
 import uk.gov.hmrc.objectstore.client.utils.PathUtils._
 import uk.gov.hmrc.objectstore.client.wiremock.ObjectStoreStubs._
 import uk.gov.hmrc.objectstore.client.wiremock.WireMockHelper
-import uk.gov.hmrc.objectstore.client.{ObjectListing, RetentionPeriod, ObjectSummary, Path}
+import uk.gov.hmrc.objectstore.client.{ObjectListing, ObjectSummary, Path, RetentionPeriod}
 
+import java.util.UUID.randomUUID
 import scala.concurrent.ExecutionContextExecutor
 
 class PlayObjectStoreClientEitherSpec
@@ -208,7 +210,7 @@ class PlayObjectStoreClientEitherSpec
 
       import InMemoryReads.jsValueContentRead
 
-      osClient.getObject[JsValue](path).futureValue.left.value shouldBe an[PlayObjectStoreException]
+      osClient.getObject[JsValue](path).futureValue.left.value shouldBe an[Exception]
     }
 
     "return an object that exists as JsResult" in {
@@ -330,6 +332,8 @@ class PlayObjectStoreClientEitherSpec
       osClient.listObjects(path).futureValue.left.value shouldBe an[UpstreamErrorResponse]
     }
   }
+
+  private implicit val hc: HeaderCarrier = HeaderCarrier(authorization = Option(Authorization(randomUUID().toString)))
 
   override def afterAll: Unit = {
     super.afterAll

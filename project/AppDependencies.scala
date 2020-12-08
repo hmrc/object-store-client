@@ -5,16 +5,18 @@ object AppDependencies {
   lazy val objectStoreClientCommon: Seq[ModuleID] = Seq(
     "org.slf4j" % "slf4j-api" % "1.7.30"
   )
-  lazy val objectStoreClienPlay26: Seq[ModuleID] = Seq(
+  lazy val objectStoreClientPlay26: Seq[ModuleID] = Seq(
     "com.typesafe.play"      %% "play"               % play26Version,
     "com.typesafe.play"      %% "play-guice"         % play26Version,
     "com.typesafe.play"      %% "play-ahc-ws"        % play26Version,
+    "uk.gov.hmrc"            %% "http-verbs-play-26" % "12.3.0",
     "org.scalatestplus.play" %% "scalatestplus-play" % "3.1.3" % Test
   ) ++ test
-  lazy val objectStoreClienPlay27: Seq[ModuleID] = Seq(
+  lazy val objectStoreClientPlay27: Seq[ModuleID] = Seq(
     "com.typesafe.play"      %% "play"               % play27Version,
     "com.typesafe.play"      %% "play-guice"         % play27Version,
     "com.typesafe.play"      %% "play-ahc-ws"        % play27Version,
+    "uk.gov.hmrc"            %% "http-verbs-play-27" % "12.3.0",
     "org.scalatestplus.play" %% "scalatestplus-play" % "4.0.3" % Test
   ) ++ test
   val test = Seq(
