@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,27 +25,30 @@ import uk.gov.hmrc.objectstore.client.RetentionPeriod
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 
 class ObjectStoreModule() extends Module {
-  override def bindings(environment: Environment, configuration: Configuration): Seq[Binding[_]] = Seq(
-    bind[ObjectStoreClientConfig].toProvider[ObjectStoreClientConfigProvider]
-  )
+  override def bindings(environment: Environment, configuration: Configuration): Seq[Binding[_]] =
+    Seq(
+      bind[ObjectStoreClientConfig].toProvider[ObjectStoreClientConfigProvider]
+    )
 }
 
-private class ObjectStoreClientConfigProvider @Inject()(configuration: Configuration)
+private class ObjectStoreClientConfigProvider @Inject() (configuration: Configuration)
     extends Provider[ObjectStoreClientConfig] {
 
-  override def get(): ObjectStoreClientConfig = ObjectStoreClientConfig(
-    baseUrl                = getBaseUrl(configuration.underlying),
-    owner                  = getOwner(configuration.underlying),
-    authorizationToken     = getAuthorizationHeader(configuration.underlying),
-    defaultRetentionPeriod = getDefaultRetentionPeriod(configuration.underlying)
-  )
+  override def get(): ObjectStoreClientConfig =
+    ObjectStoreClientConfig(
+      baseUrl = getBaseUrl(configuration.underlying),
+      owner = getOwner(configuration.underlying),
+      authorizationToken = getAuthorizationHeader(configuration.underlying),
+      defaultRetentionPeriod = getDefaultRetentionPeriod(configuration.underlying)
+    )
 
   private def getBaseUrl(config: Config): String = {
     val osConfig = config.getConfig("microservice.services.object-store")
 
-    val protocol = if (osConfig.hasPath("protocol")) {
-      osConfig.getString("protocol")
-    } else "http"
+    val protocol =
+      if (osConfig.hasPath("protocol"))
+        osConfig.getString("protocol")
+      else "http"
 
     val host = osConfig.getString("host")
     val port = osConfig.getInt("port")

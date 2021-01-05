@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,19 +18,19 @@ package uk.gov.hmrc.objectstore.client.wiremock
 
 import com.github.tomakehurst.wiremock.client.WireMock._
 import uk.gov.hmrc.objectstore.client.RetentionPeriod.OneWeek
-import uk.gov.hmrc.objectstore.client.{RetentionPeriod, Path}
+import uk.gov.hmrc.objectstore.client.{Path, RetentionPeriod}
 import uk.gov.hmrc.objectstore.client.play.Md5Hash
 
 object ObjectStoreStubs {
 
   def initPutObjectStub(
-                         path: Path.File,
-                         statusCode: Int,
-                         reqBody: Array[Byte],
-                         md5Base64: String,
-                         owner: String,
-                         retentionPeriod: RetentionPeriod = OneWeek,
-                         contentType: String                    = "application/octet-stream"
+    path: Path.File,
+    statusCode: Int,
+    reqBody: Array[Byte],
+    md5Base64: String,
+    owner: String,
+    retentionPeriod: RetentionPeriod = OneWeek,
+    contentType: String = "application/octet-stream"
   ): Unit = {
     val request = put(urlEqualTo(s"/object-store/object/$owner/${path.asUri}"))
       .withHeader("Authorization", equalTo("AuthorizationToken"))
@@ -43,7 +43,8 @@ object ObjectStoreStubs {
     val response = aResponse().withStatus(statusCode)
     stubFor(
       request
-        .willReturn(response))
+        .willReturn(response)
+    )
   }
 
   def initListObjectsStub(
@@ -63,7 +64,8 @@ object ObjectStoreStubs {
 
     stubFor(
       request
-        .willReturn(responseBuilder))
+        .willReturn(responseBuilder)
+    )
   }
 
   def initDeleteObjectStub(
@@ -78,7 +80,8 @@ object ObjectStoreStubs {
 
     stubFor(
       request
-        .willReturn(response))
+        .willReturn(response)
+    )
   }
 
   def initGetObjectStub(path: Path.File, statusCode: Int, resBody: Option[String], owner: String): Unit = {
@@ -98,7 +101,8 @@ object ObjectStoreStubs {
 
     stubFor(
       request
-        .willReturn(responseBuilder))
+        .willReturn(responseBuilder)
+    )
   }
 
 }

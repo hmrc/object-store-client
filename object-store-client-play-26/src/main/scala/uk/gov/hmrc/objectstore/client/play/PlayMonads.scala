@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package uk.gov.hmrc.objectstore.client.play
 
 import scala.concurrent.{ExecutionContext, Future}
 
-
 trait PlayMonads {
 
   implicit def futureEitherMonad(implicit ec: ExecutionContext): PlayMonad[FutureEither] =
@@ -29,7 +28,7 @@ trait PlayMonads {
       override def flatMap[A, B](fa: FutureEither[A])(fn: A => FutureEither[B]): FutureEither[B] =
         fa.flatMap {
           case Right(a) => fn(a)
-          case Left(e) => raiseError(e)
+          case Left(e)  => raiseError(e)
         }
 
       override def map[A, B](fa: FutureEither[A])(fn: A => B): FutureEither[B] =

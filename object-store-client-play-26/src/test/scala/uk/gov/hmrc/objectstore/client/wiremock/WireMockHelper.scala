@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,7 +60,10 @@ trait WireMockHelper extends BeforeAndAfterAll with BeforeAndAfterEach {
 private object PortTester {
 
   def findPort(excluded: Int*): Int =
-    Random.shuffle((6001 to 7000).toVector).find(port => !excluded.contains(port) && isFree(port)).getOrElse(throw new Exception("No free port"))
+    Random
+      .shuffle((6001 to 7000).toVector)
+      .find(port => !excluded.contains(port) && isFree(port))
+      .getOrElse(throw new Exception("No free port"))
 
   private def isFree(port: Int): Boolean = {
     val triedSocket = Try {

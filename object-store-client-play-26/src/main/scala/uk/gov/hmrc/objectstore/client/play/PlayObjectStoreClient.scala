@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,24 +26,26 @@ import scala.concurrent.{ExecutionContext, Future}
 
 /** Client which returns responses within Future[Either[PlayObjectStoreException, *]]. */
 @Singleton
-class PlayObjectStoreClientEither @Inject()(
+class PlayObjectStoreClientEither @Inject() (
   wsClient: WSClient,
-  config  : ObjectStoreClientConfig
-)(implicit ec: ExecutionContext
-) extends ObjectStoreClient[FutureEither, Request, Response, ResBody](
-  new PlayWSHttpClient[FutureEither](wsClient),
-  PlayObjectStoreReads.futureEitherReads, config
-)
+  config: ObjectStoreClientConfig
+)(implicit ec: ExecutionContext)
+    extends ObjectStoreClient[FutureEither, Request, Response, ResBody](
+      new PlayWSHttpClient[FutureEither](wsClient),
+      PlayObjectStoreReads.futureEitherReads,
+      config
+    )
 
 /** Client which returns responses within Future.
   * To handle the client exceptions, you can recover the [[PlayObjectStoreException]]
   */
 @Singleton
-class PlayObjectStoreClient @Inject()(
+class PlayObjectStoreClient @Inject() (
   wsClient: WSClient,
-  config  : ObjectStoreClientConfig
-)(implicit ec: ExecutionContext
-) extends ObjectStoreClient[Future, Request, Response, ResBody](
-  new PlayWSHttpClient[Future](wsClient),
-  PlayObjectStoreReads.futureReads, config
-)
+  config: ObjectStoreClientConfig
+)(implicit ec: ExecutionContext)
+    extends ObjectStoreClient[Future, Request, Response, ResBody](
+      new PlayWSHttpClient[Future](wsClient),
+      PlayObjectStoreReads.futureReads,
+      config
+    )

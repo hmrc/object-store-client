@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ sealed trait Path { def asUri: String }
 
 object Path {
   case class Directory(value: String) extends Path {
-    override val asUri: String = (if (value.endsWith("/")) value else value + "/").stripPrefix("/")
+    override val asUri: String = value.stripPrefix("/").stripSuffix("/")
 
     def file(fileName: String): File = File(this, fileName)
   }
@@ -32,12 +32,12 @@ object Path {
     if (fileName.isEmpty) throw new IllegalArgumentException(s"fileName cannot be empty")
 
     override val asUri: String =
-      s"${directory.asUri}${URLEncoder.encode(fileName, "UTF-8")}"
+      s"${directory.asUri}/${URLEncoder.encode(fileName.stripSuffix("/"), "UTF-8")}"
   }
 
   object File {
     def apply(uri: String): Path.File = {
-      val (directory, fileName) = uri.splitAt(uri.lastIndexOf("/"))
+      val (directory, fileName) = uri.splitAt(uri.stripSuffix("/").lastIndexOf("/"))
       Path.File(Path.Directory(directory), URLDecoder.decode(fileName.stripPrefix("/"), "UTF-8"))
     }
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import uk.gov.hmrc.objectstore.client.category.Monad
 import scala.annotation.implicitNotFound
 
 case class Payload[CONTENT](
-  length : Long,
+  length: Long,
   md5Hash: String,
   content: CONTENT
 )
@@ -37,7 +37,9 @@ trait ObjectStoreContentWrite[F[_], CONTENT, BODY] { outer =>
         outer.writeContent(f(content), contentType)
     }
 
-  def contramapF[CONTENT2](f: CONTENT2 => F[CONTENT])(implicit F: Monad[F]): ObjectStoreContentWrite[F, CONTENT2, BODY] =
+  def contramapF[CONTENT2](
+    f: CONTENT2 => F[CONTENT]
+  )(implicit F: Monad[F]): ObjectStoreContentWrite[F, CONTENT2, BODY] =
     new ObjectStoreContentWrite[F, CONTENT2, BODY] {
       override def writeContent(content: CONTENT2, contentType: Option[String]): F[BODY] =
         F.flatMap(f(content))(c => outer.writeContent(c, contentType))

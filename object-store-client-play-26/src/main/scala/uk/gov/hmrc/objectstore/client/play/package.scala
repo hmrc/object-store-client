@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,12 +31,9 @@ package object play {
 
   type FutureEither[A] = Future[Either[Exception, A]]
 
-  object Implicits
-      extends PlayObjectStoreContentReads
-      with PlayObjectStoreContentWrites
-      with PlayMonads {
+  object Implicits extends PlayObjectStoreContentReads with PlayObjectStoreContentWrites with PlayMonads {
 
-      object InMemoryReads extends InMemoryPlayObjectStoreContentReads
+    object InMemoryReads extends InMemoryPlayObjectStoreContentReads
   }
 }
 
@@ -45,10 +42,10 @@ package play {
   // TODO move this into common (and empty implementation) ?
   // relationship with Payload?
   case class HttpBody[BODY](
-    length   : Option[Long],
-    md5      : Option[String],
+    length: Option[Long],
+    md5: Option[String],
     writeBody: BODY,
-    release  : () => Unit
+    release: () => Unit
   )
 
   // the play implementation operates over Future - this allows us to embed any Future into the operating F

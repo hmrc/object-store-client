@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,9 @@ import scala.util.{Failure, Success, Try}
 
 trait PlayObjectStoreContentReads {
 
-  implicit def akkaSourceContentRead[F[_]](implicit F: PlayMonad[F]): ObjectStoreContentRead[F, ResBody, Source[ByteString, NotUsed]] =
+  implicit def akkaSourceContentRead[F[_]](implicit
+    F: PlayMonad[F]
+  ): ObjectStoreContentRead[F, ResBody, Source[ByteString, NotUsed]] =
     new ObjectStoreContentRead[F, ResBody, Source[ByteString, NotUsed]] {
       override def readContent(response: ResBody): F[Source[ByteString, NotUsed]] =
         F.pure(response)
@@ -47,18 +49,30 @@ trait LowPriorityInMemoryPlayObjectStoreContentReads extends PlayObjectStoreCont
       }
     )
 
-  implicit def jsReadsRead[F[_], A : Reads](implicit m: Materializer, F: PlayMonad[F]): ObjectStoreContentRead[F, ResBody, A] =
+  implicit def jsReadsRead[F[_], A: Reads](implicit
+    m: Materializer,
+    F: PlayMonad[F]
+  ): ObjectStoreContentRead[F, ResBody, A] =
     jsValueContentRead.map(_.as[A])
 }
 
 trait InMemoryPlayObjectStoreContentReads extends LowPriorityInMemoryPlayObjectStoreContentReads {
 
-  override implicit def stringContentRead[F[_]](implicit m: Materializer, F: PlayMonad[F]): ObjectStoreContentRead[F, ResBody, String] =
+  override implicit def stringContentRead[F[_]](implicit
+    m: Materializer,
+    F: PlayMonad[F]
+  ): ObjectStoreContentRead[F, ResBody, String] =
     super.stringContentRead
 
-  override implicit def jsValueContentRead[F[_]](implicit m: Materializer, F: PlayMonad[F]): ObjectStoreContentRead[F, ResBody, JsValue] =
+  override implicit def jsValueContentRead[F[_]](implicit
+    m: Materializer,
+    F: PlayMonad[F]
+  ): ObjectStoreContentRead[F, ResBody, JsValue] =
     super.jsValueContentRead
 
-  implicit def jsResultContentRead[F[_], A : Reads](implicit m: Materializer, F: PlayMonad[F]): ObjectStoreContentRead[F, ResBody, JsResult[A]] =
+  implicit def jsResultContentRead[F[_], A: Reads](implicit
+    m: Materializer,
+    F: PlayMonad[F]
+  ): ObjectStoreContentRead[F, ResBody, JsResult[A]] =
     jsValueContentRead.map(_.validate[A])
 }
