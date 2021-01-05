@@ -87,7 +87,7 @@ class PlayObjectStoreClientSpec
 
       initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner = defaultOwner)
 
-      osClient.putObject(path, source).futureValue shouldBe ()
+      osClient.putObject(path, source).futureValue shouldBe ((): Unit)
     }
 
     "store an object as Source with Any bound to Mat" in {
@@ -98,7 +98,7 @@ class PlayObjectStoreClientSpec
 
       initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner = defaultOwner)
 
-      osClient.putObject(path, source).futureValue shouldBe ()
+      osClient.putObject(path, source).futureValue shouldBe ((): Unit)
     }
 
     "store an object as Source with NotUsed bound to Mat and known md5hash and length" in {
@@ -111,7 +111,7 @@ class PlayObjectStoreClientSpec
 
       osClient
         .putObject(path, Payload(length = body.length, md5Hash = md5Base64, content = source))
-        .futureValue shouldBe ()
+        .futureValue shouldBe ((): Unit)
     }
 
     "store an object as Source with Any bound to Mat and known md5hash and length" in {
@@ -124,7 +124,7 @@ class PlayObjectStoreClientSpec
 
       osClient
         .putObject(path, Payload(length = body.length, md5Hash = md5Base64, content = source))
-        .futureValue shouldBe ()
+        .futureValue shouldBe ((): Unit)
     }
 
     "store an object as Bytes" in {
@@ -134,7 +134,7 @@ class PlayObjectStoreClientSpec
 
       initPutObjectStub(path, statusCode = 201, body, md5Base64, owner = defaultOwner)
 
-      osClient.putObject(path, body).futureValue shouldBe ()
+      osClient.putObject(path, body).futureValue shouldBe ((): Unit)
     }
 
     "store an object with explicit retention period" in {
@@ -151,7 +151,7 @@ class PlayObjectStoreClientSpec
         retentionPeriod = RetentionPeriod.OneMonth
       )
 
-      osClient.putObject(path, body, RetentionPeriod.OneMonth).futureValue shouldBe ()
+      osClient.putObject(path, body, RetentionPeriod.OneMonth).futureValue shouldBe ((): Unit)
     }
 
     "store an object as String" in {
@@ -161,7 +161,7 @@ class PlayObjectStoreClientSpec
 
       initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner = defaultOwner)
 
-      osClient.putObject(path, body, OneWeek).futureValue shouldBe ()
+      osClient.putObject(path, body, OneWeek).futureValue shouldBe ((): Unit)
     }
 
     "return an exception if object-store response is not successful" in {
@@ -182,7 +182,7 @@ class PlayObjectStoreClientSpec
 
       initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner = owner)
 
-      osClient.putObject(path, body, owner = owner).futureValue shouldBe ()
+      osClient.putObject(path, body, owner = owner).futureValue shouldBe ((): Unit)
     }
 
     "store an object with a specified content-type" in {
@@ -194,7 +194,7 @@ class PlayObjectStoreClientSpec
 
       initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner, contentType = contentType)
 
-      osClient.putObject(path, body, contentType = Some(contentType), owner = owner).futureValue shouldBe ()
+      osClient.putObject(path, body, contentType = Some(contentType), owner = owner).futureValue shouldBe ((): Unit)
     }
   }
 
@@ -308,7 +308,7 @@ class PlayObjectStoreClientSpec
 
       initDeleteObjectStub(path, owner = defaultOwner)
 
-      osClient.deleteObject(path).futureValue shouldBe ()
+      osClient.deleteObject(path).futureValue shouldBe ((): Unit)
     }
 
     "return an exception if object-store response is not successful" in {
@@ -325,7 +325,7 @@ class PlayObjectStoreClientSpec
 
       initDeleteObjectStub(path, owner = owner)
 
-      osClient.deleteObject(path, owner).futureValue shouldBe ()
+      osClient.deleteObject(path, owner).futureValue shouldBe ((): Unit)
     }
   }
 
