@@ -37,10 +37,16 @@ object PlayObjectStoreReads {
       override def toObjectListing(response: Response): FutureEither[ObjectListing] =
         Future.successful(
           response match {
-            case r if Status.isSuccessful(r.status) => r.body[JsValue].validate[ObjectListing](PlayFormats.objectListingRead) match {
-              case JsSuccess(r, _) => Right(r)
-              case JsError(errors) => Left(new RuntimeException(s"Attempt to convert json to ${classOf[ObjectListing].getName} gave errors: $errors"))
-            }
+            case r if Status.isSuccessful(r.status) =>
+              r.body[JsValue].validate[ObjectListing](PlayFormats.objectListingRead) match {
+                case JsSuccess(r, _) => Right(r)
+                case JsError(errors) =>
+                  Left(
+                    new RuntimeException(
+                      s"Attempt to convert json to ${classOf[ObjectListing].getName} gave errors: $errors"
+                    )
+                  )
+              }
             case r => Left(UpstreamErrorResponse(s"Object store call failed with status code: ${r.status}", r.status))
           }
         )
@@ -48,7 +54,7 @@ object PlayObjectStoreReads {
       override def toObject(location: String, response: Response): FutureEither[Option[Object[ResBody]]] =
         Future.successful(
           response match {
-            case resp@r if Status.isSuccessful(r.status) =>
+            case resp @ r if Status.isSuccessful(r.status) =>
               def header(k: String): Either[Exception, String] =
                 r.header(k).map(Right(_)).getOrElse(Left(new RuntimeException(s"Missing header $k")))
 
@@ -64,20 +70,22 @@ object PlayObjectStoreReads {
                 contentMd5    <- header("Content-MD5").right
                 lm            <- header("Last-Modified").right
                 lastModified  <- attempt("Last-Modified", ZonedDateTime.parse(lm, RFC_1123_DATE_TIME).toInstant).right
-              } yield
-                Some(Object(
+              } yield Some(
+                Object(
                   location = location,
-                  content  = resp.bodyAsSource.mapMaterializedValue(_ => NotUsed),
+                  content = resp.bodyAsSource.mapMaterializedValue(_ => NotUsed),
                   metadata = ObjectMetadata(
-                    contentType   = r.contentType,
+                    contentType = r.contentType,
                     contentLength = contentLength,
-                    contentMd5    = contentMd5,
-                    lastModified  = lastModified,
-                    userMetadata  = Map.empty[String, String] // TODO userMetadata?
-                  )))
+                    contentMd5 = contentMd5,
+                    lastModified = lastModified,
+                    userMetadata = Map.empty[String, String] // TODO userMetadata?
+                  )
+                )
+              )
 
             case r if r.status == Status.NOT_FOUND => Right(None)
-            case r => Left(UpstreamErrorResponse(s"Object store call failed with status code: ${r.status}", r.status))
+            case r                                 => Left(UpstreamErrorResponse(s"Object store call failed with status code: ${r.status}", r.status))
           }
         )
 
@@ -85,10 +93,10 @@ object PlayObjectStoreReads {
         Future.successful(
           response match {
             case r if Status.isSuccessful(r.status) => Right(())
-            case r => Left(UpstreamErrorResponse(s"Object store call failed with status code: ${r.status}", r.status))
+            case r                                  => Left(UpstreamErrorResponse(s"Object store call failed with status code: ${r.status}", r.status))
           }
         )
-  }
+    }
 
   def futureReads(implicit ec: ExecutionContext): ObjectStoreRead[Future, Response, Source[ByteString, NotUsed]] =
     new ObjectStoreRead[Future, Response, Source[ByteString, NotUsed]] {
@@ -96,7 +104,7 @@ object PlayObjectStoreReads {
       private def transform[A](f: FutureEither[A]): Future[A] =
         f.flatMap {
           case Right(a) => Future.successful(a)
-          case Left(e) => Future.failed(e)
+          case Left(e)  => Future.failed(e)
         }
 
       override def toObjectListing(response: Response): Future[ObjectListing] =

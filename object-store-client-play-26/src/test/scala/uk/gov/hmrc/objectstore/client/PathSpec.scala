@@ -22,31 +22,30 @@ class PathSpec extends WordSpec with Matchers {
   "Path asUri" must {
     "generate a directory uri correctly with a trailing slash if absent" in {
       val rawDirectoryPath = "directory"
-      val directory   = Path.Directory(rawDirectoryPath)
-      val uri         = directory.asUri
+      val directory        = Path.Directory(rawDirectoryPath)
+      val uri              = directory.asUri
       assertResult("directory/")(uri)
     }
 
     "generate a directory uri correctly with a trailing slash if already present" in {
       val rawDirectoryPath = "directory/"
-      val directory   = Path.Directory(rawDirectoryPath)
-      val uri         = directory.asUri
+      val directory        = Path.Directory(rawDirectoryPath)
+      val uri              = directory.asUri
       assertResult("directory/")(uri)
     }
 
     "generate a directory uri when raw path is empty string" in {
       val rawDirectoryPath = ""
-      val directory   = Path.Directory(rawDirectoryPath)
-      val uri         = directory.asUri
+      val directory        = Path.Directory(rawDirectoryPath)
+      val uri              = directory.asUri
       assertResult("")(uri)
     }
 
     "generate a file uri correctly" in {
-      val file        = Path.Directory("directory").file("file")
-      val uri         = file.asUri
+      val file = Path.Directory("directory").file("file")
+      val uri  = file.asUri
       assertResult("directory/file")(uri)
     }
   }
-
 
 }

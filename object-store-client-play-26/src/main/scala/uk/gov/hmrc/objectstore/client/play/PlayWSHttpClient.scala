@@ -27,54 +27,54 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.Duration
 
 class PlayWSHttpClient[F[_]](wsClient: WSClient)(implicit ec: ExecutionContext, F: PlayMonad[F])
-  extends HttpClient[F, Request, Response] {
+    extends HttpClient[F, Request, Response] {
 
   private val logger: Logger = Logger(this.getClass)
 
   override def put(url: String, body: Request, headers: List[(String, String)]): F[Response] =
     invoke(
-      url             = url,
-      method          = "PUT",
-      body            = body,
-      headers         = headers
+      url = url,
+      method = "PUT",
+      body = body,
+      headers = headers
     )
 
   override def post(url: String, body: Request, headers: List[(String, String)]): F[Response] =
     invoke(
-      url             = url,
-      method          = "POST",
-      body            = body,
-      headers         = headers
+      url = url,
+      method = "POST",
+      body = body,
+      headers = headers
     )
 
   override def get(url: String, headers: List[(String, String)]): F[Response] =
     invoke(
-      url             = url,
-      method          = "GET",
-      headers         = headers
+      url = url,
+      method = "GET",
+      headers = headers
     )
 
   override def delete(url: String, headers: List[(String, String)]): F[Response] =
     invoke(
-      url             = url,
-      method          = "DELETE",
-      headers         = headers
+      url = url,
+      method = "DELETE",
+      headers = headers
     )
 
   private val empty =
     HttpBody[WSRequest => WSRequest](
-      length    = None,
-      md5       = None,
+      length = None,
+      md5 = None,
       writeBody = identity,
-      release   = () => ()
+      release = () => ()
     )
 
   private def invoke(
-    url            : String,
-    method         : String,
-    headers        : List[(String, String)],
+    url: String,
+    method: String,
+    headers: List[(String, String)],
     queryParameters: List[(String, String)] = List.empty,
-    body           : Request                = empty
+    body: Request = empty
   ): F[WSResponse] = {
 
     logger.info(s"Request: Url: $url")
@@ -90,22 +90,24 @@ class PlayWSHttpClient[F[_]](wsClient: WSClient)(implicit ec: ExecutionContext, 
       .withQueryStringParameters(queryParameters: _*)
       .withRequestTimeout(Duration.Inf)
 
-      val res =
-        body
-          .writeBody(wsRequest)
-          .stream()
-          .map(logResponse)
-          .map(Right(_): Either[HttpException, WSResponse])
-          .recover {
-            case e: TimeoutException => Left(new GatewayTimeoutException(s"$method of '$url' timed out with message '${e.getMessage}'"))
-            case e: ConnectException => Left(new BadGatewayException(s"$method of '$url' failed. Caused by: '${e.getMessage}'"))
-          }
-          .andThen { case _ => body.release() }
+    val res =
+      body
+        .writeBody(wsRequest)
+        .stream()
+        .map(logResponse)
+        .map(Right(_): Either[HttpException, WSResponse])
+        .recover {
+          case e: TimeoutException =>
+            Left(new GatewayTimeoutException(s"$method of '$url' timed out with message '${e.getMessage}'"))
+          case e: ConnectException =>
+            Left(new BadGatewayException(s"$method of '$url' failed. Caused by: '${e.getMessage}'"))
+        }
+        .andThen { case _ => body.release() }
 
-      F.flatMap(F.liftFuture(res)){
-        case Left(e)  => F.raiseError(e)
-        case Right(r) => F.pure(r)
-      }
+    F.flatMap(F.liftFuture(res)) {
+      case Left(e)  => F.raiseError(e)
+      case Right(r) => F.pure(r)
+    }
   }
 
   private def logResponse(response: WSResponse): WSResponse = {

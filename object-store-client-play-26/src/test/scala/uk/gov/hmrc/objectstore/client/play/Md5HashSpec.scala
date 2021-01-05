@@ -20,10 +20,7 @@ import java.io.ByteArrayInputStream
 
 import org.scalatest.{Matchers, WordSpec}
 
-
-class Md5HashSpec
-  extends WordSpec
-     with Matchers {
+class Md5HashSpec extends WordSpec with Matchers {
 
   "Md5Hash.fromInputStream" must {
 

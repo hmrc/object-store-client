@@ -32,9 +32,7 @@ object Md5Hash {
       val dis = new DigestInputStream(is, md)
       Iterator.continually(dis.read()).takeWhile(_ != -1).toArray
       Base64.getEncoder.encodeToString(md.digest())
-    } finally {
-      is.close()
-    }
+    } finally is.close()
 
   def fromBytes(bytes: Array[Byte]): String =
     Base64.getEncoder.encodeToString(MessageDigest.getInstance("MD5").digest(bytes))

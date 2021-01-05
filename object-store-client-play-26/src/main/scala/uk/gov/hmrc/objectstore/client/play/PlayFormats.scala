@@ -33,11 +33,10 @@ object PlayFormats {
       .inmap(Path.File.apply, _.asUri)
 
   val objectSummaryRead: Reads[ObjectSummary] =
-    ( (__ \ "location"     ).read[String].map(_.stripPrefix("/object-store/object/")).map(Path.File.apply)
-    ~ (__ \ "contentLength").read[Long]
-    ~ (__ \ "contentMD5"   ).read[String]
-    ~ (__ \ "lastModified" ).read[Instant]
-    )(ObjectSummary.apply _)
+    ((__ \ "location").read[String].map(_.stripPrefix("/object-store/object/")).map(Path.File.apply)
+      ~ (__ \ "contentLength").read[Long]
+      ~ (__ \ "contentMD5").read[String]
+      ~ (__ \ "lastModified").read[Instant])(ObjectSummary.apply _)
 
   val objectListingRead: Reads[ObjectListing] = {
     implicit val osf: Reads[ObjectSummary] = objectSummaryRead

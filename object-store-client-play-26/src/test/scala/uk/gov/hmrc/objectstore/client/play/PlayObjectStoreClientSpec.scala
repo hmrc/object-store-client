@@ -56,7 +56,7 @@ class PlayObjectStoreClientSpec
   implicit val system: ActorSystem          = ActorSystem()
   implicit val m: ActorMaterializer         = ActorMaterializer()
 
-  private val application: Application = fakeApplication()
+  private val application: Application          = fakeApplication()
   protected val osClient: PlayObjectStoreClient = application.injector.instanceOf(classOf[PlayObjectStoreClient])
 
   lazy val defaultOwner = "my-service"
@@ -66,11 +66,13 @@ class PlayObjectStoreClientSpec
       .overrides(
         bind[ObjectStoreClientConfig].toInstance(
           ObjectStoreClientConfig(
-            baseUrl            = wireMockUrl,
-            owner              = defaultOwner,
+            baseUrl = wireMockUrl,
+            owner = defaultOwner,
             authorizationToken = "AuthorizationToken",
             defaultRetentionPeriod = RetentionPeriod.OneWeek
-          )))
+          )
+        )
+      )
       .build()
 
   import Implicits._
@@ -85,7 +87,7 @@ class PlayObjectStoreClientSpec
 
       initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner = defaultOwner)
 
-      osClient.putObject(path, source).futureValue shouldBe (())
+      osClient.putObject(path, source).futureValue shouldBe ()
     }
 
     "store an object as Source with Any bound to Mat" in {
@@ -96,7 +98,7 @@ class PlayObjectStoreClientSpec
 
       initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner = defaultOwner)
 
-      osClient.putObject(path, source).futureValue shouldBe (())
+      osClient.putObject(path, source).futureValue shouldBe ()
     }
 
     "store an object as Source with NotUsed bound to Mat and known md5hash and length" in {
@@ -109,7 +111,7 @@ class PlayObjectStoreClientSpec
 
       osClient
         .putObject(path, Payload(length = body.length, md5Hash = md5Base64, content = source))
-        .futureValue shouldBe (())
+        .futureValue shouldBe ()
     }
 
     "store an object as Source with Any bound to Mat and known md5hash and length" in {
@@ -122,7 +124,7 @@ class PlayObjectStoreClientSpec
 
       osClient
         .putObject(path, Payload(length = body.length, md5Hash = md5Base64, content = source))
-        .futureValue shouldBe (())
+        .futureValue shouldBe ()
     }
 
     "store an object as Bytes" in {
@@ -132,7 +134,7 @@ class PlayObjectStoreClientSpec
 
       initPutObjectStub(path, statusCode = 201, body, md5Base64, owner = defaultOwner)
 
-      osClient.putObject(path, body).futureValue shouldBe (())
+      osClient.putObject(path, body).futureValue shouldBe ()
     }
 
     "store an object with explicit retention period" in {
@@ -140,9 +142,16 @@ class PlayObjectStoreClientSpec
       val path      = generateFilePath()
       val md5Base64 = Md5Hash.fromBytes(body)
 
-      initPutObjectStub(path, statusCode = 201, body, md5Base64, owner = defaultOwner, retentionPeriod = RetentionPeriod.OneMonth)
+      initPutObjectStub(
+        path,
+        statusCode = 201,
+        body,
+        md5Base64,
+        owner = defaultOwner,
+        retentionPeriod = RetentionPeriod.OneMonth
+      )
 
-      osClient.putObject(path, body, RetentionPeriod.OneMonth).futureValue shouldBe (())
+      osClient.putObject(path, body, RetentionPeriod.OneMonth).futureValue shouldBe ()
     }
 
     "store an object as String" in {
@@ -152,7 +161,7 @@ class PlayObjectStoreClientSpec
 
       initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner = defaultOwner)
 
-      osClient.putObject(path, body, OneWeek).futureValue shouldBe (())
+      osClient.putObject(path, body, OneWeek).futureValue shouldBe ()
     }
 
     "return an exception if object-store response is not successful" in {
@@ -173,7 +182,7 @@ class PlayObjectStoreClientSpec
 
       initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner = owner)
 
-      osClient.putObject(path, body, owner = owner).futureValue shouldBe (())
+      osClient.putObject(path, body, owner = owner).futureValue shouldBe ()
     }
 
     "store an object with a specified content-type" in {
@@ -185,7 +194,7 @@ class PlayObjectStoreClientSpec
 
       initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner, contentType = contentType)
 
-      osClient.putObject(path, body, contentType = Some(contentType), owner = owner).futureValue shouldBe (())
+      osClient.putObject(path, body, contentType = Some(contentType), owner = owner).futureValue shouldBe ()
     }
   }
 
@@ -299,7 +308,7 @@ class PlayObjectStoreClientSpec
 
       initDeleteObjectStub(path, owner = defaultOwner)
 
-      osClient.deleteObject(path).futureValue shouldBe (())
+      osClient.deleteObject(path).futureValue shouldBe ()
     }
 
     "return an exception if object-store response is not successful" in {
@@ -316,7 +325,7 @@ class PlayObjectStoreClientSpec
 
       initDeleteObjectStub(path, owner = owner)
 
-      osClient.deleteObject(path, owner).futureValue shouldBe (())
+      osClient.deleteObject(path, owner).futureValue shouldBe ()
     }
   }
 
@@ -328,16 +337,16 @@ class PlayObjectStoreClientSpec
 
       osClient.listObjects(path).futureValue.objectSummaries shouldBe List(
         ObjectSummary(
-          location      = Path.File(Path.Directory("something"), "0993180f-8f31-41b2-905c-71f0273bb7d4"),
+          location = Path.File(Path.Directory("something"), "0993180f-8f31-41b2-905c-71f0273bb7d4"),
           contentLength = 49,
-          contentMd5    = "4033ff85a6fdc6a2f51e60d89236a244",
-          lastModified  = Instant.parse("2020-07-21T13:16:42.859Z")
+          contentMd5 = "4033ff85a6fdc6a2f51e60d89236a244",
+          lastModified = Instant.parse("2020-07-21T13:16:42.859Z")
         ),
         ObjectSummary(
-          location      = Path.File(Path.Directory("something"), "23265eab-268e-4fcc-904f-775586b362c2"),
+          location = Path.File(Path.Directory("something"), "23265eab-268e-4fcc-904f-775586b362c2"),
           contentLength = 49,
-          contentMd5    = "a3c2f1e38701bd2c7b54ebd7b1cd0dbc",
-          lastModified  = Instant.parse("2020-07-21T13:16:41.226Z")
+          contentMd5 = "a3c2f1e38701bd2c7b54ebd7b1cd0dbc",
+          lastModified = Instant.parse("2020-07-21T13:16:41.226Z")
         )
       )
     }
@@ -349,16 +358,16 @@ class PlayObjectStoreClientSpec
 
       osClient.listObjects(path).futureValue.objectSummaries shouldBe List(
         ObjectSummary(
-          location      = Path.File(Path.Directory("something"), "0993180f-8f31-41b2-905c-71f0273bb7d4"),
+          location = Path.File(Path.Directory("something"), "0993180f-8f31-41b2-905c-71f0273bb7d4"),
           contentLength = 49,
-          contentMd5    = "4033ff85a6fdc6a2f51e60d89236a244",
-          lastModified  = Instant.parse("2020-07-21T13:16:42.859Z")
+          contentMd5 = "4033ff85a6fdc6a2f51e60d89236a244",
+          lastModified = Instant.parse("2020-07-21T13:16:42.859Z")
         ),
         ObjectSummary(
-          location      = Path.File(Path.Directory("something"), "23265eab-268e-4fcc-904f-775586b362c2"),
+          location = Path.File(Path.Directory("something"), "23265eab-268e-4fcc-904f-775586b362c2"),
           contentLength = 49,
-          contentMd5    = "a3c2f1e38701bd2c7b54ebd7b1cd0dbc",
-          lastModified  = Instant.parse("2020-07-21T13:16:41.226Z")
+          contentMd5 = "a3c2f1e38701bd2c7b54ebd7b1cd0dbc",
+          lastModified = Instant.parse("2020-07-21T13:16:41.226Z")
         )
       )
     }
@@ -387,16 +396,16 @@ class PlayObjectStoreClientSpec
 
       osClient.listObjects(path, owner).futureValue.objectSummaries shouldBe List(
         ObjectSummary(
-          location      = Path.File(Path.Directory("something"), "0993180f-8f31-41b2-905c-71f0273bb7d4"),
+          location = Path.File(Path.Directory("something"), "0993180f-8f31-41b2-905c-71f0273bb7d4"),
           contentLength = 49,
-          contentMd5    = "4033ff85a6fdc6a2f51e60d89236a244",
-          lastModified  = Instant.parse("2020-07-21T13:16:42.859Z")
+          contentMd5 = "4033ff85a6fdc6a2f51e60d89236a244",
+          lastModified = Instant.parse("2020-07-21T13:16:42.859Z")
         ),
         ObjectSummary(
-          location      = Path.File(Path.Directory("something"), "23265eab-268e-4fcc-904f-775586b362c2"),
+          location = Path.File(Path.Directory("something"), "23265eab-268e-4fcc-904f-775586b362c2"),
           contentLength = 49,
-          contentMd5    = "a3c2f1e38701bd2c7b54ebd7b1cd0dbc",
-          lastModified  = Instant.parse("2020-07-21T13:16:41.226Z")
+          contentMd5 = "a3c2f1e38701bd2c7b54ebd7b1cd0dbc",
+          lastModified = Instant.parse("2020-07-21T13:16:41.226Z")
         )
       )
     }
@@ -415,7 +424,6 @@ class PlayObjectStoreClientSpec
     def asString(): String =
       source.map(_.utf8String).runReduce(_ + _).futureValue
   }
-
 
   private def toSource(body: String): Source[ByteString, NotUsed] =
     Source.single(ByteString(body.getBytes("UTF-8")))

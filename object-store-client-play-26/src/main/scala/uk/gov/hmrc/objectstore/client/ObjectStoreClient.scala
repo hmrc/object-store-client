@@ -28,9 +28,7 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
   client: HttpClient[F, REQ_BODY, RES],
   read: ObjectStoreRead[F, RES, RES_BODY],
   config: ObjectStoreClientConfig
-)(
-  implicit
-  F: Monad[F]) {
+)(implicit F: Monad[F]) {
 
   private def retentionPeriodHeader(retentionPeriod: RetentionPeriod): (String, String) =
     "X-Retention-Period" -> retentionPeriod.value
@@ -42,35 +40,26 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
     path: Path.File,
     content: CONTENT,
     retentionPeriod: RetentionPeriod = config.defaultRetentionPeriod,
-    contentType: Option[String]      = None,
-    owner: String                    = config.owner
-  )(
-    implicit
-    w: ObjectStoreContentWrite[F, CONTENT, REQ_BODY],
-    hc: HeaderCarrier): F[Unit] =
-    F.flatMap(w.writeContent(content, contentType))(
-      c =>
-        F.flatMap(
-          client.put(
-            s"$url/object/$owner/${path.asUri}",
-            c,
-            headers(retentionPeriodHeader(retentionPeriod))))(
-          read.consume
-      ))
+    contentType: Option[String] = None,
+    owner: String = config.owner
+  )(implicit w: ObjectStoreContentWrite[F, CONTENT, REQ_BODY], hc: HeaderCarrier): F[Unit] =
+    F.flatMap(w.writeContent(content, contentType))(c =>
+      F.flatMap(client.put(s"$url/object/$owner/${path.asUri}", c, headers(retentionPeriodHeader(retentionPeriod))))(
+        read.consume
+      )
+    )
 
   def getObject[CONTENT](
     path: Path.File,
     owner: String = config.owner
-  )(
-    implicit
-    cr: ObjectStoreContentRead[F, RES_BODY, CONTENT],
-    hc: HeaderCarrier): F[Option[Object[CONTENT]]] = {
+  )(implicit cr: ObjectStoreContentRead[F, RES_BODY, CONTENT], hc: HeaderCarrier): F[Option[Object[CONTENT]]] = {
     val location = s"$url/object/$owner/${path.asUri}"
     F.flatMap(client.get(location, headers()))(res =>
       F.flatMap(read.toObject(location, res)) {
         case Some(obj) => F.map(cr.readContent(obj.content))(c => Some(obj.copy(content = c)))
         case None      => F.pure(None)
-    })
+      }
+    )
   }
 
   def deleteObject(

@@ -33,15 +33,17 @@ trait PlayObjectStoreContentWrites {
   private def bodyWritable[T](contentType: Option[String])(implicit bw: BodyWritable[T]): BodyWritable[T] =
     contentType.fold(bw)(ct => BodyWritable(bw.transform, ct))
 
-  implicit def payloadAkkaSourceContentWrite[F[_], Mat <: Any](implicit F: PlayMonad[F]): ObjectStoreContentWrite[F, Payload[Source[ByteString, Mat]], Request] =
+  implicit def payloadAkkaSourceContentWrite[F[_], Mat <: Any](implicit
+    F: PlayMonad[F]
+  ): ObjectStoreContentWrite[F, Payload[Source[ByteString, Mat]], Request] =
     new ObjectStoreContentWrite[F, Payload[Source[ByteString, Mat]], Request] {
       override def writeContent(payload: Payload[Source[ByteString, Mat]], contentType: Option[String]): F[Request] =
         F.pure(
           HttpBody(
-            length    = Some(payload.length),
-            md5       = Some(payload.md5Hash),
+            length = Some(payload.length),
+            md5 = Some(payload.md5Hash),
             writeBody = (req: WSRequest) => req.withBody(payload.content)(bodyWritable(contentType)),
-            release   = () => ()
+            release = () => ()
           )
         )
     }
@@ -49,13 +51,17 @@ trait PlayObjectStoreContentWrites {
   implicit def fileWrite[F[_]](implicit F: PlayMonad[F]): ObjectStoreContentWrite[F, File, Request] =
     payloadAkkaSourceContentWrite[F, NotUsed].contramap { file =>
       Payload(
-        length  = file.length,
+        length = file.length,
         md5Hash = Md5Hash.fromInputStream(new FileInputStream(file)),
         content = FileIO.fromPath(file.toPath).mapMaterializedValue(_ => NotUsed)
       )
     }
 
-  implicit def akkaSourceContentWrite[F[_], Mat <: Any](implicit ec: ExecutionContext, m: Materializer, F: PlayMonad[F]): ObjectStoreContentWrite[F, Source[ByteString, Mat], Request] =
+  implicit def akkaSourceContentWrite[F[_], Mat <: Any](implicit
+    ec: ExecutionContext,
+    m: Materializer,
+    F: PlayMonad[F]
+  ): ObjectStoreContentWrite[F, Source[ByteString, Mat], Request] =
     new ObjectStoreContentWrite[F, Source[ByteString, Mat], Request] {
       override def writeContent(content: Source[ByteString, Mat], contentType: Option[String]): F[Request] = {
         val tempFile = SingletonTemporaryFileCreator.create()
@@ -63,21 +69,20 @@ trait PlayObjectStoreContentWrites {
         val (uploadFinished, md5Finished) =
           broadcast2(
             source = content,
-            sink1  = FileIO.toPath(tempFile.path),
-            sink2  = Md5Hash.md5HashSink
+            sink1 = FileIO.toPath(tempFile.path),
+            sink2 = Md5Hash.md5HashSink
           ).run()
 
         F.liftFuture(
           for {
             _       <- uploadFinished
             md5Hash <- md5Finished
-          } yield
-            HttpBody(
-              length    = Some(tempFile.path.toFile.length),
-              md5       = Some(md5Hash),
-              writeBody = (req: WSRequest) => req.withBody(tempFile.path.toFile)(bodyWritable(contentType)),
-              release   = () => SingletonTemporaryFileCreator.delete(tempFile)
-            )
+          } yield HttpBody(
+            length = Some(tempFile.path.toFile.length),
+            md5 = Some(md5Hash),
+            writeBody = (req: WSRequest) => req.withBody(tempFile.path.toFile)(bodyWritable(contentType)),
+            release = () => SingletonTemporaryFileCreator.delete(tempFile)
+          )
         )
       }
     }
@@ -87,20 +92,19 @@ trait PlayObjectStoreContentWrites {
     sink1: Sink[T, Mat1],
     sink2: Sink[T, Mat2]
   ): RunnableGraph[(Mat1, Mat2)] =
-    RunnableGraph.fromGraph(GraphDSL.create(sink1, sink2)(Tuple2.apply) {
-      implicit builder => (s1, s2) =>
-        import GraphDSL.Implicits._
-        val broadcast = builder.add(Broadcast[T](outputPorts = 2))
-        source ~> broadcast
-        broadcast.out(0) ~> Flow[T].async ~> s1
-        broadcast.out(1) ~> Flow[T].async ~> s2
-        ClosedShape
+    RunnableGraph.fromGraph(GraphDSL.create(sink1, sink2)(Tuple2.apply) { implicit builder => (s1, s2) =>
+      import GraphDSL.Implicits._
+      val broadcast = builder.add(Broadcast[T](outputPorts = 2))
+      source ~> broadcast
+      broadcast.out(0) ~> Flow[T].async ~> s1
+      broadcast.out(1) ~> Flow[T].async ~> s2
+      ClosedShape
     })
 
   implicit def bytesWrite[F[_]](implicit F: PlayMonad[F]): ObjectStoreContentWrite[F, Array[Byte], Request] =
     payloadAkkaSourceContentWrite[F, NotUsed].contramap { bytes =>
       Payload(
-        length  = bytes.length,
+        length = bytes.length,
         md5Hash = Md5Hash.fromBytes(bytes),
         content = Source.single(bytes).map(ByteString(_))
       )
