@@ -16,12 +16,16 @@
 
 package uk.gov.hmrc.objectstore.client.play
 
+import java.time.Instant
+import java.util.UUID.randomUUID
+
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.time.{Millis, Span}
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.Application
@@ -29,8 +33,8 @@ import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
-import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
 import uk.gov.hmrc.http.logging.Authorization
+import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
 import uk.gov.hmrc.objectstore.client.RetentionPeriod.OneWeek
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 import uk.gov.hmrc.objectstore.client.http.Payload
@@ -39,8 +43,6 @@ import uk.gov.hmrc.objectstore.client.wiremock.ObjectStoreStubs._
 import uk.gov.hmrc.objectstore.client.wiremock.WireMockHelper
 import uk.gov.hmrc.objectstore.client.{ObjectListing, ObjectSummary, Path, RetentionPeriod}
 
-import java.time.Instant
-import java.util.UUID.randomUUID
 import scala.concurrent.ExecutionContextExecutor
 
 class PlayObjectStoreClientSpec
@@ -49,12 +51,12 @@ class PlayObjectStoreClientSpec
     with GuiceOneServerPerSuite
     with BeforeAndAfterAll
     with WireMockHelper
-    with ScalaFutures
-    with IntegrationPatience {
+    with ScalaFutures {
 
   implicit val ec: ExecutionContextExecutor = scala.concurrent.ExecutionContext.global
   implicit val system: ActorSystem          = ActorSystem()
   implicit val m: ActorMaterializer         = ActorMaterializer()
+  implicit val patience: PatienceConfig     = PatienceConfig(timeout = scaled(Span(2000, Millis)))
 
   private val application: Application          = fakeApplication()
   protected val osClient: PlayObjectStoreClient = application.injector.instanceOf(classOf[PlayObjectStoreClient])
