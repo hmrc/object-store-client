@@ -71,8 +71,10 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
   def listObjects(
     path: Path.Directory,
     owner: String = config.owner
-  )(implicit hc: HeaderCarrier): F[ObjectListing] =
-    F.flatMap(client.get(s"$url/list/$owner/${path.asUri}", headers()))(read.toObjectListing)
+  )(implicit hc: HeaderCarrier): F[ObjectListing] = {
+    val location = s"$url/list/$owner/${path.asUri}".stripSuffix("/") // strip suffix since you can list an empty path
+    F.flatMap(client.get(location, headers()))(read.toObjectListing)
+  }
 
   private def headers(additionalHeaders: (String, String)*)(implicit hc: HeaderCarrier): List[(String, String)] =
     hc.copy(authorization = Some(Authorization(config.authorizationToken))).headers.toList ++ additionalHeaders
