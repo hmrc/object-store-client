@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.objectstore.client.play
 
+import akka.stream.Materializer
 import javax.inject.{Inject, Singleton}
 import play.api.libs.ws.WSClient
 import uk.gov.hmrc.objectstore.client.ObjectStoreClient
@@ -29,7 +30,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class PlayObjectStoreClientEither @Inject() (
   wsClient: WSClient,
   config: ObjectStoreClientConfig
-)(implicit ec: ExecutionContext)
+)(implicit m: Materializer, ec: ExecutionContext)
     extends ObjectStoreClient[FutureEither, Request, Response, ResBody](
       new PlayWSHttpClient[FutureEither](wsClient),
       PlayObjectStoreReads.futureEitherReads,
@@ -43,7 +44,7 @@ class PlayObjectStoreClientEither @Inject() (
 class PlayObjectStoreClient @Inject() (
   wsClient: WSClient,
   config: ObjectStoreClientConfig
-)(implicit ec: ExecutionContext)
+)(implicit m: Materializer, ec: ExecutionContext)
     extends ObjectStoreClient[Future, Request, Response, ResBody](
       new PlayWSHttpClient[Future](wsClient),
       PlayObjectStoreReads.futureReads,

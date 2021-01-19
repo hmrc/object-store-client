@@ -17,10 +17,11 @@
 package uk.gov.hmrc.objectstore.client.play
 
 import akka.NotUsed
+import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import play.api.http.Status
-import play.api.libs.json.{JsError, JsSuccess, JsValue}
+import play.api.libs.json.{Json, JsError, JsSuccess}
 import uk.gov.hmrc.http.UpstreamErrorResponse
 import uk.gov.hmrc.objectstore.client.http.ObjectStoreRead
 import uk.gov.hmrc.objectstore.client.{Object, ObjectListing, ObjectMetadata}
@@ -32,13 +33,13 @@ import scala.util.{Failure, Success, Try}
 
 object PlayObjectStoreReads {
 
-  def futureEitherReads: ObjectStoreRead[FutureEither, Response, Source[ByteString, NotUsed]] =
+  def futureEitherReads(implicit m: Materializer, ec: ExecutionContext): ObjectStoreRead[FutureEither, Response, Source[ByteString, NotUsed]] =
     new ObjectStoreRead[FutureEither, Response, Source[ByteString, NotUsed]] {
       override def toObjectListing(response: Response): FutureEither[ObjectListing] =
-        Future.successful(
-          response match {
-            case r if Status.isSuccessful(r.status) =>
-              r.body[JsValue].validate[ObjectListing](PlayFormats.objectListingRead) match {
+        response match {
+          case r if Status.isSuccessful(r.status) =>
+            r.bodyAsSource.map(_.utf8String).runReduce(_ + _).map { str =>
+              Json.parse(str).validate[ObjectListing](PlayFormats.objectListingRead) match {
                 case JsSuccess(r, _) => Right(r)
                 case JsError(errors) =>
                   Left(
@@ -47,9 +48,9 @@ object PlayObjectStoreReads {
                     )
                   )
               }
-            case r => Left(UpstreamErrorResponse(s"Object store call failed with status code: ${r.status}, body: ${r.body[String]}", r.status))
-          }
-        )
+            }
+          case r => Future.successful(Left(UpstreamErrorResponse(s"Object store call failed with status code: ${r.status}, body: ${r.body[String]}", r.status)))
+        }
 
       override def toObject(location: String, response: Response): FutureEither[Option[Object[ResBody]]] =
         Future.successful(
@@ -98,7 +99,7 @@ object PlayObjectStoreReads {
         )
     }
 
-  def futureReads(implicit ec: ExecutionContext): ObjectStoreRead[Future, Response, Source[ByteString, NotUsed]] =
+  def futureReads(implicit m: Materializer, ec: ExecutionContext): ObjectStoreRead[Future, Response, Source[ByteString, NotUsed]] =
     new ObjectStoreRead[Future, Response, Source[ByteString, NotUsed]] {
 
       private def transform[A](f: FutureEither[A]): Future[A] =
