@@ -47,7 +47,7 @@ object PlayObjectStoreReads {
                     )
                   )
               }
-            case r => Left(UpstreamErrorResponse(s"Object store call failed with status code: ${r.status}", r.status))
+            case r => Left(UpstreamErrorResponse(s"Object store call failed with status code: ${r.status}, body: ${r.body[String]}", r.status))
           }
         )
 
@@ -85,7 +85,7 @@ object PlayObjectStoreReads {
               )
 
             case r if r.status == Status.NOT_FOUND => Right(None)
-            case r                                 => Left(UpstreamErrorResponse(s"Object store call failed with status code: ${r.status}", r.status))
+            case r                                 => Left(UpstreamErrorResponse(s"Object store call failed with status code: ${r.status}, body: ${r.body[String]}", r.status))
           }
         )
 
@@ -93,7 +93,7 @@ object PlayObjectStoreReads {
         Future.successful(
           response match {
             case r if Status.isSuccessful(r.status) => Right(())
-            case r                                  => Left(UpstreamErrorResponse(s"Object store call failed with status code: ${r.status}", r.status))
+            case r                                  => Left(UpstreamErrorResponse(s"Object store call failed with status code: ${r.status}, body: ${r.body[String]}", r.status))
           }
         )
     }

@@ -53,7 +53,7 @@ object ObjectStoreStubs {
     resBodyJson: Option[String],
     owner: String
   ): Unit = {
-    val request = get(urlEqualTo(s"/object-store/list/$owner/${path.asUri}"))
+    val request = get(urlEqualTo(s"/object-store/list/$owner/${path.asUri}".stripSuffix("/")))
       .withHeader("Authorization", equalTo("AuthorizationToken"))
 
     val responseBuilder = aResponse().withStatus(statusCode)
