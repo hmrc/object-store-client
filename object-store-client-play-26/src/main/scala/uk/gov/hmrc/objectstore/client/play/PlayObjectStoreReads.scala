@@ -36,10 +36,10 @@ object PlayObjectStoreReads {
   def futureEitherReads(implicit m: Materializer, ec: ExecutionContext): ObjectStoreRead[FutureEither, Response, Source[ByteString, NotUsed]] =
     new ObjectStoreRead[FutureEither, Response, Source[ByteString, NotUsed]] {
       override def toObjectListing(response: Response): FutureEither[ObjectListing] =
-        response match {
-          case r if Status.isSuccessful(r.status) =>
-            r.bodyAsSource.map(_.utf8String).runReduce(_ + _).map { str =>
-              Json.parse(str).validate[ObjectListing](PlayFormats.objectListingRead) match {
+        response.status match {
+          case SuccessStatus(_) =>
+            readBody(response).map { bodyStr =>
+              Json.parse(bodyStr).validate[ObjectListing](PlayFormats.objectListingRead) match {
                 case JsSuccess(r, _) => Right(r)
                 case JsError(errors) =>
                   Left(
@@ -49,22 +49,25 @@ object PlayObjectStoreReads {
                   )
               }
             }
-          case r => Future.successful(Left(UpstreamErrorResponse(s"Object store call failed with status code: ${r.status}, body: ${r.body[String]}", r.status)))
-        }
+          case _ =>
+            readBody(response).map { bodyStr =>
+              Left(UpstreamErrorResponse(s"Object store call failed with status code: ${response.status}, body: $bodyStr", response.status))
+            }
+          }
 
       override def toObject(location: String, response: Response): FutureEither[Option[Object[ResBody]]] =
-        Future.successful(
-          response match {
-            case resp @ r if Status.isSuccessful(r.status) =>
-              def header(k: String): Either[Exception, String] =
-                r.header(k).map(Right(_)).getOrElse(Left(new RuntimeException(s"Missing header $k")))
+        response.status match {
+          case SuccessStatus(_) =>
+            def header(k: String): Either[Exception, String] =
+              response.header(k).map(Right(_)).getOrElse(Left(new RuntimeException(s"Missing header $k")))
 
-              def attempt[A](h: String, v: => A): Either[Exception, A] =
-                Try(v) match {
-                  case Success(s) => Right(s)
-                  case Failure(e) => Left(new RuntimeException(s"Couldn't read header $h: ${e.getMessage}"))
-                }
+            def attempt[A](h: String, v: => A): Either[Exception, A] =
+              Try(v) match {
+                case Success(s) => Right(s)
+                case Failure(e) => Left(new RuntimeException(s"Couldn't read header $h: ${e.getMessage}"))
+              }
 
+            Future.successful {
               for {
                 cl            <- header("Content-Length").right
                 contentLength <- attempt("Content-Length", cl.toLong).right
@@ -74,9 +77,9 @@ object PlayObjectStoreReads {
               } yield Some(
                 Object(
                   location = location,
-                  content = resp.bodyAsSource.mapMaterializedValue(_ => NotUsed),
+                  content = response.bodyAsSource.mapMaterializedValue(_ => NotUsed),
                   metadata = ObjectMetadata(
-                    contentType = r.contentType,
+                    contentType = response.contentType,
                     contentLength = contentLength,
                     contentMd5 = contentMd5,
                     lastModified = lastModified,
@@ -84,19 +87,23 @@ object PlayObjectStoreReads {
                   )
                 )
               )
-
-            case r if r.status == Status.NOT_FOUND => Right(None)
-            case r                                 => Left(UpstreamErrorResponse(s"Object store call failed with status code: ${r.status}, body: ${r.body[String]}", r.status))
+            }
+        case Status.NOT_FOUND =>
+          Future.successful(Right(None))
+        case _ =>
+          readBody(response).map { bodyStr =>
+            Left(UpstreamErrorResponse(s"Object store call failed with status code: ${response.status}, body: $bodyStr", response.status))
           }
-        )
+        }
 
       override def consume(response: Response): FutureEither[Unit] =
-        Future.successful(
-          response match {
-            case r if Status.isSuccessful(r.status) => Right(())
-            case r                                  => Left(UpstreamErrorResponse(s"Object store call failed with status code: ${r.status}, body: ${r.body[String]}", r.status))
-          }
-        )
+        response.status match {
+          case SuccessStatus(_) => Future.successful(Right(()))
+          case _ =>
+            readBody(response).map { bodyStr =>
+              Left(UpstreamErrorResponse(s"Object store call failed with status code: ${response.status}, body: $bodyStr", response.status))
+            }
+        }
     }
 
   def futureReads(implicit m: Materializer, ec: ExecutionContext): ObjectStoreRead[Future, Response, Source[ByteString, NotUsed]] =
@@ -117,4 +124,13 @@ object PlayObjectStoreReads {
       override def consume(response: Response): Future[Unit] =
         transform(futureEitherReads.consume(response))
     }
+
+  private def readBody(response: Response)(implicit m: Materializer): Future[String] =
+    // runFold rather than runReduce in case stream is empty
+    response.bodyAsSource.map(_.utf8String).runFold("")(_ + _)
+
+  private object SuccessStatus {
+    def unapply(status: Int): Option[Int] =
+      Some(status).filter(Status.isSuccessful)
+  }
 }
