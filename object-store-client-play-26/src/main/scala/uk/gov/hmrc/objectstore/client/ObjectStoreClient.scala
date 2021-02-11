@@ -23,6 +23,7 @@ import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 import uk.gov.hmrc.objectstore.client.http.{HttpClient, ObjectStoreContentRead, ObjectStoreContentWrite, ObjectStoreRead}
 
 import scala.language.higherKinds
+import com.typesafe.config.ConfigFactory
 
 class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
   client: HttpClient[F, REQ_BODY, RES],
@@ -76,6 +77,13 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
     F.flatMap(client.get(location, headers()))(read.toObjectListing)
   }
 
+  private val hcConfig = HeaderCarrier.Config.fromConfig(ConfigFactory.load())
+
   private def headers(additionalHeaders: (String, String)*)(implicit hc: HeaderCarrier): List[(String, String)] =
-    hc.copy(authorization = Some(Authorization(config.authorizationToken))).headers.toList ++ additionalHeaders
+    hc
+      .copy(authorization = Some(Authorization(config.authorizationToken)))
+      .headersForUrl(hcConfig)(url)
+      .toList ++
+        additionalHeaders
+
 }
