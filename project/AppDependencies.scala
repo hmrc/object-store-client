@@ -1,7 +1,6 @@
 import sbt._
 
 object AppDependencies {
-
   lazy val objectStoreClientCommon: Seq[ModuleID] = Seq(
     "org.slf4j" % "slf4j-api" % "1.7.30"
   )
@@ -19,6 +18,13 @@ object AppDependencies {
     "uk.gov.hmrc"            %% "http-verbs-play-27" % "12.3.0",
     "org.scalatestplus.play" %% "scalatestplus-play" % "4.0.3" % Test
   ) ++ test
+  lazy val objectStoreClientPlay28: Seq[ModuleID] = Seq(
+    "com.typesafe.play"      %% "play"               % play28Version,
+    "com.typesafe.play"      %% "play-guice"         % play28Version,
+    "com.typesafe.play"      %% "play-ahc-ws"        % play28Version,
+    "uk.gov.hmrc"            %% "http-verbs-play-28" % "13.0.0",
+    "org.scalatestplus.play" %% "scalatestplus-play" % "4.0.3" % Test
+  ) ++ test
   val test = Seq(
     "org.mockito"            % "mockito-all"         % "1.10.19" % Test,
     "com.github.tomakehurst" % "wiremock-standalone" % "2.27.1"  % Test,
@@ -27,4 +33,5 @@ object AppDependencies {
   )
   private val play26Version = "2.6.25"
   private val play27Version = "2.7.4"
+  private val play28Version = "2.8.7"
 }

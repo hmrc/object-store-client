@@ -17,3 +17,7 @@ dist
 *.iws
 .DS_Store
 **/*.DS_Store
+.bloop/
+.metals/
+.vscode/
+project/metals.sbt
