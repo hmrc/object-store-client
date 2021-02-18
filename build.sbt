@@ -3,7 +3,7 @@ import sbt._
 
 val name      = "object-store-client"
 
-val scala2_12 = "2.12.10"
+val scala2_12 = "2.12.12"
 
 lazy val commonSettings = Seq(
   organization := "uk.gov.hmrc.objectstore",
@@ -23,14 +23,15 @@ lazy val library = Project(name, file("."))
   .aggregate(
     objectStoreClientCommon,
     objectStoreClientPlay26,
-    objectStoreClientPlay27
+    objectStoreClientPlay27,
+    objectStoreClientPlay28
   )
 
 def copySources(module: Project) = Seq(
-  Compile / scalaSource := (module / Compile / scalaSource).value,
-  Compile / resources   := (module / Compile / resources  ).value,
-  Test    / scalaSource := (module / Test    / scalaSource).value,
-  Test    / resources   := (module / Test    / resources  ).value
+  Compile / scalaSource       := (module / Compile / scalaSource).value,
+  Compile / resourceDirectory := (module / Compile / resourceDirectory).value,
+  Test    / scalaSource       := (module / Test    / scalaSource).value,
+  Test    / resourceDirectory := (module / Test    / resourceDirectory).value
 )
 
 lazy val objectStoreClientCommon = Project("object-store-client-common", file("object-store-client-common"))
