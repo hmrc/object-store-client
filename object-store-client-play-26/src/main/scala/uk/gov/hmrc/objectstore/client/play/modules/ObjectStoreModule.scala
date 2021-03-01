@@ -31,7 +31,7 @@ class ObjectStoreModule() extends Module {
     )
 }
 
-private class ObjectStoreClientConfigProvider @Inject() (configuration: Configuration)
+private[modules] class ObjectStoreClientConfigProvider @Inject() (configuration: Configuration)
     extends Provider[ObjectStoreClientConfig] {
 
   override def get(): ObjectStoreClientConfig =
@@ -65,5 +65,5 @@ private class ObjectStoreClientConfigProvider @Inject() (configuration: Configur
   private def getDefaultRetentionPeriod(config: Config): RetentionPeriod =
     RetentionPeriod
       .parse(config.getString("object-store.default-retention-period"))
-      .fold(throw new IllegalStateException, identity)
+      .fold(m => throw new IllegalStateException(m), identity)
 }
