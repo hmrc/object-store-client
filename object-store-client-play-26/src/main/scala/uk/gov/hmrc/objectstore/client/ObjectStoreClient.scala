@@ -36,7 +36,18 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
 
   private val url = s"${config.baseUrl}/object-store"
 
-  /** Storing an object on an existing path will overwrite the previously stored object on that path. */
+  /**
+   * Put object
+   * @tparam CONTENT @see [[https://github.com/hmrc/object-store-client#put-object]]
+   * @param path Path of the object in object-store under [[owner]]
+   * @param content Content to upload
+   * @param retentionPeriod Retention period of the object in object-store
+   * @param contentType Optional Content-Type
+   * @param owner Owner service of this object
+   * @return [[Unit]] wrapped in the effect [[F]]
+   *
+   * @note Storing an object on an existing path will overwrite the previously stored object on that path.
+   * */
   def putObject[CONTENT](
     path: Path.File,
     content: CONTENT,
@@ -50,6 +61,13 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
       )
     )
 
+  /**
+   * Get object
+   * @tparam CONTENT @see [[https://github.com/hmrc/object-store-client#get-object]]
+   * @param path Path of the object in object-store under [[owner]]
+   * @param owner Owner service of this object
+   * @return optional [[Object]]`[`[[CONTENT]]`]` wrapped in the effect [[F]]
+   * */
   def getObject[CONTENT](
     path: Path.File,
     owner: String = config.owner
@@ -63,12 +81,24 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
     )
   }
 
+  /**
+   * Delete object
+   * @param path Path of the object in object-store under owner
+   * @param owner Owner service of this object
+   * @return [[Unit]] wrapped in the effect [[F]]
+   * */
   def deleteObject(
     path: Path.File,
     owner: String = config.owner
   )(implicit hc: HeaderCarrier): F[Unit] =
     F.flatMap(client.delete(s"$url/object/$owner/${path.asUri}", headers()))(read.consume)
 
+  /**
+   * List objects
+   * @param path Path of the object in object-store under owner
+   * @param owner Owner service
+   * @return [[ObjectListing]] wrapped in the effect [[F]]
+   * */
   def listObjects(
     path: Path.Directory,
     owner: String = config.owner

@@ -38,7 +38,6 @@ class PlayObjectStoreClientEither @Inject() (
     )
 
 /** Client which returns responses within Future.
-  * To handle the client exceptions, you can recover the [[PlayObjectStoreException]]
   */
 @Singleton
 class PlayObjectStoreClient @Inject() (
