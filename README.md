@@ -111,7 +111,7 @@ import uk.gov.hmrc.objectstore.client.play.Implicits._
 client.getObject[Source[ByteString, NotUsed]](
   path = Path.Directory("accounts/2020").file("summary.txt"),
   owner = "my-service" // defaults to 'appName' configuration
-) // returns Future[Option[Source[ByteString, NotUsed]]]
+) // returns Future[Option[Object[Source[ByteString, NotUsed]]]]
 ```
 
 The above code will try to download the content of the object at the path `/my-service/accounts/2020/summary.text`. 
