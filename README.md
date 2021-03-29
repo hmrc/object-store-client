@@ -151,6 +151,34 @@ Exceptions like `uk.gov.hmrc.http.GatewayTimeoutException` or response parsing e
 If you prefer explicit error encoded in the return type of object-store methods, then use `uk.gov.hmrc.objectstore.client.play.PlayObjectStoreClientEither` instead of `uk.gov.hmrc.objectstore.client.play.PlayObjectStoreClient`.
 The object-store methods will now return a `Future[Either[Exception, A]]`.
 
+
+### Stubbing object-store-client in tests
+In the unit or integration tests, we'd like to stub out the interaction with real object-store. For this, we provide in-memory stubs `StubPlayObjectStoreClient` and `StubPlayObjectStoreClientEither` (stub counterparts for `PlayObjectStoreClient` and `PlayObjectStoreClientEither` correspondingly).
+
+For unit tests, we can inject the stub instance into the subject under test and also make assertions on the stub instance.
+
+For integration tests, we can override the default binding to use the stub instance like below
+
+```scala
+
+class HelloWorldObjectStoreIntegrationSpec extends PlaySpec with GuiceOneAppPerSuite {
+
+  val baseUrl    = s"baseUrl-${randomUUID().toString}"
+  val owner      = s"owner-${randomUUID().toString}"
+  val token      = s"token-${randomUUID().toString}"
+  val config     = ObjectStoreClientConfig(baseUrl, owner, token, OneWeek)
+
+  lazy val objectStoreStub = new stub.StubPlayObjectStoreClient(config)
+
+  override def fakeApplication(): Application =
+    GuiceApplicationBuilder()
+            .bindings(bind(classOf[PlayObjectStoreClient]).to(objectStoreStub))
+            .build()
+}
+
+
+```
+
 ### License
 
 This code is open source software licensed under the [Apache 2.0 License]("http://www.apache.org/licenses/LICENSE-2.0.html").
