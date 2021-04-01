@@ -83,11 +83,19 @@ class ClientStubSpec extends FlatSpec with ScalaFutures with MustMatchers with O
         objectsAtB <- stub.listObjects(Path.Directory(s"$nodeA/$nodeB"))
         objectsAtC <- stub.listObjects(Path.Directory(s"$nodeA/$nodeB/$nodeC"))
       } yield {
-        objectsAtA.objectSummaries mustBe empty
-        objectsAtB.objectSummaries.map(_.location) mustBe List(Path.File(s"$nodeA/$nodeB/$leafB1"))
+        objectsAtA.objectSummaries.map(_.location) must contain theSameElementsAs List(
+          Path.File(s"$owner/$nodeA/$nodeB/$leafB1"),
+          Path.File(s"$owner/$nodeA/$nodeB/$nodeC/$leafC1"),
+          Path.File(s"$owner/$nodeA/$nodeB/$nodeC/$leafC2")
+        )
+        objectsAtB.objectSummaries.map(_.location) must contain theSameElementsAs List(
+          Path.File(s"$owner/$nodeA/$nodeB/$leafB1"),
+          Path.File(s"$owner/$nodeA/$nodeB/$nodeC/$leafC1"),
+          Path.File(s"$owner/$nodeA/$nodeB/$nodeC/$leafC2")
+        )
         objectsAtC.objectSummaries.map(_.location) must contain theSameElementsAs List(
-          Path.File(s"$nodeA/$nodeB/$nodeC/$leafC1"),
-          Path.File(s"$nodeA/$nodeB/$nodeC/$leafC2")
+          Path.File(s"$owner/$nodeA/$nodeB/$nodeC/$leafC1"),
+          Path.File(s"$owner/$nodeA/$nodeB/$nodeC/$leafC2")
         )
       }).futureValue
     }

@@ -18,9 +18,8 @@ package uk.gov.hmrc.objectstore.client.play.test
 
 import akka.NotUsed
 import akka.stream.Materializer
-import play.api.libs.ws.SourceBody
 import play.api.libs.ws.ahc._
-import play.api.libs.ws.WSClient
+import play.api.libs.ws.{SourceBody, WSClient}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.objectstore.client._
 import uk.gov.hmrc.objectstore.client.category.Monad
@@ -59,9 +58,8 @@ object stub {
 
     def config: ObjectStoreClientConfig
 
-    type Directory = String
-    type Filename  = String
-    private val objectStore = mutable.Map.empty[Directory, Map[Filename, InternalObject]]
+    private type FilePath = String
+    private val objectStore = mutable.Map.empty[FilePath, InternalObject]
     private val url         = s"${config.baseUrl}/object-store"
 
     private case class InternalObject(request: Request, contentType: String, lastModifiedInstant: Instant)
@@ -74,15 +72,11 @@ object stub {
       owner: String = config.owner
     )(implicit w: ObjectStoreContentWrite[F, CONTENT, Request], hc: HeaderCarrier): F[Unit] =
       M.map(w.writeContent(content, contentType)) { r =>
-        val newEntry = Map(
-          path.fileName -> InternalObject(
-            r,
-            contentType.getOrElse("application/octet-stream"),
-            Instant.now()
-          )
+        objectStore += s"$owner/${path.asUri}" -> InternalObject(
+          r,
+          contentType.getOrElse("application/octet-stream"),
+          Instant.now()
         )
-        val directoryUri = path.directory.asUri
-        objectStore += directoryUri -> objectStore.get(directoryUri).foldLeft(newEntry)(_ ++ _)
         ()
       }
 
@@ -92,8 +86,7 @@ object stub {
     ): F[Option[Object[CONTENT]]] = {
       val location = s"$url/object/$owner/${path.asUri}"
       objectStore
-        .get(path.directory.asUri)
-        .flatMap(_.get(path.fileName))
+        .get(s"$owner/${path.asUri}")
         .map { internalObject =>
           val wsRequest = internalObject.request.writeBody(wsClient.url("http://foo"))
           val body      = wsRequest.body.asInstanceOf[SourceBody].source.mapMaterializedValue(_ => NotUsed)
@@ -119,7 +112,7 @@ object stub {
     override def deleteObject(path: Path.File, owner: String = config.owner)(implicit
       hc: HeaderCarrier
     ): F[Unit] = {
-      objectStore += path.directory.asUri -> (objectStore.getOrElse(path.directory.asUri, Map.empty) - path.fileName)
+      objectStore -= s"$owner/${path.asUri}"
       M.pure(())
     }
 
@@ -129,11 +122,11 @@ object stub {
       M.pure(
         ObjectListing(
           objectStore
-            .getOrElse(path.asUri, Map.empty)
+            .filterKeys(_.startsWith(s"$owner/${path.asUri}"))
             .map {
-              case (filename, internalObject) =>
+              case (filePath, internalObject) =>
                 ObjectSummary(
-                  path.file(filename),
+                  Path.File(filePath),
                   internalObject.request.length.getOrElse(0),
                   internalObject.request.md5.getOrElse(""),
                   internalObject.lastModifiedInstant
