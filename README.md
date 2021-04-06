@@ -179,6 +179,9 @@ class HelloWorldObjectStoreIntegrationSpec extends PlaySpec with GuiceOneAppPerS
 
 ```
 
+### Stubbing object-store for acceptance tests
+Please see [object-store stubs](https://github.com/hmrc/object-store#object-store-stubs)
+
 ### License
 
 This code is open source software licensed under the [Apache 2.0 License]("http://www.apache.org/licenses/LICENSE-2.0.html").

@@ -16,11 +16,11 @@
 
 package uk.gov.hmrc.objectstore.client.play
 
-import java.time.Instant
-
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{Format, Reads, __}
 import uk.gov.hmrc.objectstore.client.{ObjectListing, ObjectSummary, Path}
+
+import java.time.Instant
 
 object PlayFormats {
 
@@ -40,6 +40,6 @@ object PlayFormats {
 
   val objectListingRead: Reads[ObjectListing] = {
     implicit val osf: Reads[ObjectSummary] = objectSummaryRead
-    Reads.at[List[ObjectSummary]](__ \ "objects").map(ObjectListing.apply _)
+    Reads.at[List[ObjectSummary]](__ \ "objects").map(ObjectListing.apply)
   }
 }
