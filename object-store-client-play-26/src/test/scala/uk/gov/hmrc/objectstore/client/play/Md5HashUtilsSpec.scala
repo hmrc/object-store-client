@@ -24,7 +24,7 @@ import uk.gov.hmrc.objectstore.client.Md5Hash
 
 class Md5HashUtilsSpec extends AnyWordSpec with Matchers {
 
-  "Md5HashUtils.fromInputStream" must {
+  "Md5HashUtils.fromInputStream" should {
 
     "convert inputstream to md5Hash" in {
       Md5HashUtils.fromInputStream(new ByteArrayInputStream("asd".getBytes)) shouldBe Md5Hash("eBVpbsvxyW5olLd5RW0zDg==")
