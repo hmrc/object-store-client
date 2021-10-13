@@ -20,7 +20,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.Authorization
 import uk.gov.hmrc.objectstore.client.category.Monad
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
-import uk.gov.hmrc.objectstore.client.http.{HttpClient, ObjectStoreContentRead, ObjectStoreContentWrite, ObjectStoreRead}
+import uk.gov.hmrc.objectstore.client.http.{HttpClient, ObjectStoreContentRead, ObjectStoreContentWrite, ObjectStoreRead, ObjectStoreWrite}
 
 import scala.language.higherKinds
 import com.typesafe.config.ConfigFactory
@@ -28,6 +28,7 @@ import com.typesafe.config.ConfigFactory
 class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
   client: HttpClient[F, REQ_BODY, RES],
   read: ObjectStoreRead[F, RES, RES_BODY],
+  write: ObjectStoreWrite[F, REQ_BODY],
   config: ObjectStoreClientConfig
 )(implicit F: Monad[F]) {
 
@@ -106,6 +107,19 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
     val location = s"$url/list/$owner/${path.asUri}".stripSuffix("/") // strip suffix since you can list an empty path
     F.flatMap(client.get(location, headers()))(read.toObjectListing)
   }
+
+  def zip(zipRequest: ZipRequest)(implicit hc: HeaderCarrier): F[ZipResponse] =
+    F.flatMap(
+      write.writeZipRequest(zipRequest)
+    )(reqBody =>
+      F.flatMap(
+        client.post(
+          s"$url/ops/zip",
+          reqBody,
+          headers()
+        )
+      )(read.toZipResponse)
+    )
 
   private val hcConfig = HeaderCarrier.Config.fromConfig(ConfigFactory.load())
 

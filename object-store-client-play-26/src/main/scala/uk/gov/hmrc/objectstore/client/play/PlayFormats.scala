@@ -17,8 +17,8 @@
 package uk.gov.hmrc.objectstore.client.play
 
 import play.api.libs.functional.syntax._
-import play.api.libs.json.{Format, Reads, __}
-import uk.gov.hmrc.objectstore.client.{Md5Hash, ObjectListing, ObjectSummary, Path}
+import play.api.libs.json.{Format, Reads, Writes, __}
+import uk.gov.hmrc.objectstore.client.{Md5Hash, ObjectListing, ObjectSummary, Path, RetentionPeriod, ZipRequest, ZipResponse}
 
 import java.time.Instant
 
@@ -43,4 +43,16 @@ object PlayFormats {
     implicit val osf: Reads[ObjectSummary] = objectSummaryRead
     Reads.at[List[ObjectSummary]](__ \ "objects").map(ObjectListing.apply)
   }
+
+  val zipResponseReads: Reads[ZipResponse] =
+    ( (__ \ "location"   ).read[Path.File](fileFormat)
+    ~ (__ \ "size"       ).read[Long]
+    ~ (__ \ "md5Checksum").read[String].map(Md5Hash.apply)
+    )(ZipResponse.apply _)
+
+  val zipRequestWrites: Writes[ZipRequest] =
+    ( (__ \ "fromLocation"   ).write[Path.Directory](directoryFormat)
+    ~ (__ \ "toLocation"     ).write[Path.File](fileFormat)
+    ~ (__ \ "retentionPeriod").write[String].contramap[RetentionPeriod](_.value)
+    )(unlift(ZipRequest.unapply))
 }

@@ -88,3 +88,15 @@ object RetentionPeriod {
       .find(_.value == value)
       .toRight(s"Invalid object-store retention period. Valid values - [${allValues.map(_.value).mkString(", ")}]")
 }
+
+final case class ZipRequest(
+  from           : Path.Directory,
+  to             : Path.File,
+  retentionPeriod: RetentionPeriod
+)
+
+final case class ZipResponse(
+  location   : Path.File,
+  size       : Long,
+  md5Checksum: Md5Hash
+)

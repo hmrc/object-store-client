@@ -21,10 +21,10 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import play.api.http.Status
-import play.api.libs.json.{Json, JsError, JsSuccess}
+import play.api.libs.json.{Json, JsError, JsSuccess, Reads}
 import uk.gov.hmrc.http.UpstreamErrorResponse
 import uk.gov.hmrc.objectstore.client.http.ObjectStoreRead
-import uk.gov.hmrc.objectstore.client.{Md5Hash, Object, ObjectListing, ObjectMetadata}
+import uk.gov.hmrc.objectstore.client.{Md5Hash, Object, ObjectListing, ObjectMetadata, ZipResponse}
 
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME
@@ -36,24 +36,7 @@ object PlayObjectStoreReads {
   def futureEitherReads(implicit m: Materializer, ec: ExecutionContext): ObjectStoreRead[FutureEither, Response, Source[ByteString, NotUsed]] =
     new ObjectStoreRead[FutureEither, Response, Source[ByteString, NotUsed]] {
       override def toObjectListing(response: Response): FutureEither[ObjectListing] =
-        response.status match {
-          case SuccessStatus(_) =>
-            readBody(response).map { bodyStr =>
-              Json.parse(bodyStr).validate[ObjectListing](PlayFormats.objectListingRead) match {
-                case JsSuccess(r, _) => Right(r)
-                case JsError(errors) =>
-                  Left(
-                    new RuntimeException(
-                      s"Attempt to convert json to ${classOf[ObjectListing].getName} gave errors: $errors"
-                    )
-                  )
-              }
-            }
-          case _ =>
-            readBody(response).map { bodyStr =>
-              Left(UpstreamErrorResponse(s"Object store call failed with status code: ${response.status}, body: $bodyStr", response.status))
-            }
-          }
+        toDomain[ObjectListing](response)(PlayFormats.objectListingRead)
 
       override def toObject(location: String, response: Response): FutureEither[Option[Object[ResBody]]] =
         response.status match {
@@ -96,6 +79,9 @@ object PlayObjectStoreReads {
           }
         }
 
+      override def toZipResponse(response: Response): FutureEither[ZipResponse] =
+        toDomain[ZipResponse](response)(PlayFormats.zipResponseReads)
+
       override def consume(response: Response): FutureEither[Unit] =
         response.status match {
           case SuccessStatus(_) => Future.successful(Right(()))
@@ -104,6 +90,26 @@ object PlayObjectStoreReads {
               Left(UpstreamErrorResponse(s"Object store call failed with status code: ${response.status}, body: $bodyStr", response.status))
             }
         }
+
+      private def toDomain[A](response: Response)(implicit reads: Reads[A]): FutureEither[A] =
+        response.status match {
+          case SuccessStatus(_) =>
+            readBody(response).map { bodyStr =>
+              Json.parse(bodyStr).validate[A](reads) match {
+                case JsSuccess(r, _) => Right(r)
+                case JsError(errors) =>
+                  Left(
+                    new RuntimeException(
+                      s"Attempt to convert json to ${classOf[ObjectListing].getName} gave errors: $errors"
+                    )
+                  )
+              }
+            }
+          case _ =>
+            readBody(response).map { bodyStr =>
+              Left(UpstreamErrorResponse(s"Object store call failed with status code: ${response.status}, body: $bodyStr", response.status))
+            }
+          }
     }
 
   def futureReads(implicit m: Materializer, ec: ExecutionContext): ObjectStoreRead[Future, Response, Source[ByteString, NotUsed]] =
@@ -120,6 +126,9 @@ object PlayObjectStoreReads {
 
       override def toObject(location: String, response: Response): Future[Option[Object[Source[ByteString, NotUsed]]]] =
         transform(futureEitherReads.toObject(location, response))
+
+      override def toZipResponse(response: Response): Future[ZipResponse] =
+        transform(futureEitherReads.toZipResponse(response))
 
       override def consume(response: Response): Future[Unit] =
         transform(futureEitherReads.consume(response))

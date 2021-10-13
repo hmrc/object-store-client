@@ -39,7 +39,7 @@ import uk.gov.hmrc.objectstore.client.http.Payload
 import uk.gov.hmrc.objectstore.client.utils.PathUtils._
 import uk.gov.hmrc.objectstore.client.wiremock.ObjectStoreStubs._
 import uk.gov.hmrc.objectstore.client.wiremock.WireMockHelper
-import uk.gov.hmrc.objectstore.client.{Md5Hash, ObjectListing, ObjectSummary, Path, RetentionPeriod}
+import uk.gov.hmrc.objectstore.client.{Md5Hash, ObjectListing, ObjectSummary, Path, RetentionPeriod, ZipRequest, ZipResponse}
 
 import java.util.UUID.randomUUID
 import scala.concurrent.ExecutionContextExecutor
@@ -347,6 +347,41 @@ class PlayObjectStoreClientEitherSpec
       initListObjectsStub(path, statusCode = 401, None, owner = owner)
 
       osClient.listObjects(path).futureValue.left.value shouldBe an[UpstreamErrorResponse]
+    }
+  }
+
+  "zip" must {
+    "return an ObjectListing with objectSummaries" in {
+      val zipRequest =
+        ZipRequest(
+          from            = Path.Directory("envelope1"),
+          to              = Path.File(Path.Directory("zips"), "zip1.zip"),
+          retentionPeriod = RetentionPeriod.OneWeek
+        )
+
+      val zipResponse =
+        ZipResponse(
+          location    = Path.File(Path.Directory("zips"), "zip1.zip"),
+          size        = 1000L,
+          md5Checksum = Md5Hash("a3c2f1e38701bd2c7b54ebd7b1cd0dbc")
+        )
+
+      initZipStub(zipRequest, statusCode = 200, Some(zipResponse))
+
+      osClient.zip(zipRequest).futureValue.right.value shouldBe zipResponse
+    }
+
+    "return an exception if object-store response is not successful" in {
+      val zipRequest =
+        ZipRequest(
+          from            = Path.Directory("envelope1"),
+          to              = Path.File(Path.Directory("zips"), "zip1.zip"),
+          retentionPeriod = RetentionPeriod.OneWeek
+        )
+
+      initZipStub(zipRequest, statusCode = 401, response = None)
+
+      osClient.zip(zipRequest).futureValue.left.value shouldBe an[UpstreamErrorResponse]
     }
   }
 

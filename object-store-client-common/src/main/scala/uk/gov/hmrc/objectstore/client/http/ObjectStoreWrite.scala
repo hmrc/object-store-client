@@ -16,17 +16,10 @@
 
 package uk.gov.hmrc.objectstore.client.http
 
-import uk.gov.hmrc.objectstore.client.{Object, ObjectListing, ZipResponse}
+import uk.gov.hmrc.objectstore.client.ZipRequest
 
 import scala.language.higherKinds
 
-trait ObjectStoreRead[F[_], RES, RES_BODY] { self =>
-
-  def toObjectListing(response: RES): F[ObjectListing]
-
-  def toZipResponse(response: RES): F[ZipResponse]
-
-  def toObject(location: String, response: RES): F[Option[Object[RES_BODY]]]
-
-  def consume(response: RES): F[Unit]
+trait ObjectStoreWrite[F[_], REQ_BODY] {
+  def writeZipRequest(zipRequest: ZipRequest): F[REQ_BODY]
 }

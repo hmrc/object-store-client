@@ -34,6 +34,7 @@ class PlayObjectStoreClientEither @Inject() (
     extends ObjectStoreClient[FutureEither, Request, Response, ResBody](
       new PlayWSHttpClient[FutureEither](wsClient),
       PlayObjectStoreReads.futureEitherReads,
+      PlayObjectStoreWrites.write,
       config
     )
 
@@ -47,5 +48,6 @@ class PlayObjectStoreClient @Inject() (
     extends ObjectStoreClient[Future, Request, Response, ResBody](
       new PlayWSHttpClient[Future](wsClient),
       PlayObjectStoreReads.futureReads,
+      PlayObjectStoreWrites.write,
       config
     )
