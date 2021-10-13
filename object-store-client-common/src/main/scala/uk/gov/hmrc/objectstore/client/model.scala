@@ -71,6 +71,7 @@ final case class ObjectSummary(
 sealed abstract class RetentionPeriod(val value: String)
 
 object RetentionPeriod {
+  case object OneDay extends RetentionPeriod("1-day")
   case object OneWeek extends RetentionPeriod("1-week")
   case object OneMonth extends RetentionPeriod("1-month")
   case object SixMonths extends RetentionPeriod("6-months")
@@ -78,7 +79,7 @@ object RetentionPeriod {
   case object SevenYears extends RetentionPeriod("7-years")
   case object TenYears extends RetentionPeriod("10-years")
 
-  private val allValues: Set[RetentionPeriod] = Set(OneWeek, OneMonth, SixMonths, OneYear, SevenYears, TenYears)
+  private val allValues: Set[RetentionPeriod] = Set(OneDay, OneWeek, OneMonth, SixMonths, OneYear, SevenYears, TenYears)
 
   def parse(value: String): Either[String, RetentionPeriod] =
     allValues
