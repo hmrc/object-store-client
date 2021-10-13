@@ -61,6 +61,7 @@ object-store.default-retention-period = "1-week"
 ```
 
 The valid values for this configuration are
+- 1-day
 - 1-week
 - 1-month
 - 6-months
