@@ -16,13 +16,14 @@
 
 package uk.gov.hmrc.objectstore.client.http
 
+import uk.gov.hmrc.objectstore.client.Md5Hash
 import uk.gov.hmrc.objectstore.client.category.Monad
 
 import scala.annotation.implicitNotFound
 
 case class Payload[CONTENT](
   length: Long,
-  md5Hash: String,
+  md5Hash: Md5Hash,
   content: CONTENT
 )
 

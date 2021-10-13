@@ -22,25 +22,26 @@ import java.util.Base64
 
 import akka.stream.scaladsl.Sink
 import akka.util.ByteString
+import uk.gov.hmrc.objectstore.client.Md5Hash
 
 import scala.concurrent.{ExecutionContext, Future}
 
-object Md5Hash {
-  def fromInputStream(is: InputStream): String =
+object Md5HashUtils {
+  def fromInputStream(is: InputStream): Md5Hash =
     try {
       val md  = MessageDigest.getInstance("MD5")
       val dis = new DigestInputStream(is, md)
       Iterator.continually(dis.read()).takeWhile(_ != -1).toArray
-      Base64.getEncoder.encodeToString(md.digest())
+      Md5Hash(Base64.getEncoder.encodeToString(md.digest()))
     } finally is.close()
 
-  def fromBytes(bytes: Array[Byte]): String =
-    Base64.getEncoder.encodeToString(MessageDigest.getInstance("MD5").digest(bytes))
+  def fromBytes(bytes: Array[Byte]): Md5Hash =
+    Md5Hash(Base64.getEncoder.encodeToString(MessageDigest.getInstance("MD5").digest(bytes)))
 
-  def md5HashSink(implicit ec: ExecutionContext): Sink[ByteString, Future[String]] = {
+  def md5HashSink(implicit ec: ExecutionContext): Sink[ByteString, Future[Md5Hash]] = {
     val md = MessageDigest.getInstance("MD5")
     Sink
       .foreach[ByteString](bs => md.update(bs.toArray))
-      .mapMaterializedValue(_.map(_ => Base64.getEncoder.encodeToString(md.digest())))
+      .mapMaterializedValue(_.map(_ => Md5Hash(Base64.getEncoder.encodeToString(md.digest()))))
   }
 }

@@ -16,17 +16,18 @@
 
 package uk.gov.hmrc.objectstore.client.play.modules
 
-import org.scalatest.{MustMatchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import play.api.Configuration
 import uk.gov.hmrc.objectstore.client.RetentionPeriod
 
 import java.util.UUID.randomUUID
 
-class ObjectStoreClientConfigProviderSpecs extends WordSpec with MustMatchers {
+class ObjectStoreClientConfigProviderSpecs extends AnyWordSpec with Matchers {
 
-  "provider" must {
+  "provider" should {
     "provide ObjectStoreClientConfig with base url" in new Setup {
-      provider.get().baseUrl mustBe "https://service:8000"
+      provider.get().baseUrl shouldBe "https://service:8000"
     }
 
     "provide ObjectStoreClientConfig with base url when no protocol is provided" in new Setup {
@@ -36,19 +37,19 @@ class ObjectStoreClientConfigProviderSpecs extends WordSpec with MustMatchers {
           "port"     -> 8000
         ),
       )
-      provider.get().baseUrl mustBe "http://service:8000"
+      provider.get().baseUrl shouldBe "http://service:8000"
     }
 
     "provide ObjectStoreClientConfig with owner as the appName" in new Setup {
-      provider.get().owner mustBe appName
+      provider.get().owner shouldBe appName
     }
 
     "provide ObjectStoreClientConfig with authorizationToken" in new Setup {
-      provider.get().authorizationToken mustBe internalAuthToken
+      provider.get().authorizationToken shouldBe internalAuthToken
     }
 
     "provide ObjectStoreClientConfig with defaultRetentionPeriod" in new Setup {
-      provider.get().defaultRetentionPeriod mustBe RetentionPeriod.OneWeek
+      provider.get().defaultRetentionPeriod shouldBe RetentionPeriod.OneWeek
     }
 
     "throw IllegalStateException when configured retention period is an invalid value" in new Setup {

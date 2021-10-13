@@ -52,7 +52,7 @@ trait PlayObjectStoreContentWrites {
     payloadAkkaSourceContentWrite[F, NotUsed].contramap { file =>
       Payload(
         length = file.length,
-        md5Hash = Md5Hash.fromInputStream(new FileInputStream(file)),
+        md5Hash = Md5HashUtils.fromInputStream(new FileInputStream(file)),
         content = FileIO.fromPath(file.toPath).mapMaterializedValue(_ => NotUsed)
       )
     }
@@ -70,7 +70,7 @@ trait PlayObjectStoreContentWrites {
           broadcast2(
             source = content,
             sink1 = FileIO.toPath(tempFile.path),
-            sink2 = Md5Hash.md5HashSink
+            sink2 = Md5HashUtils.md5HashSink
           ).run()
 
         F.liftFuture(
@@ -105,7 +105,7 @@ trait PlayObjectStoreContentWrites {
     payloadAkkaSourceContentWrite[F, NotUsed].contramap { bytes =>
       Payload(
         length = bytes.length,
-        md5Hash = Md5Hash.fromBytes(bytes),
+        md5Hash = Md5HashUtils.fromBytes(bytes),
         content = Source.single(bytes).map(ByteString(_))
       )
     }

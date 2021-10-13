@@ -16,9 +16,10 @@
 
 package uk.gov.hmrc.objectstore.client
 
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class PathSpec extends WordSpec with Matchers {
+class PathSpec extends AnyWordSpec with Matchers {
   "Path asUri" must {
     "generate a directory uri correctly without a trailing slash if present" in {
       val rawDirectoryPath = "directory/"

@@ -18,18 +18,20 @@ package uk.gov.hmrc.objectstore.client.play
 
 import java.io.ByteArrayInputStream
 
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+import uk.gov.hmrc.objectstore.client.Md5Hash
 
-class Md5HashSpec extends WordSpec with Matchers {
+class Md5HashUtilsSpec extends AnyWordSpec with Matchers {
 
-  "Md5Hash.fromInputStream" must {
+  "Md5HashUtils.fromInputStream" must {
 
     "convert inputstream to md5Hash" in {
-      Md5Hash.fromInputStream(new ByteArrayInputStream("asd".getBytes)) shouldBe "eBVpbsvxyW5olLd5RW0zDg=="
+      Md5HashUtils.fromInputStream(new ByteArrayInputStream("asd".getBytes)) shouldBe Md5Hash("eBVpbsvxyW5olLd5RW0zDg==")
     }
 
     "convert Bytes to md5Hash" in {
-      Md5Hash.fromBytes("asd".getBytes) shouldBe "eBVpbsvxyW5olLd5RW0zDg=="
+      Md5HashUtils.fromBytes("asd".getBytes) shouldBe Md5Hash("eBVpbsvxyW5olLd5RW0zDg==")
     }
   }
 }

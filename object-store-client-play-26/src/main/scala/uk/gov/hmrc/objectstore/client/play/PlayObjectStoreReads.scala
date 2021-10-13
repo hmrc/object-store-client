@@ -24,7 +24,7 @@ import play.api.http.Status
 import play.api.libs.json.{Json, JsError, JsSuccess}
 import uk.gov.hmrc.http.UpstreamErrorResponse
 import uk.gov.hmrc.objectstore.client.http.ObjectStoreRead
-import uk.gov.hmrc.objectstore.client.{Object, ObjectListing, ObjectMetadata}
+import uk.gov.hmrc.objectstore.client.{Md5Hash, Object, ObjectListing, ObjectMetadata}
 
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME
@@ -71,7 +71,7 @@ object PlayObjectStoreReads {
               for {
                 cl            <- header("Content-Length").right
                 contentLength <- attempt("Content-Length", cl.toLong).right
-                contentMd5    <- header("Content-MD5").right
+                contentMd5    <- header("Content-MD5").map(Md5Hash.apply).right
                 lm            <- header("Last-Modified").right
                 lastModified  <- attempt("Last-Modified", ZonedDateTime.parse(lm, RFC_1123_DATE_TIME).toInstant).right
               } yield Some(

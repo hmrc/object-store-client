@@ -80,7 +80,7 @@ class PlayWSHttpClient[F[_]](wsClient: WSClient)(implicit ec: ExecutionContext, 
     logger.info(s"Request: Url: $url")
     val hdrs = headers ++
       body.length.map("Content-Length" -> _.toString) ++
-      body.md5.map("Content-MD5" -> _)
+      body.md5.map("Content-MD5" -> _.value)
 
     val wsRequest = wsClient
       .url(url)

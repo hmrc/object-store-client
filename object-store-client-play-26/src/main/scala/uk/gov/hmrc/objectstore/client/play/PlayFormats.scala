@@ -18,7 +18,7 @@ package uk.gov.hmrc.objectstore.client.play
 
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{Format, Reads, __}
-import uk.gov.hmrc.objectstore.client.{ObjectListing, ObjectSummary, Path}
+import uk.gov.hmrc.objectstore.client.{Md5Hash, ObjectListing, ObjectSummary, Path}
 
 import java.time.Instant
 
@@ -33,10 +33,11 @@ object PlayFormats {
       .inmap(Path.File.apply, _.asUri)
 
   val objectSummaryRead: Reads[ObjectSummary] =
-    ((__ \ "location").read[String].map(_.stripPrefix("/object-store/object/")).map(Path.File.apply)
-      ~ (__ \ "contentLength").read[Long]
-      ~ (__ \ "contentMD5").read[String]
-      ~ (__ \ "lastModified").read[Instant])(ObjectSummary.apply _)
+    ( (__ \ "location"     ).read[String].map(_.stripPrefix("/object-store/object/")).map(Path.File.apply)
+    ~ (__ \ "contentLength").read[Long]
+    ~ (__ \ "contentMD5"   ).read[String].map(Md5Hash.apply)
+    ~ (__ \ "lastModified" ).read[Instant]
+    )(ObjectSummary.apply _)
 
   val objectListingRead: Reads[ObjectListing] = {
     implicit val osf: Reads[ObjectSummary] = objectSummaryRead

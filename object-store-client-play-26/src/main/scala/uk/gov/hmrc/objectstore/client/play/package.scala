@@ -43,7 +43,7 @@ package play {
   // relationship with Payload?
   case class HttpBody[BODY](
     length: Option[Long],
-    md5: Option[String],
+    md5: Option[Md5Hash],
     writeBody: BODY,
     release: () => Unit
   )

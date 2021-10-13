@@ -23,8 +23,10 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
+import org.scalatest.{BeforeAndAfterAll, EitherValues}
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
-import org.scalatest.{BeforeAndAfterAll, EitherValues, Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.Application
 import play.api.inject.bind
@@ -37,20 +39,20 @@ import uk.gov.hmrc.objectstore.client.http.Payload
 import uk.gov.hmrc.objectstore.client.utils.PathUtils._
 import uk.gov.hmrc.objectstore.client.wiremock.ObjectStoreStubs._
 import uk.gov.hmrc.objectstore.client.wiremock.WireMockHelper
-import uk.gov.hmrc.objectstore.client.{ObjectListing, ObjectSummary, Path, RetentionPeriod}
+import uk.gov.hmrc.objectstore.client.{Md5Hash, ObjectListing, ObjectSummary, Path, RetentionPeriod}
 
 import java.util.UUID.randomUUID
 import scala.concurrent.ExecutionContextExecutor
 
 class PlayObjectStoreClientEitherSpec
-    extends WordSpec
-    with Matchers
-    with GuiceOneServerPerSuite
-    with BeforeAndAfterAll
-    with WireMockHelper
-    with ScalaFutures
-    with IntegrationPatience
-    with EitherValues {
+  extends AnyWordSpec
+     with Matchers
+     with GuiceOneServerPerSuite
+     with BeforeAndAfterAll
+     with WireMockHelper
+     with ScalaFutures
+     with IntegrationPatience
+     with EitherValues {
 
   implicit val ec: ExecutionContextExecutor = scala.concurrent.ExecutionContext.global
   implicit val system: ActorSystem          = ActorSystem()
@@ -83,29 +85,29 @@ class PlayObjectStoreClientEitherSpec
     "store an object as Source with NotUsed bound to Mat" in {
       val body                                = s"hello world! ${UUID.randomUUID().toString}"
       val path                                = generateFilePath()
-      val md5Base64                           = Md5Hash.fromBytes(body.getBytes)
+      val md5Base64                           = Md5HashUtils.fromBytes(body.getBytes)
       val source: Source[ByteString, NotUsed] = toSource(body)
 
       initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner = owner)
 
-      osClient.putObject(path, source).futureValue.right.value shouldBe ((): Unit)
+      osClient.putObject(path, source).futureValue.value shouldBe ((): Unit)
     }
 
     "store an object as Source with Any bound to Mat" in {
       val body                          = s"hello world! ${UUID.randomUUID().toString}"
       val path                          = generateFilePath()
-      val md5Base64                     = Md5Hash.fromBytes(body.getBytes)
+      val md5Base64                     = Md5HashUtils.fromBytes(body.getBytes)
       val source: Source[ByteString, _] = toSource(body)
 
       initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner = owner)
 
-      osClient.putObject(path, source).futureValue.right.value shouldBe ((): Unit)
+      osClient.putObject(path, source).futureValue.value shouldBe ((): Unit)
     }
 
     "store an object as Source with NotUsed bound to Mat and known md5hash and length" in {
       val body                                = s"hello world! ${UUID.randomUUID().toString}"
       val path                                = generateFilePath()
-      val md5Base64                           = Md5Hash.fromBytes(body.getBytes)
+      val md5Base64                           = Md5HashUtils.fromBytes(body.getBytes)
       val source: Source[ByteString, NotUsed] = toSource(body)
 
       initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner = owner)
@@ -113,14 +115,13 @@ class PlayObjectStoreClientEitherSpec
       osClient
         .putObject(path, Payload(length = body.length, md5Hash = md5Base64, content = source))
         .futureValue
-        .right
         .value shouldBe ((): Unit)
     }
 
     "store an object as Source with Any bound to Mat and known md5hash and length" in {
       val body                          = s"hello world! ${UUID.randomUUID().toString}"
       val path                          = generateFilePath()
-      val md5Base64                     = Md5Hash.fromBytes(body.getBytes)
+      val md5Base64                     = Md5HashUtils.fromBytes(body.getBytes)
       val source: Source[ByteString, _] = toSource(body)
 
       initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner = owner)
@@ -128,24 +129,23 @@ class PlayObjectStoreClientEitherSpec
       osClient
         .putObject(path, Payload(length = body.length, md5Hash = md5Base64, content = source))
         .futureValue
-        .right
         .value shouldBe ((): Unit)
     }
 
     "store an object as Bytes" in {
       val body      = s"hello world! ${UUID.randomUUID().toString}".getBytes
       val path      = generateFilePath()
-      val md5Base64 = Md5Hash.fromBytes(body)
+      val md5Base64 = Md5HashUtils.fromBytes(body)
 
       initPutObjectStub(path, statusCode = 201, body, md5Base64, owner = owner)
 
-      osClient.putObject(path, body).futureValue.right.value shouldBe ((): Unit)
+      osClient.putObject(path, body).futureValue.value shouldBe ((): Unit)
     }
 
     "store an object with explicit retention period" in {
       val body      = s"hello world! ${UUID.randomUUID().toString}".getBytes
       val path      = generateFilePath()
-      val md5Base64 = Md5Hash.fromBytes(body)
+      val md5Base64 = Md5HashUtils.fromBytes(body)
 
       initPutObjectStub(
         path,
@@ -156,23 +156,23 @@ class PlayObjectStoreClientEitherSpec
         retentionPeriod = RetentionPeriod.OneMonth
       )
 
-      osClient.putObject(path, body, RetentionPeriod.OneMonth).futureValue.right.value shouldBe ((): Unit)
+      osClient.putObject(path, body, RetentionPeriod.OneMonth).futureValue.value shouldBe ((): Unit)
     }
 
     "store an object as String" in {
       val body      = s"hello world! ${UUID.randomUUID().toString}"
       val path      = generateFilePath()
-      val md5Base64 = Md5Hash.fromBytes(body.getBytes)
+      val md5Base64 = Md5HashUtils.fromBytes(body.getBytes)
 
       initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner = owner)
 
-      osClient.putObject(path, body).futureValue.right.value shouldBe ((): Unit)
+      osClient.putObject(path, body).futureValue.value shouldBe ((): Unit)
     }
 
     "return an exception if object-store response is not successful" in {
       val body      = s"hello world! ${UUID.randomUUID().toString}"
       val path      = generateFilePath()
-      val md5Base64 = Md5Hash.fromBytes(body.getBytes)
+      val md5Base64 = Md5HashUtils.fromBytes(body.getBytes)
 
       initPutObjectStub(path, statusCode = 401, body.getBytes, md5Base64, owner = owner)
 
@@ -187,7 +187,7 @@ class PlayObjectStoreClientEitherSpec
 
       initGetObjectStub(path, statusCode = 200, Some(body), owner = owner)
 
-      val obj = osClient.getObject[Source[ByteString, NotUsed]](path).futureValue.right.value
+      val obj = osClient.getObject[Source[ByteString, NotUsed]](path).futureValue.value
       obj.get.content.asString() shouldBe body
     }
 
@@ -199,7 +199,7 @@ class PlayObjectStoreClientEitherSpec
 
       import InMemoryReads.stringContentRead
 
-      val obj = osClient.getObject[String](path).futureValue.right.value
+      val obj = osClient.getObject[String](path).futureValue.value
       obj.get.content shouldBe body
     }
 
@@ -216,7 +216,7 @@ class PlayObjectStoreClientEitherSpec
 
       import InMemoryReads.jsValueContentRead
 
-      val obj = osClient.getObject[JsValue](path).futureValue.right.value
+      val obj = osClient.getObject[JsValue](path).futureValue.value
       obj.get.content shouldBe JsObject(Seq("k1" -> JsString("v1"), "k2" -> JsString("v2")))
     }
 
@@ -239,7 +239,7 @@ class PlayObjectStoreClientEitherSpec
 
       import InMemoryReads._
 
-      val obj = osClient.getObject[JsResult[Obj]](path).futureValue.right.value
+      val obj = osClient.getObject[JsResult[Obj]](path).futureValue.value
       obj.get.content shouldBe JsSuccess(Obj(k1 = "v1", k2 = "v2"), __)
     }
 
@@ -251,7 +251,7 @@ class PlayObjectStoreClientEitherSpec
 
       import InMemoryReads._
 
-      val obj = osClient.getObject[Obj](path).futureValue.right.value
+      val obj = osClient.getObject[Obj](path).futureValue.value
       obj.get.content shouldBe Obj(k1 = "v1", k2 = "v2")
     }
 
@@ -260,7 +260,7 @@ class PlayObjectStoreClientEitherSpec
 
       initGetObjectStub(path, statusCode = 404, None, owner = owner)
 
-      osClient.getObject(path).futureValue.right.value shouldBe None
+      osClient.getObject(path).futureValue.value shouldBe None
     }
 
     "return an exception if object-store response is not successful" in {
@@ -278,7 +278,7 @@ class PlayObjectStoreClientEitherSpec
 
       initDeleteObjectStub(path, owner = owner)
 
-      osClient.deleteObject(path).futureValue.right.value shouldBe ((): Unit)
+      osClient.deleteObject(path).futureValue.value shouldBe ((): Unit)
     }
 
     "return an exception if object-store response is not successful" in {
@@ -296,18 +296,18 @@ class PlayObjectStoreClientEitherSpec
 
       initListObjectsStub(path, statusCode = 200, Some(objectListingJson), owner = owner)
 
-      osClient.listObjects(path).futureValue.right.value.objectSummaries shouldBe List(
+      osClient.listObjects(path).futureValue.value.objectSummaries shouldBe List(
         ObjectSummary(
-          location = Path.File(Path.Directory("something"), "0993180f-8f31-41b2-905c-71f0273bb7d4"),
+          location      = Path.File(Path.Directory("something"), "0993180f-8f31-41b2-905c-71f0273bb7d4"),
           contentLength = 49,
-          contentMd5 = "4033ff85a6fdc6a2f51e60d89236a244",
-          lastModified = Instant.parse("2020-07-21T13:16:42.859Z")
+          contentMd5    = Md5Hash("4033ff85a6fdc6a2f51e60d89236a244"),
+          lastModified  = Instant.parse("2020-07-21T13:16:42.859Z")
         ),
         ObjectSummary(
-          location = Path.File(Path.Directory("something"), "23265eab-268e-4fcc-904f-775586b362c2"),
+          location      = Path.File(Path.Directory("something"), "23265eab-268e-4fcc-904f-775586b362c2"),
           contentLength = 49,
-          contentMd5 = "a3c2f1e38701bd2c7b54ebd7b1cd0dbc",
-          lastModified = Instant.parse("2020-07-21T13:16:41.226Z")
+          contentMd5    = Md5Hash("a3c2f1e38701bd2c7b54ebd7b1cd0dbc"),
+          lastModified  = Instant.parse("2020-07-21T13:16:41.226Z")
         )
       )
     }
@@ -317,18 +317,18 @@ class PlayObjectStoreClientEitherSpec
 
       initListObjectsStub(path, statusCode = 200, Some(objectListingJson), owner)
 
-      osClient.listObjects(path).futureValue.right.value.objectSummaries shouldBe List(
+      osClient.listObjects(path).futureValue.value.objectSummaries shouldBe List(
         ObjectSummary(
-          location = Path.File(Path.Directory("something"), "0993180f-8f31-41b2-905c-71f0273bb7d4"),
+          location      = Path.File(Path.Directory("something"), "0993180f-8f31-41b2-905c-71f0273bb7d4"),
           contentLength = 49,
-          contentMd5 = "4033ff85a6fdc6a2f51e60d89236a244",
-          lastModified = Instant.parse("2020-07-21T13:16:42.859Z")
+          contentMd5    = Md5Hash("4033ff85a6fdc6a2f51e60d89236a244"),
+          lastModified  = Instant.parse("2020-07-21T13:16:42.859Z")
         ),
         ObjectSummary(
-          location = Path.File(Path.Directory("something"), "23265eab-268e-4fcc-904f-775586b362c2"),
+          location      = Path.File(Path.Directory("something"), "23265eab-268e-4fcc-904f-775586b362c2"),
           contentLength = 49,
-          contentMd5 = "a3c2f1e38701bd2c7b54ebd7b1cd0dbc",
-          lastModified = Instant.parse("2020-07-21T13:16:41.226Z")
+          contentMd5    = Md5Hash("a3c2f1e38701bd2c7b54ebd7b1cd0dbc"),
+          lastModified  = Instant.parse("2020-07-21T13:16:41.226Z")
         )
       )
     }
@@ -338,7 +338,7 @@ class PlayObjectStoreClientEitherSpec
 
       initListObjectsStub(path, statusCode = 200, Some(emptyObjectListingJson), owner = owner)
 
-      osClient.listObjects(path).futureValue.right.value shouldBe ObjectListing(List.empty)
+      osClient.listObjects(path).futureValue.value shouldBe ObjectListing(List.empty)
     }
 
     "return an exception if object-store response is not successful" in {

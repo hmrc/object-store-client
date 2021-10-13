@@ -43,6 +43,8 @@ object Path {
   }
 }
 
+case class Md5Hash(value: String) extends AnyVal
+
 case class Object[CONTENT](
   location: String,
   content: CONTENT,
@@ -56,7 +58,7 @@ final case class ObjectListing(
 final case class ObjectMetadata(
   contentType: String,
   contentLength: Long,
-  contentMd5: String,
+  contentMd5: Md5Hash,
   lastModified: Instant,
   userMetadata: Map[String, String]
 )
@@ -64,7 +66,7 @@ final case class ObjectMetadata(
 final case class ObjectSummary(
   location: Path.File,
   contentLength: Long,
-  contentMd5: String,
+  contentMd5: Md5Hash,
   lastModified: Instant
 )
 
