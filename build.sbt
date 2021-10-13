@@ -1,22 +1,16 @@
-import sbt.Keys.crossScalaVersions
 import sbt._
-
-val name      = "object-store-client"
-
-val scala2_12 = "2.12.14"
 
 lazy val commonSettings = Seq(
   organization     := "uk.gov.hmrc.objectstore",
   majorVersion     := 0,
-  scalaVersion     := scala2_12,
+  scalaVersion     := "2.12.14",
   isPublicArtefact := true,
 )
 
-lazy val library = Project(name, file("."))
+lazy val library = Project("object-store-client", file("."))
   .settings(
     commonSettings,
-    publish / skip := true,
-    crossScalaVersions := Seq.empty
+    publish / skip := true
   )
   .aggregate(
     objectStoreClientCommon,
