@@ -83,11 +83,12 @@ and use its methods to interact with object-store. Here onwards, we'll call that
 import uk.gov.hmrc.objectstore.client.play.Implicits._
 
 client.putObject(
-  path = Path.Directory("accounts/2020").file("summary.txt"),
-  content = "this is the content",
+  path            = Path.Directory("accounts/2020").file("summary.txt"),
+  content         = "this is the content",
   retentionPeriod = RetentionPeriod.OneMonth, // defaults to 'object-store.default-retention-period' configuration
-  contentType = Some("plain/text"), // defaults to None
-  owner = "my-service" // defaults to 'appName' configuration
+  contentType     = Some("plain/text"), // defaults to None
+  contentMd5      = Some(Md5Hash("4033ff85a6fdc6a2f51e60d89236a244")), // defaults to None, and will be calculated
+  owner           = "my-service" // defaults to 'appName' configuration
 ) // returns Future[Unit]
 ```
 

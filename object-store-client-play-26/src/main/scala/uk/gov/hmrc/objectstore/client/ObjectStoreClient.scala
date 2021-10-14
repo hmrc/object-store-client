@@ -54,9 +54,10 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
     content: CONTENT,
     retentionPeriod: RetentionPeriod = config.defaultRetentionPeriod,
     contentType: Option[String] = None,
+    contentMd5: Option[Md5Hash] = None,
     owner: String = config.owner
   )(implicit w: ObjectStoreContentWrite[F, CONTENT, REQ_BODY], hc: HeaderCarrier): F[Unit] =
-    F.flatMap(w.writeContent(content, contentType))(c =>
+    F.flatMap(w.writeContent(content, contentType, contentMd5))(c =>
       F.flatMap(client.put(s"$url/object/$owner/${path.asUri}", c, headers(retentionPeriodHeader(retentionPeriod))))(
         read.consume
       )
