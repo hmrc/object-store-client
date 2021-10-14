@@ -81,6 +81,13 @@ class PlayObjectStoreClientEitherSpec
   import Implicits._
 
   "putObject" must {
+    val summary =
+      ObjectSummary(
+        location      = Path.File(Path.Directory("zips"), "zip1.zip"),
+        contentLength = 1000L,
+        contentMd5    = Md5Hash("a3c2f1e38701bd2c7b54ebd7b1cd0dbc"),
+        lastModified  = Instant.now
+      )
 
     "store an object as Source with NotUsed bound to Mat" in {
       val body                                = s"hello world! ${UUID.randomUUID().toString}"
@@ -88,9 +95,9 @@ class PlayObjectStoreClientEitherSpec
       val md5Base64                           = Md5HashUtils.fromBytes(body.getBytes)
       val source: Source[ByteString, NotUsed] = toSource(body)
 
-      initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner = owner)
+      initPutObjectStub(path, body.getBytes, md5Base64, owner = owner, statusCode = 200, response = Some(summary))
 
-      osClient.putObject(path, source).futureValue.value shouldBe ((): Unit)
+      osClient.putObject(path, source).futureValue.value shouldBe summary
     }
 
     "store an object as Source with Any bound to Mat" in {
@@ -99,9 +106,9 @@ class PlayObjectStoreClientEitherSpec
       val md5Base64                     = Md5HashUtils.fromBytes(body.getBytes)
       val source: Source[ByteString, _] = toSource(body)
 
-      initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner = owner)
+      initPutObjectStub(path, body.getBytes, md5Base64, owner = owner, statusCode = 200, response = Some(summary))
 
-      osClient.putObject(path, source).futureValue.value shouldBe ((): Unit)
+      osClient.putObject(path, source).futureValue.value shouldBe summary
     }
 
     "store an object as Source with NotUsed bound to Mat and known md5hash and length" in {
@@ -110,12 +117,12 @@ class PlayObjectStoreClientEitherSpec
       val md5Base64                           = Md5HashUtils.fromBytes(body.getBytes)
       val source: Source[ByteString, NotUsed] = toSource(body)
 
-      initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner = owner)
+      initPutObjectStub(path, body.getBytes, md5Base64, owner = owner, statusCode = 200, response = Some(summary))
 
       osClient
         .putObject(path, Payload(length = body.length, md5Hash = md5Base64, content = source))
         .futureValue
-        .value shouldBe ((): Unit)
+        .value shouldBe summary
     }
 
     "store an object as Source with Any bound to Mat and known md5hash and length" in {
@@ -124,12 +131,12 @@ class PlayObjectStoreClientEitherSpec
       val md5Base64                     = Md5HashUtils.fromBytes(body.getBytes)
       val source: Source[ByteString, _] = toSource(body)
 
-      initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner = owner)
+      initPutObjectStub(path, body.getBytes, md5Base64, owner = owner, statusCode = 200, response = Some(summary))
 
       osClient
         .putObject(path, Payload(length = body.length, md5Hash = md5Base64, content = source))
         .futureValue
-        .value shouldBe ((): Unit)
+        .value shouldBe summary
     }
 
     "store an object as Bytes" in {
@@ -137,9 +144,9 @@ class PlayObjectStoreClientEitherSpec
       val path      = generateFilePath()
       val md5Base64 = Md5HashUtils.fromBytes(body)
 
-      initPutObjectStub(path, statusCode = 201, body, md5Base64, owner = owner)
+      initPutObjectStub(path, body, md5Base64, owner = owner, statusCode = 200, response = Some(summary))
 
-      osClient.putObject(path, body).futureValue.value shouldBe ((): Unit)
+      osClient.putObject(path, body).futureValue.value shouldBe summary
     }
 
     "store an object with explicit retention period" in {
@@ -149,14 +156,15 @@ class PlayObjectStoreClientEitherSpec
 
       initPutObjectStub(
         path,
-        statusCode = 201,
         body,
         md5Base64,
-        owner = owner,
-        retentionPeriod = RetentionPeriod.OneMonth
+        owner           = owner,
+        retentionPeriod = RetentionPeriod.OneMonth,
+        statusCode      = 200,
+        response        = Some(summary)
       )
 
-      osClient.putObject(path, body, RetentionPeriod.OneMonth).futureValue.value shouldBe ((): Unit)
+      osClient.putObject(path, body, RetentionPeriod.OneMonth).futureValue.value shouldBe summary
     }
 
     "store an object as String" in {
@@ -164,9 +172,9 @@ class PlayObjectStoreClientEitherSpec
       val path      = generateFilePath()
       val md5Base64 = Md5HashUtils.fromBytes(body.getBytes)
 
-      initPutObjectStub(path, statusCode = 201, body.getBytes, md5Base64, owner = owner)
+      initPutObjectStub(path, body.getBytes, md5Base64, owner = owner, statusCode = 200, response = Some(summary))
 
-      osClient.putObject(path, body).futureValue.value shouldBe ((): Unit)
+      osClient.putObject(path, body).futureValue.value shouldBe summary
     }
 
     "return an exception if object-store response is not successful" in {
@@ -174,7 +182,7 @@ class PlayObjectStoreClientEitherSpec
       val path      = generateFilePath()
       val md5Base64 = Md5HashUtils.fromBytes(body.getBytes)
 
-      initPutObjectStub(path, statusCode = 401, body.getBytes, md5Base64, owner = owner)
+      initPutObjectStub(path, body.getBytes, md5Base64, owner = owner, statusCode = 401, response = None)
 
       osClient.putObject(path, toSource(body)).futureValue.left.value shouldBe an[UpstreamErrorResponse]
     }

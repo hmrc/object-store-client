@@ -25,12 +25,13 @@ object ObjectStoreStubs {
 
   def initPutObjectStub(
     path           : Path.File,
-    statusCode     : Int,
     reqBody        : Array[Byte],
     md5Base64      : Md5Hash,
     owner          : String,
     retentionPeriod: RetentionPeriod = RetentionPeriod.OneWeek,
-    contentType    : String          = "application/octet-stream"
+    contentType    : String          = "application/octet-stream",
+    statusCode     : Int,
+    response       : Option[ObjectSummary]
   ): Unit = {
     val request = put(urlEqualTo(s"/object-store/object/$owner/${path.asUri}"))
       .withHeader("Authorization", equalTo("AuthorizationToken"))
@@ -40,10 +41,23 @@ object ObjectStoreStubs {
       .withHeader("X-Retention-Period", equalTo(retentionPeriod.value))
       .withRequestBody(binaryEqualTo(reqBody))
 
-    val response = aResponse().withStatus(statusCode)
+    val responseBuilder =
+      response.foldLeft(aResponse.withStatus(statusCode)){ case (builder, response) =>
+        builder
+          .withHeader("Content-Type", "application/json")
+          .withBody(
+            Json.obj(
+              "location"      -> response.location.asUri,
+              "contentLength" -> response.contentLength,
+              "contentMD5"    -> response.contentMd5.value,
+              "lastModified"  -> response.lastModified
+            ).toString
+          )
+      }
+
     stubFor(
       request
-        .willReturn(response)
+        .willReturn(responseBuilder)
     )
   }
 

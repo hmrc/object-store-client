@@ -71,14 +71,20 @@ object stub {
       contentType: Option[String] = None,
       contentMd5: Option[Md5Hash] = None,
       owner: String = config.owner
-    )(implicit w: ObjectStoreContentWrite[F, CONTENT, Request], hc: HeaderCarrier): F[Unit] =
+    )(implicit w: ObjectStoreContentWrite[F, CONTENT, Request], hc: HeaderCarrier): F[ObjectSummary] =
       M.map(w.writeContent(content, contentType, contentMd5)) { r =>
+        val lastModified = Instant.now()
         objectStore += s"$owner/${path.asUri}" -> InternalObject(
           r,
           contentType.getOrElse("application/octet-stream"),
-          Instant.now()
+          lastModified
         )
-        ()
+        ObjectSummary(
+          location      = path,
+          contentLength = r.length.getOrElse(0),
+          contentMd5    = r.md5.getOrElse(Md5Hash("")),
+          lastModified  = lastModified
+        )
       }
 
     override def getObject[CONTENT](path: Path.File, owner: String = config.owner)(implicit
