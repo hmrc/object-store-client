@@ -39,7 +39,7 @@ import uk.gov.hmrc.objectstore.client.http.Payload
 import uk.gov.hmrc.objectstore.client.utils.PathUtils._
 import uk.gov.hmrc.objectstore.client.wiremock.ObjectStoreStubs._
 import uk.gov.hmrc.objectstore.client.wiremock.WireMockHelper
-import uk.gov.hmrc.objectstore.client.{Md5Hash, ObjectListing, ObjectSummary, Path, RetentionPeriod, ZipRequest}
+import uk.gov.hmrc.objectstore.client.{Md5Hash, ObjectListing, ObjectSummary, Path, RetentionPeriod}
 
 import java.util.UUID.randomUUID
 import scala.concurrent.ExecutionContextExecutor
@@ -352,12 +352,9 @@ class PlayObjectStoreClientEitherSpec
 
   "zip" must {
     "return an ObjectListing with objectSummaries" in {
-      val zipRequest =
-        ZipRequest(
-          from            = Path.Directory("envelope1"),
-          to              = Path.File(Path.Directory("zips"), "zip1.zip"),
-          retentionPeriod = RetentionPeriod.OneWeek
-        )
+      val from            = Path.Directory("envelope1")
+      val to              = Path.File(Path.Directory("zips"), "zip1.zip")
+      val retentionPeriod = RetentionPeriod.OneWeek
 
       val zipResponse =
         ObjectSummary(
@@ -367,22 +364,19 @@ class PlayObjectStoreClientEitherSpec
           lastModified  = Instant.now
         )
 
-      initZipStub(zipRequest, statusCode = 200, Some(zipResponse))
+      initZipStub(from, to, retentionPeriod, statusCode = 200, Some(zipResponse))
 
-      osClient.zip(zipRequest).futureValue.right.value shouldBe zipResponse
+      osClient.zip(from, to, retentionPeriod).futureValue.value shouldBe zipResponse
     }
 
     "return an exception if object-store response is not successful" in {
-      val zipRequest =
-        ZipRequest(
-          from            = Path.Directory("envelope1"),
-          to              = Path.File(Path.Directory("zips"), "zip1.zip"),
-          retentionPeriod = RetentionPeriod.OneWeek
-        )
+      val from            = Path.Directory("envelope1")
+      val to              = Path.File(Path.Directory("zips"), "zip1.zip")
+      val retentionPeriod = RetentionPeriod.OneWeek
 
-      initZipStub(zipRequest, statusCode = 401, response = None)
+      initZipStub(from, to, retentionPeriod, statusCode = 401, response = None)
 
-      osClient.zip(zipRequest).futureValue.left.value shouldBe an[UpstreamErrorResponse]
+      osClient.zip(from, to, retentionPeriod).futureValue.left.value shouldBe an[UpstreamErrorResponse]
     }
   }
 

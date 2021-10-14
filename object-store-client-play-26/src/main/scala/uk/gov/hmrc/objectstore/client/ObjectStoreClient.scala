@@ -108,9 +108,13 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
     F.flatMap(client.get(location, headers()))(read.toObjectListing)
   }
 
-  def zip(zipRequest: ZipRequest)(implicit hc: HeaderCarrier): F[ObjectSummary] =
+  def zip(
+    from           : Path.Directory,
+    to             : Path.File,
+    retentionPeriod: RetentionPeriod = config.defaultRetentionPeriod
+  )(implicit hc: HeaderCarrier): F[ObjectSummary] =
     F.flatMap(
-      write.writeZipRequest(zipRequest)
+      write.writeZipRequest(ZipRequest(from, to, retentionPeriod))
     )(reqBody =>
       F.flatMap(
         client.post(
