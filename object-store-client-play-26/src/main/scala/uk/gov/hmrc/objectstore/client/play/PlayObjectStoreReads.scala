@@ -24,7 +24,7 @@ import play.api.http.Status
 import play.api.libs.json.{Json, JsError, JsSuccess, Reads}
 import uk.gov.hmrc.http.UpstreamErrorResponse
 import uk.gov.hmrc.objectstore.client.http.ObjectStoreRead
-import uk.gov.hmrc.objectstore.client.{Md5Hash, Object, ObjectListing, ObjectMetadata, ZipResponse}
+import uk.gov.hmrc.objectstore.client.{Md5Hash, Object, ObjectListing, ObjectMetadata, ObjectSummary}
 
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME
@@ -36,7 +36,7 @@ object PlayObjectStoreReads {
   def futureEitherReads(implicit m: Materializer, ec: ExecutionContext): ObjectStoreRead[FutureEither, Response, Source[ByteString, NotUsed]] =
     new ObjectStoreRead[FutureEither, Response, Source[ByteString, NotUsed]] {
       override def toObjectListing(response: Response): FutureEither[ObjectListing] =
-        toDomain[ObjectListing](response)(PlayFormats.objectListingRead)
+        toDomain[ObjectListing](response)(PlayFormats.objectListingReads)
 
       override def toObject(location: String, response: Response): FutureEither[Option[Object[ResBody]]] =
         response.status match {
@@ -79,8 +79,8 @@ object PlayObjectStoreReads {
           }
         }
 
-      override def toZipResponse(response: Response): FutureEither[ZipResponse] =
-        toDomain[ZipResponse](response)(PlayFormats.zipResponseReads)
+      override def toObjectSummary(response: Response): FutureEither[ObjectSummary] =
+        toDomain[ObjectSummary](response)(PlayFormats.objectSummaryReads)
 
       override def consume(response: Response): FutureEither[Unit] =
         response.status match {
@@ -127,8 +127,8 @@ object PlayObjectStoreReads {
       override def toObject(location: String, response: Response): Future[Option[Object[Source[ByteString, NotUsed]]]] =
         transform(futureEitherReads.toObject(location, response))
 
-      override def toZipResponse(response: Response): Future[ZipResponse] =
-        transform(futureEitherReads.toZipResponse(response))
+      override def toObjectSummary(response: Response): Future[ObjectSummary] =
+        transform(futureEitherReads.toObjectSummary(response))
 
       override def consume(response: Response): Future[Unit] =
         transform(futureEitherReads.consume(response))

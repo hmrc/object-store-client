@@ -18,7 +18,7 @@ package uk.gov.hmrc.objectstore.client.wiremock
 
 import com.github.tomakehurst.wiremock.client.WireMock._
 import play.api.libs.json.Json
-import uk.gov.hmrc.objectstore.client.{Md5Hash, Path, RetentionPeriod, ZipRequest, ZipResponse}
+import uk.gov.hmrc.objectstore.client.{Md5Hash, ObjectSummary, Path, RetentionPeriod, ZipRequest}
 import uk.gov.hmrc.objectstore.client.play.Md5HashUtils
 
 object ObjectStoreStubs {
@@ -105,7 +105,7 @@ object ObjectStoreStubs {
     )
   }
 
-  def initZipStub(zipRequest: ZipRequest, statusCode: Int, response: Option[ZipResponse]): Unit = {
+  def initZipStub(zipRequest: ZipRequest, statusCode: Int, response: Option[ObjectSummary]): Unit = {
     val request =
       post(urlEqualTo("/object-store/ops/zip"))
         .withHeader("Authorization", equalTo("AuthorizationToken"))
@@ -117,9 +117,10 @@ object ObjectStoreStubs {
           .withHeader("Content-Type", "application/json")
           .withBody(
             Json.obj(
-              "location"    -> response.location.asUri,
-              "size"        -> response.size,
-              "md5Checksum" -> response.md5Checksum.value
+              "location"      -> response.location.asUri,
+              "contentLength" -> response.contentLength,
+              "contentMD5"    -> response.contentMd5.value,
+              "lastModified"  -> response.lastModified
             ).toString
           )
       }

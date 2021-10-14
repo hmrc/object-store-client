@@ -98,7 +98,7 @@ object stub {
                 ObjectMetadata(
                   internalObject.contentType,
                   internalObject.request.length.getOrElse(0),
-                  internalObject.request.md5.getOrElse(Md5Hash("")), // TODO empty? read content...
+                  internalObject.request.md5.getOrElse(Md5Hash("")),
                   Instant.now(),
                   Map.empty
                 )
@@ -128,7 +128,7 @@ object stub {
                 ObjectSummary(
                   Path.File(filePath),
                   internalObject.request.length.getOrElse(0),
-                  internalObject.request.md5.getOrElse(Md5Hash("")), // TODO empty? read content...
+                  internalObject.request.md5.getOrElse(Md5Hash("")),
                   internalObject.lastModifiedInstant
                 )
             }

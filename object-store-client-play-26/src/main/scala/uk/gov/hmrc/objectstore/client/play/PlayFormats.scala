@@ -18,7 +18,7 @@ package uk.gov.hmrc.objectstore.client.play
 
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{Format, Reads, Writes, __}
-import uk.gov.hmrc.objectstore.client.{Md5Hash, ObjectListing, ObjectSummary, Path, RetentionPeriod, ZipRequest, ZipResponse}
+import uk.gov.hmrc.objectstore.client.{Md5Hash, ObjectListing, ObjectSummary, Path, RetentionPeriod, ZipRequest}
 
 import java.time.Instant
 
@@ -32,23 +32,17 @@ object PlayFormats {
     implicitly[Format[String]]
       .inmap(Path.File.apply, _.asUri)
 
-  val objectSummaryRead: Reads[ObjectSummary] =
+  val objectSummaryReads: Reads[ObjectSummary] =
     ( (__ \ "location"     ).read[String].map(_.stripPrefix("/object-store/object/")).map(Path.File.apply)
     ~ (__ \ "contentLength").read[Long]
     ~ (__ \ "contentMD5"   ).read[String].map(Md5Hash.apply)
     ~ (__ \ "lastModified" ).read[Instant]
     )(ObjectSummary.apply _)
 
-  val objectListingRead: Reads[ObjectListing] = {
-    implicit val osf: Reads[ObjectSummary] = objectSummaryRead
+  val objectListingReads: Reads[ObjectListing] = {
+    implicit val osf: Reads[ObjectSummary] = objectSummaryReads
     Reads.at[List[ObjectSummary]](__ \ "objects").map(ObjectListing.apply)
   }
-
-  val zipResponseReads: Reads[ZipResponse] =
-    ( (__ \ "location"   ).read[Path.File](fileFormat)
-    ~ (__ \ "size"       ).read[Long]
-    ~ (__ \ "md5Checksum").read[String].map(Md5Hash.apply)
-    )(ZipResponse.apply _)
 
   val zipRequestWrites: Writes[ZipRequest] =
     ( (__ \ "fromLocation"   ).write[Path.Directory](directoryFormat)

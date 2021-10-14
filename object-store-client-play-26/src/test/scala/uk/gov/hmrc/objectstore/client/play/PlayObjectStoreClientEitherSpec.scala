@@ -39,7 +39,7 @@ import uk.gov.hmrc.objectstore.client.http.Payload
 import uk.gov.hmrc.objectstore.client.utils.PathUtils._
 import uk.gov.hmrc.objectstore.client.wiremock.ObjectStoreStubs._
 import uk.gov.hmrc.objectstore.client.wiremock.WireMockHelper
-import uk.gov.hmrc.objectstore.client.{Md5Hash, ObjectListing, ObjectSummary, Path, RetentionPeriod, ZipRequest, ZipResponse}
+import uk.gov.hmrc.objectstore.client.{Md5Hash, ObjectListing, ObjectSummary, Path, RetentionPeriod, ZipRequest}
 
 import java.util.UUID.randomUUID
 import scala.concurrent.ExecutionContextExecutor
@@ -360,10 +360,11 @@ class PlayObjectStoreClientEitherSpec
         )
 
       val zipResponse =
-        ZipResponse(
-          location    = Path.File(Path.Directory("zips"), "zip1.zip"),
-          size        = 1000L,
-          md5Checksum = Md5Hash("a3c2f1e38701bd2c7b54ebd7b1cd0dbc")
+        ObjectSummary(
+          location      = Path.File(Path.Directory("zips"), "zip1.zip"),
+          contentLength = 1000L,
+          contentMd5    = Md5Hash("a3c2f1e38701bd2c7b54ebd7b1cd0dbc"),
+          lastModified  = Instant.now
         )
 
       initZipStub(zipRequest, statusCode = 200, Some(zipResponse))

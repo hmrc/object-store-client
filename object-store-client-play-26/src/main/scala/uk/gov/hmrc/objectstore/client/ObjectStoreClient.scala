@@ -108,7 +108,7 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
     F.flatMap(client.get(location, headers()))(read.toObjectListing)
   }
 
-  def zip(zipRequest: ZipRequest)(implicit hc: HeaderCarrier): F[ZipResponse] =
+  def zip(zipRequest: ZipRequest)(implicit hc: HeaderCarrier): F[ObjectSummary] =
     F.flatMap(
       write.writeZipRequest(zipRequest)
     )(reqBody =>
@@ -118,7 +118,7 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
           reqBody,
           headers()
         )
-      )(read.toZipResponse)
+      )(read.toObjectSummary)
     )
 
   private val hcConfig = HeaderCarrier.Config.fromConfig(ConfigFactory.load())

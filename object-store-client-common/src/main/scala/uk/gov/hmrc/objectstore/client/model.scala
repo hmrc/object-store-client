@@ -94,9 +94,3 @@ final case class ZipRequest(
   to             : Path.File,
   retentionPeriod: RetentionPeriod
 )
-
-final case class ZipResponse(
-  location   : Path.File,
-  size       : Long,
-  md5Checksum: Md5Hash
-)
