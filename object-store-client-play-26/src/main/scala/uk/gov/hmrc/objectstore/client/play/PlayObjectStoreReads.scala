@@ -29,14 +29,17 @@ import uk.gov.hmrc.objectstore.client.{Md5Hash, Object, ObjectListing, ObjectMet
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME
 import scala.concurrent.{ExecutionContext, Future}
+import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
 
 object PlayObjectStoreReads {
 
   def futureEitherReads(implicit m: Materializer, ec: ExecutionContext): ObjectStoreRead[FutureEither, Response, Source[ByteString, NotUsed]] =
     new ObjectStoreRead[FutureEither, Response, Source[ByteString, NotUsed]] {
-      override def toObjectListing(response: Response): FutureEither[ObjectListing] =
-        toDomain[ObjectListing](response)(PlayFormats.objectListingReads)
+      override def toObjectListing(response: Response): FutureEither[ObjectListing] = {
+        implicit val osr = PlayFormats.objectListingReads
+        toDomain[ObjectListing](response)
+      }
 
       override def toObject(location: String, response: Response): FutureEither[Option[Object[ResBody]]] =
         response.status match {
@@ -79,8 +82,10 @@ object PlayObjectStoreReads {
           }
         }
 
-      override def toObjectSummary(response: Response): FutureEither[ObjectSummary] =
-        toDomain[ObjectSummary](response)(PlayFormats.objectSummaryReads)
+      override def toObjectSummary(response: Response): FutureEither[ObjectSummary] = {
+        implicit val osr = PlayFormats.objectSummaryReads
+        toDomain[ObjectSummary](response)
+      }
 
       override def consume(response: Response): FutureEither[Unit] =
         response.status match {
@@ -91,7 +96,7 @@ object PlayObjectStoreReads {
             }
         }
 
-      private def toDomain[A](response: Response)(implicit reads: Reads[A]): FutureEither[A] =
+      private def toDomain[A](response: Response)(implicit reads: Reads[A], ct: ClassTag[A]): FutureEither[A] =
         response.status match {
           case SuccessStatus(_) =>
             readBody(response).map { bodyStr =>
@@ -100,7 +105,7 @@ object PlayObjectStoreReads {
                 case JsError(errors) =>
                   Left(
                     new RuntimeException(
-                      s"Attempt to convert json to ${classOf[ObjectListing].getName} gave errors: $errors"
+                      s"Attempt to convert json to $ct gave errors: $errors"
                     )
                   )
               }
