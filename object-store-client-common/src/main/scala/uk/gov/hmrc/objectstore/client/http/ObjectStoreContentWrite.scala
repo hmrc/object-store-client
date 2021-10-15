@@ -30,19 +30,31 @@ case class Payload[CONTENT](
 @implicitNotFound("""No implicits found for ObjectStoreContentWrite[${F}, ${CONTENT}, ${BODY}].
 If you are using a Source[ByteString, _], you may be missing an implicit Materializer""")
 trait ObjectStoreContentWrite[F[_], CONTENT, BODY] { outer =>
-  def writeContent(content: CONTENT, contentType: Option[String]): F[BODY]
+  def writeContent(
+    content    : CONTENT,
+    contentType: Option[String],
+    contentMd5 : Option[Md5Hash]
+  ): F[BODY]
 
   def contramap[CONTENT2](f: CONTENT2 => CONTENT): ObjectStoreContentWrite[F, CONTENT2, BODY] =
     new ObjectStoreContentWrite[F, CONTENT2, BODY] {
-      override def writeContent(content: CONTENT2, contentType: Option[String]): F[BODY] =
-        outer.writeContent(f(content), contentType)
+      override def writeContent(
+        content    : CONTENT2,
+        contentType: Option[String],
+        contentMd5 : Option[Md5Hash]
+      ): F[BODY] =
+        outer.writeContent(f(content), contentType, contentMd5)
     }
 
   def contramapF[CONTENT2](
     f: CONTENT2 => F[CONTENT]
   )(implicit F: Monad[F]): ObjectStoreContentWrite[F, CONTENT2, BODY] =
     new ObjectStoreContentWrite[F, CONTENT2, BODY] {
-      override def writeContent(content: CONTENT2, contentType: Option[String]): F[BODY] =
-        F.flatMap(f(content))(c => outer.writeContent(c, contentType))
+      override def writeContent(
+        content    : CONTENT2,
+        contentType: Option[String],
+        contentMd5 : Option[Md5Hash]
+      ): F[BODY] =
+        F.flatMap(f(content))(c => outer.writeContent(c, contentType, contentMd5))
     }
 }
