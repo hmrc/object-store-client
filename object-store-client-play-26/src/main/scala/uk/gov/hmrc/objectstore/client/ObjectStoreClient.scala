@@ -112,10 +112,17 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
   def zip(
     from           : Path.Directory,
     to             : Path.File,
-    retentionPeriod: RetentionPeriod = config.defaultRetentionPeriod
+    retentionPeriod: RetentionPeriod = config.defaultRetentionPeriod,
+    owner          : String          = config.owner
   )(implicit hc: HeaderCarrier): F[ObjectSummary] =
     F.flatMap(
-      write.writeZipRequest(ZipRequest(from, to, retentionPeriod))
+      write.writeZipRequest(
+        ZipRequest(
+          from            = Path.Directory(s"$owner/${from.asUri}"),
+          to              = Path.File(s"$owner/${to.asUri}"),
+          retentionPeriod = retentionPeriod
+        )
+      )
     )(reqBody =>
       F.flatMap(
         client.post(
