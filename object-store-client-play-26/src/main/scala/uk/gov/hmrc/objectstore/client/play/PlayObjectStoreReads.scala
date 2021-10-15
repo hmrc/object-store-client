@@ -24,7 +24,7 @@ import play.api.http.Status
 import play.api.libs.json.{Json, JsError, JsSuccess, Reads}
 import uk.gov.hmrc.http.UpstreamErrorResponse
 import uk.gov.hmrc.objectstore.client.http.ObjectStoreRead
-import uk.gov.hmrc.objectstore.client.{Md5Hash, Object, ObjectListing, ObjectMetadata, ObjectSummary}
+import uk.gov.hmrc.objectstore.client.{Md5Hash, Object, ObjectListing, ObjectMetadata, ObjectSummary, Path}
 
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME
@@ -62,14 +62,14 @@ object PlayObjectStoreReads {
                 lastModified  <- attempt("Last-Modified", ZonedDateTime.parse(lm, RFC_1123_DATE_TIME).toInstant).right
               } yield Some(
                 Object(
-                  location = location,
-                  content = response.bodyAsSource.mapMaterializedValue(_ => NotUsed),
+                  location = Path.File(location),
+                  content  = response.bodyAsSource.mapMaterializedValue(_ => NotUsed),
                   metadata = ObjectMetadata(
-                    contentType = response.contentType,
+                    contentType   = response.contentType,
                     contentLength = contentLength,
-                    contentMd5 = contentMd5,
-                    lastModified = lastModified,
-                    userMetadata = Map.empty[String, String] // TODO userMetadata?
+                    contentMd5    = contentMd5,
+                    lastModified  = lastModified,
+                    userMetadata  = Map.empty[String, String] // TODO userMetadata?
                   )
                 )
               )

@@ -100,7 +100,7 @@ object stub {
           M.map(cr.readContent(body)) { content =>
             Option(
               Object(
-                location,
+                Path.File(location),
                 content,
                 ObjectMetadata(
                   internalObject.contentType,

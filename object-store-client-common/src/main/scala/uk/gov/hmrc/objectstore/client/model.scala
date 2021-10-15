@@ -51,7 +51,7 @@ object Path {
 case class Md5Hash(value: String) extends AnyVal
 
 case class Object[CONTENT](
-  location: String,
+  location: Path.File,
   content: CONTENT,
   metadata: ObjectMetadata
 )

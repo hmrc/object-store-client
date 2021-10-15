@@ -74,9 +74,8 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
     path: Path.File,
     owner: String = config.owner
   )(implicit cr: ObjectStoreContentRead[F, RES_BODY, CONTENT], hc: HeaderCarrier): F[Option[Object[CONTENT]]] = {
-    val location = s"$url/object/$owner/${path.asUri}"
-    F.flatMap(client.get(location, headers()))(res =>
-      F.flatMap(read.toObject(location, res)) {
+    F.flatMap(client.get(s"$url/object/$owner/${path.asUri}", headers()))(res =>
+      F.flatMap(read.toObject(s"$owner/${path.asUri}", res)) {
         case Some(obj) => F.map(cr.readContent(obj.content))(c => Some(obj.copy(content = c)))
         case None      => F.pure(None)
       }
@@ -113,13 +112,14 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
     from           : Path.Directory,
     to             : Path.File,
     retentionPeriod: RetentionPeriod = config.defaultRetentionPeriod,
-    owner          : String          = config.owner
+    fromOwner      : String          = config.owner,
+    toOwner        : String          = config.owner
   )(implicit hc: HeaderCarrier): F[ObjectSummary] =
     F.flatMap(
       write.writeZipRequest(
         ZipRequest(
-          from            = Path.Directory(s"$owner/${from.asUri}"),
-          to              = Path.File(s"$owner/${to.asUri}"),
+          from            = Path.Directory(s"object-store/object/$fromOwner/${if (from.asUri == "/") "" else from.asUri}"),
+          to              = Path.File(s"object-store/object/$toOwner/${to.asUri}"),
           retentionPeriod = retentionPeriod
         )
       )

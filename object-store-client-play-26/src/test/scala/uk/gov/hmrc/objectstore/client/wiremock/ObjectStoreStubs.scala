@@ -123,7 +123,8 @@ object ObjectStoreStubs {
     from           : Path.Directory,
     to             : Path.File,
     retentionPeriod: RetentionPeriod,
-    owner          : String,
+    fromOwner      : String,
+    toOwner        : String,
     statusCode     : Int,
     response       : Option[ObjectSummary]
   ): Unit = {
@@ -132,8 +133,8 @@ object ObjectStoreStubs {
         .withHeader("Authorization", equalTo("AuthorizationToken"))
         .withHeader("Content-Type", equalTo("application/json"))
         .withRequestBody(equalToJson(s"""{
-          "fromLocation": "$owner/${from.asUri}",
-          "toLocation": "$owner/${to.asUri}",
+          "fromLocation": "object-store/object/$fromOwner/${from.asUri}",
+          "toLocation": "object-store/object/$toOwner/${to.asUri}",
           "retentionPeriod": "${retentionPeriod.value}"
         }"""))
 
