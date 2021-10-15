@@ -60,7 +60,7 @@ class ClientStubSpec
         actualContent   <- actualObject.value.content.runReduce(_ ++ _)
         expectedContent <- defaultContent.runReduce(_ ++ _)
       } yield {
-        actualObject.value.location shouldBe s"$baseUrl/object-store/object/$owner/${defaultPath.asUri}"
+        actualObject.value.location.asUri shouldBe s"$baseUrl/object-store/object/$owner/${defaultPath.asUri}"
         actualContent shouldBe expectedContent
       }).futureValue
     }

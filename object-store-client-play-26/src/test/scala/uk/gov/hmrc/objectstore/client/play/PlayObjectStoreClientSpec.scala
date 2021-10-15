@@ -434,7 +434,7 @@ class PlayObjectStoreClientSpec
           lastModified  = Instant.now
         )
 
-      initZipStub(from, to, retentionPeriod, statusCode = 200, Some(zipResponse))
+      initZipStub(from, to, retentionPeriod, defaultOwner, defaultOwner, statusCode = 200, Some(zipResponse))
 
       osClient.zip(from, to, retentionPeriod).futureValue shouldBe zipResponse
     }
@@ -444,7 +444,7 @@ class PlayObjectStoreClientSpec
       val to              = Path.File(Path.Directory("zips"), "zip1.zip")
       val retentionPeriod = RetentionPeriod.OneWeek
 
-      initZipStub(from, to, retentionPeriod, statusCode = 401, response = None)
+      initZipStub(from, to, retentionPeriod, defaultOwner, defaultOwner, statusCode = 401, response = None)
 
       osClient.zip(from, to, retentionPeriod).failed.futureValue shouldBe an[UpstreamErrorResponse]
     }

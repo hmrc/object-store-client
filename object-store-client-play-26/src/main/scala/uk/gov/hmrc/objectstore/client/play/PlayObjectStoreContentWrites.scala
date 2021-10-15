@@ -44,7 +44,7 @@ trait PlayObjectStoreContentWrites {
         contentMd5 : Option[Md5Hash]
       ): F[Request] =
         if (contentMd5.exists(payload.md5Hash != _))
-          F.raiseError(new RuntimeException(s"ContentMd5 did not match"))
+          F.raiseError(new RuntimeException(s"Content Md5 did not match"))
         else
           F.pure(
             HttpBody(
@@ -90,7 +90,7 @@ trait PlayObjectStoreContentWrites {
             _       <- uploadFinished
             md5Hash <- md5Finished
             _       <- if (contentMd5.exists(md5Hash != _))
-                         Future.failed(new RuntimeException(s"ContentMd5 did not match"))
+                         Future.failed(new RuntimeException(s"Content Md5 did not match"))
                        else Future.unit
           } yield HttpBody(
             length    = Some(tempFile.path.toFile.length),
