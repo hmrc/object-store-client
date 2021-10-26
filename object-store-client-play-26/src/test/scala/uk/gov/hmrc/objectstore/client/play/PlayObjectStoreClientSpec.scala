@@ -32,13 +32,13 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import uk.gov.hmrc.http.{Authorization, HeaderCarrier, UpstreamErrorResponse}
-import uk.gov.hmrc.http.test.WireMockSupport
-import uk.gov.hmrc.objectstore.client.RetentionPeriod.OneWeek
+import uk.gov.hmrc.http.play.HttpClient2
+import uk.gov.hmrc.http.test.{HttpClient2Support, WireMockSupport}
+import uk.gov.hmrc.objectstore.client.{Md5Hash, ObjectListing, ObjectSummary, Path, RetentionPeriod}
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 import uk.gov.hmrc.objectstore.client.http.Payload
 import uk.gov.hmrc.objectstore.client.utils.PathUtils._
 import uk.gov.hmrc.objectstore.client.wiremock.ObjectStoreStubs._
-import uk.gov.hmrc.objectstore.client.{Md5Hash, ObjectListing, ObjectSummary, Path, RetentionPeriod}
 
 import java.time.Instant
 import java.util.UUID.randomUUID
@@ -50,6 +50,7 @@ class PlayObjectStoreClientSpec
      with GuiceOneServerPerSuite
      with BeforeAndAfterAll
      with WireMockSupport
+     with HttpClient2Support
      with ScalaFutures
      with IntegrationPatience {
 
@@ -67,12 +68,13 @@ class PlayObjectStoreClientSpec
       .overrides(
         bind[ObjectStoreClientConfig].toInstance(
           ObjectStoreClientConfig(
-            baseUrl = wireMockUrl,
-            owner = defaultOwner,
-            authorizationToken = "AuthorizationToken",
+            baseUrl                = wireMockUrl,
+            owner                  = defaultOwner,
+            authorizationToken     = "AuthorizationToken",
             defaultRetentionPeriod = RetentionPeriod.OneWeek
           )
-        )
+        ),
+        bind[HttpClient2].toInstance(httpClient2)
       )
       .build()
 
@@ -170,7 +172,7 @@ class PlayObjectStoreClientSpec
 
       initPutObjectStub(path, body.getBytes, md5Base64, owner = defaultOwner, statusCode = 200, response = Some(summary))
 
-      osClient.putObject(path, body, OneWeek).futureValue shouldBe summary
+      osClient.putObject(path, body, RetentionPeriod.OneWeek).futureValue shouldBe summary
     }
 
     "return an exception if object-store response is not successful" in {

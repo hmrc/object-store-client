@@ -18,7 +18,7 @@ package uk.gov.hmrc.objectstore.client.play
 
 import akka.stream.Materializer
 import javax.inject.{Inject, Singleton}
-import play.api.libs.ws.WSClient
+import uk.gov.hmrc.http.play.HttpClient2
 import uk.gov.hmrc.objectstore.client.ObjectStoreClient
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 import uk.gov.hmrc.objectstore.client.play.Implicits._
@@ -28,11 +28,11 @@ import scala.concurrent.{ExecutionContext, Future}
 /** Client which returns responses within Future[Either[PlayObjectStoreException, *]]. */
 @Singleton
 class PlayObjectStoreClientEither @Inject() (
-  wsClient: WSClient,
+  httpClient2: HttpClient2,
   config: ObjectStoreClientConfig
 )(implicit m: Materializer, ec: ExecutionContext)
     extends ObjectStoreClient[FutureEither, Request, Response, ResBody](
-      new PlayWSHttpClient[FutureEither](wsClient),
+      new PlayWSHttpClient[FutureEither](httpClient2),
       PlayObjectStoreReads.futureEitherReads,
       PlayObjectStoreWrites.write,
       config
@@ -42,11 +42,11 @@ class PlayObjectStoreClientEither @Inject() (
   */
 @Singleton
 class PlayObjectStoreClient @Inject() (
-  wsClient: WSClient,
+  httpClient2: HttpClient2,
   config: ObjectStoreClientConfig
 )(implicit m: Materializer, ec: ExecutionContext)
     extends ObjectStoreClient[Future, Request, Response, ResBody](
-      new PlayWSHttpClient[Future](wsClient),
+      new PlayWSHttpClient[Future](httpClient2),
       PlayObjectStoreReads.futureReads,
       PlayObjectStoreWrites.write,
       config

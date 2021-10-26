@@ -37,5 +37,5 @@ object AppDependencies {
   private val play26Version    = "2.6.25"
   private val play27Version    = "2.7.4"
   private val play28Version    = "2.8.8"
-  private val httpVerbsVersion = "13.10.0"
+  private val httpVerbsVersion = "13.9.0-SNAPSHOT"
 }

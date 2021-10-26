@@ -17,8 +17,10 @@
 package uk.gov.hmrc.objectstore.client.play
 
 import play.api.Logger
-import play.api.libs.ws.{WSClient, WSRequest, WSResponse}
-import uk.gov.hmrc.http.{BadGatewayException, GatewayTimeoutException, HttpException}
+import play.api.libs.ws.{WSRequest, WSResponse}
+import uk.gov.hmrc.http
+import uk.gov.hmrc.http.{BadGatewayException, GatewayTimeoutException, HeaderNames, HeaderCarrier, HttpException, StringContextOps}
+import uk.gov.hmrc.http.play.HttpClient2
 import uk.gov.hmrc.objectstore.client.http.HttpClient
 
 import java.net.ConnectException
@@ -26,7 +28,7 @@ import java.util.concurrent.TimeoutException
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.Duration
 
-class PlayWSHttpClient[F[_]](wsClient: WSClient)(implicit ec: ExecutionContext, F: PlayMonad[F])
+class PlayWSHttpClient[F[_]](httpClient2: HttpClient2)(implicit ec: ExecutionContext, F: PlayMonad[F])
     extends HttpClient[F, Request, Response] {
 
   private val logger: Logger = Logger(this.getClass)
@@ -77,24 +79,55 @@ class PlayWSHttpClient[F[_]](wsClient: WSClient)(implicit ec: ExecutionContext, 
     body: Request = empty
   ): F[WSResponse] = {
 
+    // TODO need to add http-verbs as a dependency to object-sore-client-common to propogate from client (through interface)
+    // for now, try to reconstruct for auditing
+    implicit val hc: HeaderCarrier = {
+      def extractHeader(name: String): Option[String] =
+        headers.collectFirst { case (k, v) if k.equalsIgnoreCase(name) => v }
+      HeaderCarrier(
+        authorization    = extractHeader(HeaderNames.authorisation).map(http.Authorization.apply),
+        forwarded        = extractHeader(HeaderNames.xForwardedFor).map(http.ForwardedFor.apply),
+        sessionId        = extractHeader(HeaderNames.xSessionId   ).map(http.SessionId.apply),
+        requestId        = extractHeader(HeaderNames.xRequestId   ).map(http.RequestId.apply),
+        requestChain     = extractHeader(HeaderNames.xRequestChain).fold(http.RequestChain.init)(http.RequestChain.apply),
+        nsStamp          = System.nanoTime(),
+        extraHeaders     = Seq.empty,
+        trueClientIp     = extractHeader(HeaderNames.trueClientIp),
+        trueClientPort   = extractHeader(HeaderNames.trueClientPort),
+        gaToken          = extractHeader(HeaderNames.googleAnalyticTokenId),
+        gaUserId         = extractHeader(HeaderNames.googleAnalyticUserId),
+        deviceID         = extractHeader(HeaderNames.deviceID),
+        akamaiReputation = extractHeader(HeaderNames.akamaiReputation).map(http.AkamaiReputation.apply),
+        otherHeaders     = Seq.empty
+      )
+    }
+
     logger.info(s"Request: Url: $url")
     val hdrs = headers ++
       body.length.map("Content-Length" -> _.toString) ++
       body.md5.map("Content-MD5" -> _.value)
 
-    val wsRequest = wsClient
-      .url(url)
-      .withFollowRedirects(false)
-      .withMethod(method)
-      .withHttpHeaders(hdrs: _*)
-      .withQueryStringParameters(queryParameters: _*)
-      .withRequestTimeout(Duration.Inf)
+    val requestBuilder =
+      (method match {
+        case "PUT"    => httpClient2.put(url"$url")
+        case "POST"   => httpClient2.post(url"$url")
+        case "GET"    => httpClient2.get(url"$url")
+        case "DELETE" => httpClient2.delete(url"$url")
+      }).transform(wsRequest =>
+        body.writeBody(
+          wsRequest
+           .withFollowRedirects(false)
+           .withHttpHeaders(hdrs: _*)
+           .withQueryStringParameters(queryParameters: _*)
+           .withRequestTimeout(Duration.Inf)
+        )
+      )
+
+    def right(req: WSRequest, responseF: scala.concurrent.Future[WSResponse]): scala.concurrent.Future[WSResponse] = responseF
 
     val res =
-      body
-        .writeBody(wsRequest)
-        .stream()
-        .map(logResponse)
+      requestBuilder
+        .stream[WSResponse](right)
         .map(Right(_): Either[HttpException, WSResponse])
         .recover {
           case e: TimeoutException =>
@@ -110,8 +143,4 @@ class PlayWSHttpClient[F[_]](wsClient: WSClient)(implicit ec: ExecutionContext, 
     }
   }
 
-  private def logResponse(response: WSResponse): WSResponse = {
-    logger.info(s"Response: Status ${response.status}, Headers ${response.headers}")
-    response
-  }
 }

@@ -21,6 +21,7 @@ import akka.stream.Materializer
 import play.api.libs.ws.ahc._
 import play.api.libs.ws.{SourceBody, WSClient}
 import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.test.HttpClient2Support
 import uk.gov.hmrc.objectstore.client._
 import uk.gov.hmrc.objectstore.client.category.Monad
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
@@ -31,12 +32,12 @@ import java.time.Instant
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 
-object stub {
+object stub extends HttpClient2Support {
 
   class StubPlayObjectStoreClient(val config: ObjectStoreClientConfig)(implicit
     m: Materializer,
     ec: ExecutionContext
-  ) extends PlayObjectStoreClient(AhcWSClient(), config)
+  ) extends PlayObjectStoreClient(httpClient2, config)
       with StubObjectStoreClient[Future] {
     protected val M        = Implicits.futureMonad
     protected val wsClient = AhcWSClient()
@@ -45,7 +46,7 @@ object stub {
   class StubPlayObjectStoreClientEither(val config: ObjectStoreClientConfig)(implicit
     m: Materializer,
     ec: ExecutionContext
-  ) extends PlayObjectStoreClientEither(AhcWSClient(), config)
+  ) extends PlayObjectStoreClientEither(httpClient2, config)
       with StubObjectStoreClient[FutureEither] {
     protected val M        = Implicits.futureEitherMonad
     protected val wsClient = AhcWSClient()

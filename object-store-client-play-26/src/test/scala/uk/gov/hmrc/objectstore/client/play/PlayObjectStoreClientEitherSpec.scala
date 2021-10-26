@@ -34,12 +34,13 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import uk.gov.hmrc.http.{Authorization, HeaderCarrier, UpstreamErrorResponse}
-import uk.gov.hmrc.http.test.WireMockSupport
+import uk.gov.hmrc.http.play.HttpClient2
+import uk.gov.hmrc.http.test.{HttpClient2Support, WireMockSupport}
+import uk.gov.hmrc.objectstore.client.{Md5Hash, ObjectListing, ObjectSummary, Path, RetentionPeriod}
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 import uk.gov.hmrc.objectstore.client.http.Payload
 import uk.gov.hmrc.objectstore.client.utils.PathUtils._
 import uk.gov.hmrc.objectstore.client.wiremock.ObjectStoreStubs._
-import uk.gov.hmrc.objectstore.client.{Md5Hash, ObjectListing, ObjectSummary, Path, RetentionPeriod}
 
 import java.util.UUID.randomUUID
 import scala.concurrent.ExecutionContextExecutor
@@ -50,6 +51,7 @@ class PlayObjectStoreClientEitherSpec
      with GuiceOneServerPerSuite
      with BeforeAndAfterAll
      with WireMockSupport
+     with HttpClient2Support
      with ScalaFutures
      with IntegrationPatience
      with EitherValues {
@@ -74,7 +76,8 @@ class PlayObjectStoreClientEitherSpec
             authorizationToken     = "AuthorizationToken",
             defaultRetentionPeriod = RetentionPeriod.OneWeek
           )
-        )
+        ),
+        bind[HttpClient2].toInstance(httpClient2)
       )
       .build()
 
