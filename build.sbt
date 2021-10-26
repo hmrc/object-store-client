@@ -1,5 +1,9 @@
 import sbt._
 
+// Disable multiple project tests running at the same time - for free port discovery
+// https://www.scala-sbt.org/1.x/docs/Parallel-Execution.html
+Global / concurrentRestrictions += Tags.limitSum(1, Tags.Test, Tags.Untagged)
+
 lazy val commonSettings = Seq(
   organization     := "uk.gov.hmrc.objectstore",
   majorVersion     := 0,
