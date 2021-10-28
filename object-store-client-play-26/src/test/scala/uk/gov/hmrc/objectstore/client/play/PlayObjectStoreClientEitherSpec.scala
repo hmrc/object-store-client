@@ -34,12 +34,12 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import uk.gov.hmrc.http.{Authorization, HeaderCarrier, UpstreamErrorResponse}
+import uk.gov.hmrc.http.test.WireMockSupport
+import uk.gov.hmrc.objectstore.client.{Md5Hash, ObjectListing, ObjectSummary, Path, RetentionPeriod}
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 import uk.gov.hmrc.objectstore.client.http.Payload
 import uk.gov.hmrc.objectstore.client.utils.PathUtils._
 import uk.gov.hmrc.objectstore.client.wiremock.ObjectStoreStubs._
-import uk.gov.hmrc.objectstore.client.wiremock.WireMockHelper
-import uk.gov.hmrc.objectstore.client.{Md5Hash, ObjectListing, ObjectSummary, Path, RetentionPeriod}
 
 import java.util.UUID.randomUUID
 import scala.concurrent.ExecutionContextExecutor
@@ -49,7 +49,7 @@ class PlayObjectStoreClientEitherSpec
      with Matchers
      with GuiceOneServerPerSuite
      with BeforeAndAfterAll
-     with WireMockHelper
+     with WireMockSupport
      with ScalaFutures
      with IntegrationPatience
      with EitherValues {
@@ -69,9 +69,9 @@ class PlayObjectStoreClientEitherSpec
       .overrides(
         bind[ObjectStoreClientConfig].toInstance(
           ObjectStoreClientConfig(
-            baseUrl = wireMockUrl,
-            owner = owner,
-            authorizationToken = "AuthorizationToken",
+            baseUrl                = wireMockUrl,
+            owner                  = owner,
+            authorizationToken     = "AuthorizationToken",
             defaultRetentionPeriod = RetentionPeriod.OneWeek
           )
         )
@@ -213,8 +213,9 @@ class PlayObjectStoreClientEitherSpec
 
     case class Obj(k1: String, k2: String)
     implicit val or: Reads[Obj] =
-      ((__ \ "k1").read[String]
-        ~ (__ \ "k2").read[String])(Obj.apply _)
+      ( (__ \ "k1").read[String]
+      ~ (__ \ "k2").read[String]
+      )(Obj.apply _)
 
     "return an object that exists as JsValue" in {
       val body = """{ "k1": "v1", "k2": "v2" }"""
@@ -407,24 +408,24 @@ class PlayObjectStoreClientEitherSpec
 
   private def objectListingJson: String =
     """{
-      |  "objects": [
-      |    {
-      |      "location": "/object-store/object/something/0993180f-8f31-41b2-905c-71f0273bb7d4",
-      |      "contentLength": 49,
-      |      "contentMD5": "4033ff85a6fdc6a2f51e60d89236a244",
-      |      "lastModified": "2020-07-21T13:16:42.859Z"
-      |    },
-      |    {
-      |      "location": "/object-store/object/something/23265eab-268e-4fcc-904f-775586b362c2",
-      |      "contentLength": 49,
-      |      "contentMD5": "a3c2f1e38701bd2c7b54ebd7b1cd0dbc",
-      |      "lastModified": "2020-07-21T13:16:41.226Z"
-      |    }
-      |  ]
-      |}""".stripMargin
+        "objects": [
+          {
+            "location": "/object-store/object/something/0993180f-8f31-41b2-905c-71f0273bb7d4",
+            "contentLength": 49,
+            "contentMD5": "4033ff85a6fdc6a2f51e60d89236a244",
+            "lastModified": "2020-07-21T13:16:42.859Z"
+          },
+          {
+            "location": "/object-store/object/something/23265eab-268e-4fcc-904f-775586b362c2",
+            "contentLength": 49,
+            "contentMD5": "a3c2f1e38701bd2c7b54ebd7b1cd0dbc",
+            "lastModified": "2020-07-21T13:16:41.226Z"
+          }
+        ]
+      }"""
 
   private def emptyObjectListingJson: String =
     """{
-      |    "objects": []
-      |}""".stripMargin
+          "objects": []
+      }"""
 }
