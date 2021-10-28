@@ -103,9 +103,9 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
   def listObjects(
     path: Path.Directory,
     owner: String = config.owner
-  )(implicit hc: HeaderCarrier): F[ObjectListing] = {
+  )(implicit hc: HeaderCarrier): F[ObjectListings] = {
     val location = s"$url/list/$owner/${path.asUri}".stripSuffix("/") // strip suffix since you can list an empty path
-    F.flatMap(client.get(location, headers()))(read.toObjectListing)
+    F.flatMap(client.get(location, headers()))(read.toObjectListings)
   }
 
   def zip(

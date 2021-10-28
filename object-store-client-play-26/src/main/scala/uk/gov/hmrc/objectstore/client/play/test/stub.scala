@@ -125,18 +125,17 @@ object stub {
 
     override def listObjects(path: Path.Directory, owner: String = config.owner)(implicit
       hc: HeaderCarrier
-    ): F[ObjectListing] =
+    ): F[ObjectListings] =
       M.pure(
-        ObjectListing(
+        ObjectListings(
           objectStore
             .filterKeys(_.startsWith(s"$owner/${path.asUri}"))
             .map {
               case (filePath, internalObject) =>
-                ObjectSummary(
-                  Path.File(filePath),
-                  internalObject.request.length.getOrElse(0),
-                  internalObject.request.md5.getOrElse(Md5Hash("")),
-                  internalObject.lastModifiedInstant
+                ObjectListing(
+                  location      = Path.File(filePath),
+                  contentLength = internalObject.request.length.getOrElse(0),
+                  lastModified  = internalObject.lastModifiedInstant
                 )
             }
             .toList

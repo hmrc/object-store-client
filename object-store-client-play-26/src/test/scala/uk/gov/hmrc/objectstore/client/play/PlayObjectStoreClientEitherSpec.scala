@@ -35,7 +35,7 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import uk.gov.hmrc.http.{Authorization, HeaderCarrier, UpstreamErrorResponse}
 import uk.gov.hmrc.http.test.WireMockSupport
-import uk.gov.hmrc.objectstore.client.{Md5Hash, ObjectListing, ObjectSummary, Path, RetentionPeriod}
+import uk.gov.hmrc.objectstore.client.{Md5Hash, ObjectListing, ObjectListings, ObjectSummary, Path, RetentionPeriod}
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 import uk.gov.hmrc.objectstore.client.http.Payload
 import uk.gov.hmrc.objectstore.client.utils.PathUtils._
@@ -300,54 +300,50 @@ class PlayObjectStoreClientEitherSpec
   }
 
   "listObject" must {
-    "return a ObjectListing with objectSummaries" in {
+    "return a ObjectListing with objects" in {
       val path = generateDirectoryPath()
 
       initListObjectsStub(path, statusCode = 200, Some(objectListingJson), owner = owner)
 
-      osClient.listObjects(path).futureValue.value.objectSummaries shouldBe List(
-        ObjectSummary(
+      osClient.listObjects(path).futureValue.value.objects shouldBe List(
+        ObjectListing(
           location      = Path.File(Path.Directory("something"), "0993180f-8f31-41b2-905c-71f0273bb7d4"),
           contentLength = 49,
-          contentMd5    = Md5Hash("4033ff85a6fdc6a2f51e60d89236a244"),
           lastModified  = Instant.parse("2020-07-21T13:16:42.859Z")
         ),
-        ObjectSummary(
+        ObjectListing(
           location      = Path.File(Path.Directory("something"), "23265eab-268e-4fcc-904f-775586b362c2"),
           contentLength = 49,
-          contentMd5    = Md5Hash("a3c2f1e38701bd2c7b54ebd7b1cd0dbc"),
           lastModified  = Instant.parse("2020-07-21T13:16:41.226Z")
         )
       )
     }
 
-    "return an ObjectListing with objectSummaries for owner's root directory" in {
+    "return an ObjectListing with objects for owner's root directory" in {
       val path = Path.Directory("")
 
       initListObjectsStub(path, statusCode = 200, Some(objectListingJson), owner)
 
-      osClient.listObjects(path).futureValue.value.objectSummaries shouldBe List(
-        ObjectSummary(
+      osClient.listObjects(path).futureValue.value.objects shouldBe List(
+        ObjectListing(
           location      = Path.File(Path.Directory("something"), "0993180f-8f31-41b2-905c-71f0273bb7d4"),
           contentLength = 49,
-          contentMd5    = Md5Hash("4033ff85a6fdc6a2f51e60d89236a244"),
           lastModified  = Instant.parse("2020-07-21T13:16:42.859Z")
         ),
-        ObjectSummary(
+        ObjectListing(
           location      = Path.File(Path.Directory("something"), "23265eab-268e-4fcc-904f-775586b362c2"),
           contentLength = 49,
-          contentMd5    = Md5Hash("a3c2f1e38701bd2c7b54ebd7b1cd0dbc"),
           lastModified  = Instant.parse("2020-07-21T13:16:41.226Z")
         )
       )
     }
 
-    "return a ObjectListing with no objectSummaries" in {
+    "return a ObjectListing with no objects" in {
       val path = generateDirectoryPath()
 
       initListObjectsStub(path, statusCode = 200, Some(emptyObjectListingJson), owner = owner)
 
-      osClient.listObjects(path).futureValue.value shouldBe ObjectListing(List.empty)
+      osClient.listObjects(path).futureValue.value shouldBe ObjectListings(List.empty)
     }
 
     "return an exception if object-store response is not successful" in {
@@ -360,7 +356,7 @@ class PlayObjectStoreClientEitherSpec
   }
 
   "zip" must {
-    "return an ObjectListing with objectSummaries" in {
+    "return an ObjectListing with objects" in {
       val from            = Path.Directory("envelope1")
       val to              = Path.File(Path.Directory("zips"), "zip1.zip")
       val retentionPeriod = RetentionPeriod.OneWeek
@@ -412,13 +408,11 @@ class PlayObjectStoreClientEitherSpec
           {
             "location": "/object-store/object/something/0993180f-8f31-41b2-905c-71f0273bb7d4",
             "contentLength": 49,
-            "contentMD5": "4033ff85a6fdc6a2f51e60d89236a244",
             "lastModified": "2020-07-21T13:16:42.859Z"
           },
           {
             "location": "/object-store/object/something/23265eab-268e-4fcc-904f-775586b362c2",
             "contentLength": 49,
-            "contentMD5": "a3c2f1e38701bd2c7b54ebd7b1cd0dbc",
             "lastModified": "2020-07-21T13:16:41.226Z"
           }
         ]

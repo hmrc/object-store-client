@@ -33,7 +33,7 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import uk.gov.hmrc.http.{Authorization, HeaderCarrier, UpstreamErrorResponse}
 import uk.gov.hmrc.http.test.WireMockSupport
-import uk.gov.hmrc.objectstore.client.{Md5Hash, ObjectListing, ObjectSummary, Path, RetentionPeriod}
+import uk.gov.hmrc.objectstore.client.{Md5Hash, ObjectListing, ObjectListings, ObjectSummary, Path, RetentionPeriod}
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 import uk.gov.hmrc.objectstore.client.http.Payload
 import uk.gov.hmrc.objectstore.client.utils.PathUtils._
@@ -338,54 +338,50 @@ class PlayObjectStoreClientSpec
   }
 
   "listObject" must {
-    "return an ObjectListing with objectSummaries" in {
+    "return an ObjectListing with objects" in {
       val path = generateDirectoryPath()
 
       initListObjectsStub(path, statusCode = 200, Some(objectListingJson), owner = defaultOwner)
 
-      osClient.listObjects(path).futureValue.objectSummaries shouldBe List(
-        ObjectSummary(
+      osClient.listObjects(path).futureValue.objects shouldBe List(
+        ObjectListing(
           location      = Path.File(Path.Directory("something"), "0993180f-8f31-41b2-905c-71f0273bb7d4"),
           contentLength = 49,
-          contentMd5    = Md5Hash("4033ff85a6fdc6a2f51e60d89236a244"),
           lastModified  = Instant.parse("2020-07-21T13:16:42.859Z")
         ),
-        ObjectSummary(
+        ObjectListing(
           location      = Path.File(Path.Directory("something"), "23265eab-268e-4fcc-904f-775586b362c2"),
           contentLength = 49,
-          contentMd5    = Md5Hash("a3c2f1e38701bd2c7b54ebd7b1cd0dbc"),
           lastModified  = Instant.parse("2020-07-21T13:16:41.226Z")
         )
       )
     }
 
-    "return an ObjectListing with objectSummaries for owner's root directory" in {
+    "return an ObjectListing with objects for owner's root directory" in {
       val path = Path.Directory("")
 
       initListObjectsStub(path, statusCode = 200, Some(objectListingJson), defaultOwner)
 
-      osClient.listObjects(path).futureValue.objectSummaries shouldBe List(
-        ObjectSummary(
+      osClient.listObjects(path).futureValue.objects shouldBe List(
+        ObjectListing(
           location      = Path.File(Path.Directory("something"), "0993180f-8f31-41b2-905c-71f0273bb7d4"),
           contentLength = 49,
-          contentMd5    = Md5Hash("4033ff85a6fdc6a2f51e60d89236a244"),
           lastModified  = Instant.parse("2020-07-21T13:16:42.859Z")
         ),
-        ObjectSummary(
+        ObjectListing(
           location      = Path.File(Path.Directory("something"), "23265eab-268e-4fcc-904f-775586b362c2"),
           contentLength = 49,
-          contentMd5    = Md5Hash("a3c2f1e38701bd2c7b54ebd7b1cd0dbc"),
           lastModified  = Instant.parse("2020-07-21T13:16:41.226Z")
         )
       )
     }
 
-    "return a ObjectListing with no objectSummaries" in {
+    "return a ObjectListing with no objects" in {
       val path = generateDirectoryPath()
 
       initListObjectsStub(path, statusCode = 200, Some(emptyObjectListingJson), owner = defaultOwner)
 
-      osClient.listObjects(path).futureValue shouldBe ObjectListing(List.empty)
+      osClient.listObjects(path).futureValue shouldBe ObjectListings(List.empty)
     }
 
     "return an exception if object-store response is not successful" in {
@@ -402,17 +398,15 @@ class PlayObjectStoreClientSpec
 
       initListObjectsStub(path, statusCode = 200, Some(objectListingJson), owner)
 
-      osClient.listObjects(path, owner).futureValue.objectSummaries shouldBe List(
-        ObjectSummary(
+      osClient.listObjects(path, owner).futureValue.objects shouldBe List(
+        ObjectListing(
           location      = Path.File(Path.Directory("something"), "0993180f-8f31-41b2-905c-71f0273bb7d4"),
           contentLength = 49,
-          contentMd5    = Md5Hash("4033ff85a6fdc6a2f51e60d89236a244"),
           lastModified  = Instant.parse("2020-07-21T13:16:42.859Z")
         ),
-        ObjectSummary(
+        ObjectListing(
           location      = Path.File(Path.Directory("something"), "23265eab-268e-4fcc-904f-775586b362c2"),
           contentLength = 49,
-          contentMd5    = Md5Hash("a3c2f1e38701bd2c7b54ebd7b1cd0dbc"),
           lastModified  = Instant.parse("2020-07-21T13:16:41.226Z")
         )
       )
@@ -420,7 +414,7 @@ class PlayObjectStoreClientSpec
   }
 
   "zip" must {
-    "return an ObjectListing with objectSummaries" in {
+    "return an ObjectSummary" in {
       val from            = Path.Directory("envelope1")
       val to              = Path.File(Path.Directory("zips"), "zip1.zip")
       val retentionPeriod = RetentionPeriod.OneWeek

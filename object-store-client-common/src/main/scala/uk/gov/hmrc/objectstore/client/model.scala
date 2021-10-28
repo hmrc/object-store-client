@@ -56,8 +56,14 @@ case class Object[CONTENT](
   metadata: ObjectMetadata
 )
 
+final case class ObjectListings(
+  objects: List[ObjectListing]
+)
+
 final case class ObjectListing(
-  objectSummaries: List[ObjectSummary]
+  location     : Path.File,
+  contentLength: Long,
+  lastModified : Instant
 )
 
 final case class ObjectMetadata(
