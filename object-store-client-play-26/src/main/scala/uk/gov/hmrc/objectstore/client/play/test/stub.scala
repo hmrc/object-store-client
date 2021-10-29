@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.objectstore.client.play.test
 
+import java.time.Instant
+
 import akka.NotUsed
 import akka.stream.Materializer
 import play.api.libs.ws.ahc._
@@ -27,7 +29,6 @@ import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 import uk.gov.hmrc.objectstore.client.http.{ObjectStoreContentRead, ObjectStoreContentWrite}
 import uk.gov.hmrc.objectstore.client.play._
 
-import java.time.Instant
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 

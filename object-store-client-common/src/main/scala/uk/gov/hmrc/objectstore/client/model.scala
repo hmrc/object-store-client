@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.objectstore.client
 
-import java.net.{URLDecoder, URLEncoder}
+import java.net.{URL, URLDecoder, URLEncoder}
 import java.time.Instant
 
 sealed trait Path { def asUri: String }
@@ -100,8 +100,16 @@ object RetentionPeriod {
       .toRight(s"Invalid object-store retention period. Valid values - [${allValues.map(_.value).mkString(", ")}]")
 }
 
-final case class ZipRequest(
+private[objectstore] final case class ZipRequest(
   from           : Path.Directory,
   to             : Path.File,
   retentionPeriod: RetentionPeriod
+)
+
+private[objectstore] final case class UrlUploadRequest(
+  fromUrl        : URL,
+  toLocation     : Path.File,
+  retentionPeriod: RetentionPeriod,
+  contentType    : Option[String],
+  contentMd5     : Option[Md5Hash]
 )

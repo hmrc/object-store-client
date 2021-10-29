@@ -16,11 +16,12 @@
 
 package uk.gov.hmrc.objectstore.client.play
 
+import java.net.URL
+import java.time.Instant
+
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{Format, Reads, Writes, __}
-import uk.gov.hmrc.objectstore.client.{Md5Hash, ObjectListing, ObjectListings, ObjectSummary, Path, RetentionPeriod, ZipRequest}
-
-import java.time.Instant
+import uk.gov.hmrc.objectstore.client.{Md5Hash, ObjectListing, ObjectListings, ObjectSummary, Path, RetentionPeriod, ZipRequest, _}
 
 object PlayFormats {
 
@@ -55,4 +56,13 @@ object PlayFormats {
     ~ (__ \ "toLocation"     ).write[Path.File](fileFormat)
     ~ (__ \ "retentionPeriod").write[String].contramap[RetentionPeriod](_.value)
     )(unlift(ZipRequest.unapply))
+
+  val urlUploadRequestWrites: Writes[UrlUploadRequest] =
+    ( (__ \ "fromUrl"        ).write[String].contramap[URL](_.toString)
+    ~ (__ \ "toLocation"     ).write[Path.File](fileFormat)
+    ~ (__ \ "retentionPeriod").write[String].contramap[RetentionPeriod](_.value)
+    ~ (__ \ "contentType"    ).writeNullable[String]
+    ~ (__ \ "contentMd5"     ).writeNullable[String].contramap[Option[Md5Hash]](_.map(_.value))
+    )(unlift(UrlUploadRequest.unapply))
+
 }

@@ -16,8 +16,10 @@
 
 package uk.gov.hmrc.objectstore.client.play
 
+import java.net.URL
 import java.time.Instant
 import java.util.UUID
+
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
@@ -40,8 +42,8 @@ import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 import uk.gov.hmrc.objectstore.client.http.Payload
 import uk.gov.hmrc.objectstore.client.utils.PathUtils._
 import uk.gov.hmrc.objectstore.client.wiremock.ObjectStoreStubs._
-
 import java.util.UUID.randomUUID
+
 import scala.concurrent.ExecutionContextExecutor
 
 class PlayObjectStoreClientEitherSpec
@@ -363,7 +365,7 @@ class PlayObjectStoreClientEitherSpec
 
       val zipResponse =
         ObjectSummary(
-          location      = Path.File(Path.Directory("zips"), "zip1.zip"),
+          location      = Path.File(Path.Directory("object-store/object/zips"), "zip1.zip"),
           contentLength = 1000L,
           contentMd5    = Md5Hash("a3c2f1e38701bd2c7b54ebd7b1cd0dbc"),
           lastModified  = Instant.now
@@ -382,6 +384,75 @@ class PlayObjectStoreClientEitherSpec
       initZipStub(from, to, retentionPeriod, owner, owner, statusCode = 401, response = None)
 
       osClient.zip(from, to, retentionPeriod).futureValue.left.value shouldBe an[UpstreamErrorResponse]
+    }
+  }
+
+  "uploadFromUrl" must {
+    "return an ObjectListing with objectSummaries" in {
+      val from            = new URL("https://fus-outbound-8264ee52f589f4c0191aa94f87aa1aeb.s3.eu-west-2.amazonaws.com/81fb03f5-195d-422a-91ab-460939045846")
+      val to              = Path.File(Path.Directory("my-folder"), "sample.pdf")
+      val retentionPeriod = RetentionPeriod.OneWeek
+
+      val response =
+        ObjectSummary(
+          location      = Path.File(Path.Directory("object-store/object/my-folder"), "sample.pdf"),
+          contentLength = 1000L,
+          contentMd5    = Md5Hash("a3c2f1e38701bd2c7b54ebd7b1cd0dbc"),
+          lastModified  = Instant.now
+        )
+
+      initUploadFromUrlStub(from, to, retentionPeriod, None, None, owner, statusCode = 200, Some(response))
+
+      osClient.uploadFromUrl(from, to, retentionPeriod).futureValue.value shouldBe response
+    }
+
+    "return an ObjectListing with objectSummaries when contentType supplied" in {
+      val from            = new URL("https://fus-outbound-8264ee52f589f4c0191aa94f87aa1aeb.s3.eu-west-2.amazonaws.com/81fb03f5-195d-422a-91ab-460939045846")
+      val to              = Path.File(Path.Directory("my-folder"), "sample.pdf")
+      val retentionPeriod = RetentionPeriod.OneWeek
+      val contentType     = Some("text/csv")
+
+      val response =
+        ObjectSummary(
+          location      = Path.File(Path.Directory("object-store/object/my-folder"), "sample.pdf"),
+          contentLength = 1000L,
+          contentMd5    = Md5Hash("a3c2f1e38701bd2c7b54ebd7b1cd0dbc"),
+          lastModified  = Instant.now
+        )
+
+      initUploadFromUrlStub(from, to, retentionPeriod, contentType, None, owner, statusCode = 200, Some(response))
+
+      osClient.uploadFromUrl(from, to, retentionPeriod, contentType).futureValue.value shouldBe response
+    }
+
+    "return an ObjectListing with objectSummaries when contentMd5 supplied" in {
+      val from            = new URL("https://fus-outbound-8264ee52f589f4c0191aa94f87aa1aeb.s3.eu-west-2.amazonaws.com/81fb03f5-195d-422a-91ab-460939045846")
+      val to              = Path.File(Path.Directory("my-folder"), "sample.pdf")
+      val retentionPeriod = RetentionPeriod.OneWeek
+      val contentType     = Some("text/csv")
+      val contentMd5      = Some(Md5Hash("a3c2f1e38701bd2c7b54ebd7b1cd0dbc"))
+
+      val response =
+        ObjectSummary(
+          location      = Path.File(Path.Directory("object-store/object/my-folder"), "sample.pdf"),
+          contentLength = 1000L,
+          contentMd5    = Md5Hash("a3c2f1e38701bd2c7b54ebd7b1cd0dbc"),
+          lastModified  = Instant.now
+        )
+
+      initUploadFromUrlStub(from, to, retentionPeriod, contentType, contentMd5 , owner, statusCode = 200, Some(response))
+
+      osClient.uploadFromUrl(from, to, retentionPeriod, contentType, contentMd5).futureValue.value shouldBe response
+    }
+
+    "return an exception if object-store response is not successful" in {
+      val from            = new URL("https://fus-outbound-8264ee52f589f4c0191aa94f87aa1aeb.s3.eu-west-2.amazonaws.com/81fb03f5-195d-422a-91ab-460939045846")
+      val to              = Path.File(Path.Directory("my-folder"), "sample.pdf")
+      val retentionPeriod = RetentionPeriod.OneWeek
+
+      initUploadFromUrlStub(from, to, retentionPeriod, None, None, owner, statusCode = 401, None)
+
+      osClient.uploadFromUrl(from, to, retentionPeriod).futureValue.left.value shouldBe an[UpstreamErrorResponse]
     }
   }
 

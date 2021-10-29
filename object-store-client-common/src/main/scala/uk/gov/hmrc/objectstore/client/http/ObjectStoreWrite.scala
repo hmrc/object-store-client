@@ -16,10 +16,12 @@
 
 package uk.gov.hmrc.objectstore.client.http
 
-import uk.gov.hmrc.objectstore.client.ZipRequest
+import uk.gov.hmrc.objectstore.client.{UrlUploadRequest, ZipRequest}
 
 import scala.language.higherKinds
 
 trait ObjectStoreWrite[F[_], REQ_BODY] {
-  def writeZipRequest(zipRequest: ZipRequest): F[REQ_BODY]
+  def fromZipRequest(request: ZipRequest): F[REQ_BODY]
+
+  def fromUrlUploadRequest(request: UrlUploadRequest): F[REQ_BODY]
 }

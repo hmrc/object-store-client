@@ -17,18 +17,30 @@
 package uk.gov.hmrc.objectstore.client.play
 
 import play.api.libs.ws.WSRequest
-import uk.gov.hmrc.objectstore.client.ZipRequest
 import uk.gov.hmrc.objectstore.client.http.ObjectStoreWrite
+import uk.gov.hmrc.objectstore.client.{UrlUploadRequest, ZipRequest}
+
+import scala.language.higherKinds
 
 object PlayObjectStoreWrites {
   implicit def write[F[_]](implicit F: PlayMonad[F]): ObjectStoreWrite[F, Request] =
     new ObjectStoreWrite[F, Request] {
-      def writeZipRequest(zipRequest: ZipRequest): F[Request] =
+      def fromZipRequest(request: ZipRequest): F[Request] =
         F.pure(
           HttpBody(
             length    = None,
             md5       = None,
-            writeBody = (req: WSRequest) => req.withBody(PlayFormats.zipRequestWrites.writes(zipRequest)),
+            writeBody = (req: WSRequest) => req.withBody(PlayFormats.zipRequestWrites.writes(request)),
+            release   = () => ()
+          )
+        )
+
+      override def fromUrlUploadRequest(request: UrlUploadRequest): F[Request] =
+        F.pure(
+          HttpBody(
+            length    = None,
+            md5       = None,
+            writeBody = (req: WSRequest) => req.withBody(PlayFormats.urlUploadRequestWrites.writes(request)),
             release   = () => ()
           )
         )
