@@ -24,7 +24,7 @@ import play.api.http.Status
 import play.api.libs.json.{Json, JsError, JsSuccess, Reads}
 import uk.gov.hmrc.http.UpstreamErrorResponse
 import uk.gov.hmrc.objectstore.client.http.ObjectStoreRead
-import uk.gov.hmrc.objectstore.client.{Md5Hash, Object, ObjectListing, ObjectMetadata, ObjectSummary, Path}
+import uk.gov.hmrc.objectstore.client.{Md5Hash, Object, ObjectListings, ObjectMetadata, ObjectSummary, Path}
 
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME
@@ -36,9 +36,9 @@ object PlayObjectStoreReads {
 
   def futureEitherReads(implicit m: Materializer, ec: ExecutionContext): ObjectStoreRead[FutureEither, Response, Source[ByteString, NotUsed]] =
     new ObjectStoreRead[FutureEither, Response, Source[ByteString, NotUsed]] {
-      override def toObjectListing(response: Response): FutureEither[ObjectListing] = {
-        implicit val osr = PlayFormats.objectListingReads
-        toDomain[ObjectListing](response)
+      override def toObjectListings(response: Response): FutureEither[ObjectListings] = {
+        implicit val osr = PlayFormats.objectListingsReads
+        toDomain[ObjectListings](response)
       }
 
       override def toObject(location: String, response: Response): FutureEither[Option[Object[ResBody]]] =
@@ -126,8 +126,8 @@ object PlayObjectStoreReads {
           case Left(e)  => Future.failed(e)
         }
 
-      override def toObjectListing(response: Response): Future[ObjectListing] =
-        transform(futureEitherReads.toObjectListing(response))
+      override def toObjectListings(response: Response): Future[ObjectListings] =
+        transform(futureEitherReads.toObjectListings(response))
 
       override def toObject(location: String, response: Response): Future[Option[Object[Source[ByteString, NotUsed]]]] =
         transform(futureEitherReads.toObject(location, response))
