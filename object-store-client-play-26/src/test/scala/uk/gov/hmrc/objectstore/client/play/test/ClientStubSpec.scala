@@ -89,17 +89,17 @@ class ClientStubSpec
         objectsAtB <- stub.listObjects(Path.Directory(s"$nodeA/$nodeB"))
         objectsAtC <- stub.listObjects(Path.Directory(s"$nodeA/$nodeB/$nodeC"))
       } yield {
-        objectsAtA.objects.map(_.location) should contain theSameElementsAs List(
+        objectsAtA.objectSummaries.map(_.location) should contain theSameElementsAs List(
           Path.File(s"$owner/$nodeA/$nodeB/$leafB1"),
           Path.File(s"$owner/$nodeA/$nodeB/$nodeC/$leafC1"),
           Path.File(s"$owner/$nodeA/$nodeB/$nodeC/$leafC2")
         )
-        objectsAtB.objects.map(_.location) should contain theSameElementsAs List(
+        objectsAtB.objectSummaries.map(_.location) should contain theSameElementsAs List(
           Path.File(s"$owner/$nodeA/$nodeB/$leafB1"),
           Path.File(s"$owner/$nodeA/$nodeB/$nodeC/$leafC1"),
           Path.File(s"$owner/$nodeA/$nodeB/$nodeC/$leafC2")
         )
-        objectsAtC.objects.map(_.location) should contain theSameElementsAs List(
+        objectsAtC.objectSummaries.map(_.location) should contain theSameElementsAs List(
           Path.File(s"$owner/$nodeA/$nodeB/$nodeC/$leafC1"),
           Path.File(s"$owner/$nodeA/$nodeB/$nodeC/$leafC2")
         )

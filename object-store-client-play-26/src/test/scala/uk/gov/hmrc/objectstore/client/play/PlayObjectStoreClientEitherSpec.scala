@@ -37,7 +37,7 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import uk.gov.hmrc.http.{Authorization, HeaderCarrier, UpstreamErrorResponse}
 import uk.gov.hmrc.http.test.WireMockSupport
-import uk.gov.hmrc.objectstore.client.{Md5Hash, ObjectListing, ObjectListings, ObjectSummary, Path, RetentionPeriod}
+import uk.gov.hmrc.objectstore.client.{Md5Hash, ObjectSummary, ObjectListing, ObjectSummaryWithMd5, Path, RetentionPeriod}
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 import uk.gov.hmrc.objectstore.client.http.Payload
 import uk.gov.hmrc.objectstore.client.utils.PathUtils._
@@ -84,7 +84,7 @@ class PlayObjectStoreClientEitherSpec
 
   "putObject" must {
     val summary =
-      ObjectSummary(
+      ObjectSummaryWithMd5(
         location      = Path.File(Path.Directory("zips"), "zip1.zip"),
         contentLength = 1000L,
         contentMd5    = Md5Hash("a3c2f1e38701bd2c7b54ebd7b1cd0dbc"),
@@ -307,13 +307,13 @@ class PlayObjectStoreClientEitherSpec
 
       initListObjectsStub(path, statusCode = 200, Some(objectListingJson), owner = owner)
 
-      osClient.listObjects(path).futureValue.value.objects shouldBe List(
-        ObjectListing(
+      osClient.listObjects(path).futureValue.value.objectSummaries shouldBe List(
+        ObjectSummary(
           location      = Path.File(Path.Directory("something"), "0993180f-8f31-41b2-905c-71f0273bb7d4"),
           contentLength = 49,
           lastModified  = Instant.parse("2020-07-21T13:16:42.859Z")
         ),
-        ObjectListing(
+        ObjectSummary(
           location      = Path.File(Path.Directory("something"), "23265eab-268e-4fcc-904f-775586b362c2"),
           contentLength = 49,
           lastModified  = Instant.parse("2020-07-21T13:16:41.226Z")
@@ -326,13 +326,13 @@ class PlayObjectStoreClientEitherSpec
 
       initListObjectsStub(path, statusCode = 200, Some(objectListingJson), owner)
 
-      osClient.listObjects(path).futureValue.value.objects shouldBe List(
-        ObjectListing(
+      osClient.listObjects(path).futureValue.value.objectSummaries shouldBe List(
+        ObjectSummary(
           location      = Path.File(Path.Directory("something"), "0993180f-8f31-41b2-905c-71f0273bb7d4"),
           contentLength = 49,
           lastModified  = Instant.parse("2020-07-21T13:16:42.859Z")
         ),
-        ObjectListing(
+        ObjectSummary(
           location      = Path.File(Path.Directory("something"), "23265eab-268e-4fcc-904f-775586b362c2"),
           contentLength = 49,
           lastModified  = Instant.parse("2020-07-21T13:16:41.226Z")
@@ -345,7 +345,7 @@ class PlayObjectStoreClientEitherSpec
 
       initListObjectsStub(path, statusCode = 200, Some(emptyObjectListingJson), owner = owner)
 
-      osClient.listObjects(path).futureValue.value shouldBe ObjectListings(List.empty)
+      osClient.listObjects(path).futureValue.value shouldBe ObjectListing(List.empty)
     }
 
     "return an exception if object-store response is not successful" in {
@@ -364,7 +364,7 @@ class PlayObjectStoreClientEitherSpec
       val retentionPeriod = RetentionPeriod.OneWeek
 
       val zipResponse =
-        ObjectSummary(
+        ObjectSummaryWithMd5(
           location      = Path.File(Path.Directory("object-store/object/zips"), "zip1.zip"),
           contentLength = 1000L,
           contentMd5    = Md5Hash("a3c2f1e38701bd2c7b54ebd7b1cd0dbc"),
@@ -394,7 +394,7 @@ class PlayObjectStoreClientEitherSpec
       val retentionPeriod = RetentionPeriod.OneWeek
 
       val response =
-        ObjectSummary(
+        ObjectSummaryWithMd5(
           location      = Path.File(Path.Directory("object-store/object/my-folder"), "sample.pdf"),
           contentLength = 1000L,
           contentMd5    = Md5Hash("a3c2f1e38701bd2c7b54ebd7b1cd0dbc"),
@@ -413,7 +413,7 @@ class PlayObjectStoreClientEitherSpec
       val contentType     = Some("text/csv")
 
       val response =
-        ObjectSummary(
+        ObjectSummaryWithMd5(
           location      = Path.File(Path.Directory("object-store/object/my-folder"), "sample.pdf"),
           contentLength = 1000L,
           contentMd5    = Md5Hash("a3c2f1e38701bd2c7b54ebd7b1cd0dbc"),
@@ -433,7 +433,7 @@ class PlayObjectStoreClientEitherSpec
       val contentMd5      = Some(Md5Hash("a3c2f1e38701bd2c7b54ebd7b1cd0dbc"))
 
       val response =
-        ObjectSummary(
+        ObjectSummaryWithMd5(
           location      = Path.File(Path.Directory("object-store/object/my-folder"), "sample.pdf"),
           contentLength = 1000L,
           contentMd5    = Md5Hash("a3c2f1e38701bd2c7b54ebd7b1cd0dbc"),
@@ -475,7 +475,7 @@ class PlayObjectStoreClientEitherSpec
 
   private def objectListingJson: String =
     """{
-        "objects": [
+        "objectSummaries": [
           {
             "location": "/object-store/object/something/0993180f-8f31-41b2-905c-71f0273bb7d4",
             "contentLength": 49,
@@ -491,6 +491,6 @@ class PlayObjectStoreClientEitherSpec
 
   private def emptyObjectListingJson: String =
     """{
-          "objects": []
+          "objectSummaries": []
       }"""
 }

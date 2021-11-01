@@ -39,6 +39,7 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
 
   /**
    * Put object
+   *
    * @tparam CONTENT @see [[https://github.com/hmrc/object-store-client#put-object]]
    * @param path Path of the object in object-store under [[owner]]
    * @param content Content to upload
@@ -46,8 +47,7 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
    * @param contentType Optional Content-Type
    * @param contentMd5 Optional MD5 hash of content
    * @param owner Owner service of this object
-   * @return [[ObjectSummary]] wrapped in the effect [[F]]
-   *
+   * @return [[ObjectSummaryWithMd5]] wrapped in the effect [[F]]
    * @note Storing an object on an existing path will overwrite the previously stored object on that path.
    * */
   def putObject[CONTENT](
@@ -57,10 +57,10 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
     contentType: Option[String] = None,
     contentMd5: Option[Md5Hash] = None,
     owner: String = config.owner
-  )(implicit w: ObjectStoreContentWrite[F, CONTENT, REQ_BODY], hc: HeaderCarrier): F[ObjectSummary] =
+  )(implicit w: ObjectStoreContentWrite[F, CONTENT, REQ_BODY], hc: HeaderCarrier): F[ObjectSummaryWithMd5] =
     F.flatMap(w.writeContent(content, contentType, contentMd5))(c =>
       F.flatMap(client.put(s"$objectStoreUrl/object/$owner/${path.asUri}", c, headers(retentionPeriodHeader(retentionPeriod))))(
-        read.toObjectSummary
+        read.toObjectSummaryWithMd5
       )
     )
 
@@ -97,26 +97,28 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
 
   /**
    * List objects
+   *
    * @param path Path of the object in object-store under owner
    * @param owner Owner service
-   * @return [[ObjectListing]] wrapped in the effect [[F]]
+   * @return [[ObjectSummary]] wrapped in the effect [[F]]
    * */
   def listObjects(
     path: Path.Directory,
     owner: String = config.owner
-  )(implicit hc: HeaderCarrier): F[ObjectListings] = {
+  )(implicit hc: HeaderCarrier): F[ObjectListing] = {
     val location = s"$objectStoreUrl/list/$owner/${path.asUri}".stripSuffix("/") // strip suffix since you can list an empty path
-    F.flatMap(client.get(location, headers()))(read.toObjectListings)
+    F.flatMap(client.get(location, headers()))(read.toObjectListing)
   }
 
   /**
    * Zip objects in a directory
+   *
    * @param from Path of the directory to be zipped
    * @param to Path of the target zip file
    * @param retentionPeriod Retention period of the object in object-store
    * @param fromOwner Owner service of the directory to be zipped
    * @param toOwner Owner service of the target zip file
-   * @return [[ObjectSummary]] wrapped in the effect [[F]]
+   * @return [[ObjectSummaryWithMd5]] wrapped in the effect [[F]]
    * */
   def zip(
     from           : Path.Directory,
@@ -124,7 +126,7 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
     retentionPeriod: RetentionPeriod = config.defaultRetentionPeriod,
     fromOwner      : String          = config.owner,
     toOwner        : String          = config.owner
-  )(implicit hc: HeaderCarrier): F[ObjectSummary] =
+  )(implicit hc: HeaderCarrier): F[ObjectSummaryWithMd5] =
     F.flatMap(
       write.fromZipRequest(
         ZipRequest(
@@ -140,19 +142,19 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
           reqBody,
           headers()
         )
-      )(read.toObjectSummary)
+      )(read.toObjectSummaryWithMd5)
     )
 
   /**
    * Upload object from a url
+   *
    * @param from Path of the object in object-store under [[owner]]
    * @param to Url of content to upload
    * @param retentionPeriod Retention period of the object in object-store
    * @param contentType Optional Content-Type
    * @param owner Owner service of this object
    * @param contentMd5 Optional MD5 hash of content
-   * @return [[ObjectSummary]] wrapped in the effect [[F]]
-   *
+   * @return [[ObjectSummaryWithMd5]] wrapped in the effect [[F]]
    * @note Storing an object on an existing path will overwrite the previously stored object on that path.
    * */
   def uploadFromUrl(
@@ -162,7 +164,7 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
     contentType: Option[String] = None,
     contentMd5: Option[Md5Hash] = None,
     owner: String = config.owner
-  )(implicit hc: HeaderCarrier): F[ObjectSummary] =
+  )(implicit hc: HeaderCarrier): F[ObjectSummaryWithMd5] =
     F.flatMap(
       write.fromUrlUploadRequest(
         UrlUploadRequest(
@@ -180,7 +182,7 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
           reqBody,
           headers()
         )
-      )(read.toObjectSummary)
+      )(read.toObjectSummaryWithMd5)
     )
 
   private val hcConfig = HeaderCarrier.Config.fromConfig(ConfigFactory.load())

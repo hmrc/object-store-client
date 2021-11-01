@@ -72,7 +72,7 @@ object stub {
       contentType: Option[String] = None,
       contentMd5: Option[Md5Hash] = None,
       owner: String = config.owner
-    )(implicit w: ObjectStoreContentWrite[F, CONTENT, Request], hc: HeaderCarrier): F[ObjectSummary] =
+    )(implicit w: ObjectStoreContentWrite[F, CONTENT, Request], hc: HeaderCarrier): F[ObjectSummaryWithMd5] =
       M.map(w.writeContent(content, contentType, contentMd5)) { r =>
         val lastModified = Instant.now()
         objectStore += s"$owner/${path.asUri}" -> InternalObject(
@@ -80,7 +80,7 @@ object stub {
           contentType.getOrElse("application/octet-stream"),
           lastModified
         )
-        ObjectSummary(
+        ObjectSummaryWithMd5(
           location      = path,
           contentLength = r.length.getOrElse(0),
           contentMd5    = r.md5.getOrElse(Md5Hash("")),
@@ -126,14 +126,14 @@ object stub {
 
     override def listObjects(path: Path.Directory, owner: String = config.owner)(implicit
       hc: HeaderCarrier
-    ): F[ObjectListings] =
+    ): F[ObjectListing] =
       M.pure(
-        ObjectListings(
+        ObjectListing(
           objectStore
             .filterKeys(_.startsWith(s"$owner/${path.asUri}"))
             .map {
               case (filePath, internalObject) =>
-                ObjectListing(
+                ObjectSummary(
                   location      = Path.File(filePath),
                   contentLength = internalObject.request.length.getOrElse(0),
                   lastModified  = internalObject.lastModifiedInstant

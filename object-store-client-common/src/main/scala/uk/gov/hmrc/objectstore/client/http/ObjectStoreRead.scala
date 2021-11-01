@@ -16,15 +16,15 @@
 
 package uk.gov.hmrc.objectstore.client.http
 
-import uk.gov.hmrc.objectstore.client.{Object, ObjectListings, ObjectSummary}
+import uk.gov.hmrc.objectstore.client.{Object, ObjectListing, ObjectSummaryWithMd5}
 
 import scala.language.higherKinds
 
 trait ObjectStoreRead[F[_], RES, RES_BODY] { self =>
 
-  def toObjectListings(response: RES): F[ObjectListings]
+  def toObjectListing(response: RES): F[ObjectListing]
 
-  def toObjectSummary(response: RES): F[ObjectSummary]
+  def toObjectSummaryWithMd5(response: RES): F[ObjectSummaryWithMd5]
 
   def toObject(location: String, response: RES): F[Option[Object[RES_BODY]]]
 

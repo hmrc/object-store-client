@@ -56,16 +56,6 @@ case class Object[CONTENT](
   metadata: ObjectMetadata
 )
 
-final case class ObjectListings(
-  objects: List[ObjectListing]
-)
-
-final case class ObjectListing(
-  location     : Path.File,
-  contentLength: Long,
-  lastModified : Instant
-)
-
 final case class ObjectMetadata(
   contentType: String,
   contentLength: Long,
@@ -74,7 +64,17 @@ final case class ObjectMetadata(
   userMetadata: Map[String, String]
 )
 
+final case class ObjectListing(
+  objectSummaries: List[ObjectSummary]
+)
+
 final case class ObjectSummary(
+  location     : Path.File,
+  contentLength: Long,
+  lastModified : Instant
+)
+
+final case class ObjectSummaryWithMd5(
   location: Path.File,
   contentLength: Long,
   contentMd5: Md5Hash,
