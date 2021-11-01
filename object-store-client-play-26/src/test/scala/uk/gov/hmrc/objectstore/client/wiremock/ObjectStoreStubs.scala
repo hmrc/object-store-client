@@ -16,10 +16,12 @@
 
 package uk.gov.hmrc.objectstore.client.wiremock
 
+import java.net.URL
+
 import com.github.tomakehurst.wiremock.client.WireMock._
 import play.api.libs.json.Json
-import uk.gov.hmrc.objectstore.client.{Md5Hash, ObjectSummary, Path, RetentionPeriod}
 import uk.gov.hmrc.objectstore.client.play.Md5HashUtils
+import uk.gov.hmrc.objectstore.client.{Md5Hash, ObjectSummaryWithMd5, Path, RetentionPeriod}
 
 object ObjectStoreStubs {
 
@@ -31,7 +33,7 @@ object ObjectStoreStubs {
     retentionPeriod: RetentionPeriod = RetentionPeriod.OneWeek,
     contentType    : String          = "application/octet-stream",
     statusCode     : Int,
-    response       : Option[ObjectSummary]
+    response       : Option[ObjectSummaryWithMd5]
   ): Unit = {
     val request = put(urlEqualTo(s"/object-store/object/$owner/${path.asUri}"))
       .withHeader("Authorization", equalTo("AuthorizationToken"))
@@ -126,7 +128,7 @@ object ObjectStoreStubs {
     fromOwner      : String,
     toOwner        : String,
     statusCode     : Int,
-    response       : Option[ObjectSummary]
+    response       : Option[ObjectSummaryWithMd5]
   ): Unit = {
     val request =
       post(urlEqualTo("/object-store/ops/zip"))
@@ -136,6 +138,49 @@ object ObjectStoreStubs {
           "fromLocation": "object-store/object/$fromOwner/${from.asUri}",
           "toLocation": "object-store/object/$toOwner/${to.asUri}",
           "retentionPeriod": "${retentionPeriod.value}"
+        }"""))
+
+    val responseBuilder =
+      response.foldLeft(aResponse.withStatus(statusCode)){ case (builder, response) =>
+        builder
+          .withHeader("Content-Type", "application/json")
+          .withBody(
+            Json.obj(
+              "location"      -> response.location.asUri,
+              "contentLength" -> response.contentLength,
+              "contentMD5"    -> response.contentMd5.value,
+              "lastModified"  -> response.lastModified
+            ).toString
+          )
+      }
+
+    stubFor(
+      request
+        .willReturn(responseBuilder)
+    )
+  }
+
+  def initUploadFromUrlStub(
+    from           : URL,
+    to             : Path.File,
+    retentionPeriod: RetentionPeriod,
+    contentType    : Option[String],
+    contentMd5     : Option[Md5Hash],
+    owner          : String,
+    statusCode     : Int,
+    response       : Option[ObjectSummaryWithMd5]
+  ): Unit = {
+
+    val request =
+      post(urlEqualTo("/object-store/ops/upload-from-url"))
+        .withHeader("Authorization", equalTo("AuthorizationToken"))
+        .withHeader("Content-Type", equalTo("application/json"))
+        .withRequestBody(equalToJson(s"""{
+          "fromUrl": "${from.toString}",
+          "toLocation": "object-store/object/$owner/${to.asUri}",
+          "retentionPeriod": "${retentionPeriod.value}"${contentType.fold(""){contentType => s""",
+          "contentType": "$contentType""""}}${contentMd5.fold(""){contentMd5 => s""",
+          "contentMd5": "${contentMd5.value}""""}}
         }"""))
 
     val responseBuilder =

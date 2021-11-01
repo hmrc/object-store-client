@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.objectstore.client.play
 
+import java.net.URL
+
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
@@ -33,14 +35,14 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import uk.gov.hmrc.http.{Authorization, HeaderCarrier, UpstreamErrorResponse}
 import uk.gov.hmrc.http.test.WireMockSupport
-import uk.gov.hmrc.objectstore.client.{Md5Hash, ObjectListing, ObjectListings, ObjectSummary, Path, RetentionPeriod}
+import uk.gov.hmrc.objectstore.client.{Md5Hash, ObjectSummary, ObjectListing, ObjectSummaryWithMd5, Path, RetentionPeriod}
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 import uk.gov.hmrc.objectstore.client.http.Payload
 import uk.gov.hmrc.objectstore.client.utils.PathUtils._
 import uk.gov.hmrc.objectstore.client.wiremock.ObjectStoreStubs._
-
 import java.time.Instant
 import java.util.UUID.randomUUID
+
 import scala.concurrent.ExecutionContextExecutor
 
 class PlayObjectStoreClientSpec
@@ -59,7 +61,7 @@ class PlayObjectStoreClientSpec
   private val application: Application          = fakeApplication()
   protected val osClient: PlayObjectStoreClient = application.injector.instanceOf(classOf[PlayObjectStoreClient])
 
-  lazy val defaultOwner = "my-service"
+  lazy val owner = "my-service"
 
   override def fakeApplication(): Application =
     new GuiceApplicationBuilder()
@@ -67,7 +69,7 @@ class PlayObjectStoreClientSpec
         bind[ObjectStoreClientConfig].toInstance(
           ObjectStoreClientConfig(
             baseUrl = wireMockUrl,
-            owner = defaultOwner,
+            owner = owner,
             authorizationToken = "AuthorizationToken",
             defaultRetentionPeriod = RetentionPeriod.OneWeek
           )
@@ -79,7 +81,7 @@ class PlayObjectStoreClientSpec
 
   "putObject" must {
     val summary =
-      ObjectSummary(
+      ObjectSummaryWithMd5(
         location      = Path.File(Path.Directory("zips"), "zip1.zip"),
         contentLength = 1000L,
         contentMd5    = Md5Hash("a3c2f1e38701bd2c7b54ebd7b1cd0dbc"),
@@ -92,7 +94,7 @@ class PlayObjectStoreClientSpec
       val md5Base64                           = Md5HashUtils.fromBytes(body.getBytes)
       val source: Source[ByteString, NotUsed] = toSource(body)
 
-      initPutObjectStub(path, body.getBytes, md5Base64, owner = defaultOwner, statusCode = 200, response = Some(summary))
+      initPutObjectStub(path, body.getBytes, md5Base64, owner = owner, statusCode = 200, response = Some(summary))
 
       osClient.putObject(path, source).futureValue shouldBe summary
     }
@@ -103,7 +105,7 @@ class PlayObjectStoreClientSpec
       val md5Base64                     = Md5HashUtils.fromBytes(body.getBytes)
       val source: Source[ByteString, _] = toSource(body)
 
-      initPutObjectStub(path, body.getBytes, md5Base64, owner = defaultOwner, statusCode = 200, response = Some(summary))
+      initPutObjectStub(path, body.getBytes, md5Base64, owner = owner, statusCode = 200, response = Some(summary))
 
       osClient.putObject(path, source).futureValue shouldBe summary
     }
@@ -114,7 +116,7 @@ class PlayObjectStoreClientSpec
       val md5Base64                           = Md5HashUtils.fromBytes(body.getBytes)
       val source: Source[ByteString, NotUsed] = toSource(body)
 
-      initPutObjectStub(path, body.getBytes, md5Base64, owner = defaultOwner, statusCode = 200, response = Some(summary))
+      initPutObjectStub(path, body.getBytes, md5Base64, owner = owner, statusCode = 200, response = Some(summary))
 
       osClient
         .putObject(path, Payload(length = body.length, md5Hash = md5Base64, content = source))
@@ -127,7 +129,7 @@ class PlayObjectStoreClientSpec
       val md5Base64                     = Md5HashUtils.fromBytes(body.getBytes)
       val source: Source[ByteString, _] = toSource(body)
 
-      initPutObjectStub(path, body.getBytes, md5Base64, owner = defaultOwner, statusCode = 200, response = Some(summary))
+      initPutObjectStub(path, body.getBytes, md5Base64, owner = owner, statusCode = 200, response = Some(summary))
 
       osClient
         .putObject(path, Payload(length = body.length, md5Hash = md5Base64, content = source))
@@ -139,7 +141,7 @@ class PlayObjectStoreClientSpec
       val path      = generateFilePath()
       val md5Base64 = Md5HashUtils.fromBytes(body)
 
-      initPutObjectStub(path, body, md5Base64, owner = defaultOwner, statusCode = 200, response = Some(summary))
+      initPutObjectStub(path, body, md5Base64, owner = owner, statusCode = 200, response = Some(summary))
 
       osClient.putObject(path, body).futureValue shouldBe summary
     }
@@ -153,7 +155,7 @@ class PlayObjectStoreClientSpec
         path,
         body,
         md5Base64,
-        owner           = defaultOwner,
+        owner           = owner,
         retentionPeriod = RetentionPeriod.OneMonth,
         statusCode      = 200,
         response        = Some(summary)
@@ -167,7 +169,7 @@ class PlayObjectStoreClientSpec
       val path      = generateFilePath()
       val md5Base64 = Md5HashUtils.fromBytes(body.getBytes)
 
-      initPutObjectStub(path, body.getBytes, md5Base64, owner = defaultOwner, statusCode = 200, response = Some(summary))
+      initPutObjectStub(path, body.getBytes, md5Base64, owner = owner, statusCode = 200, response = Some(summary))
 
       osClient.putObject(path, body, RetentionPeriod.OneWeek).futureValue shouldBe summary
     }
@@ -177,7 +179,7 @@ class PlayObjectStoreClientSpec
       val path      = generateFilePath()
       val md5Base64 = Md5HashUtils.fromBytes(body.getBytes)
 
-      initPutObjectStub(path, body.getBytes, md5Base64, owner = defaultOwner, statusCode = 401, response = None)
+      initPutObjectStub(path, body.getBytes, md5Base64, owner = owner, statusCode = 401, response = None)
 
       osClient.putObject(path, toSource(body)).failed.futureValue shouldBe an[UpstreamErrorResponse]
     }
@@ -211,7 +213,7 @@ class PlayObjectStoreClientSpec
       val body = "hello world! e36cb887-58ae-4422-9894-215faaf0aa35"
       val path = generateFilePath()
 
-      initGetObjectStub(path, statusCode = 200, Some(body), owner = defaultOwner)
+      initGetObjectStub(path, statusCode = 200, Some(body), owner = owner)
 
       val obj = osClient.getObject[Source[ByteString, NotUsed]](path).futureValue
       obj.get.content.asString() shouldBe body
@@ -221,7 +223,7 @@ class PlayObjectStoreClientSpec
       val body = "hello world! e36cb887-58ae-4422-9894-215faaf0aa35"
       val path = generateFilePath()
 
-      initGetObjectStub(path, statusCode = 200, Some(body), owner = defaultOwner)
+      initGetObjectStub(path, statusCode = 200, Some(body), owner = owner)
 
       import InMemoryReads.stringContentRead
 
@@ -238,7 +240,7 @@ class PlayObjectStoreClientSpec
       val body = """{ "k1": "v1", "k2": "v2" }"""
       val path = generateFilePath()
 
-      initGetObjectStub(path, statusCode = 200, Some(body), owner = defaultOwner)
+      initGetObjectStub(path, statusCode = 200, Some(body), owner = owner)
 
       import InMemoryReads.jsValueContentRead
 
@@ -251,7 +253,7 @@ class PlayObjectStoreClientSpec
       val body = """{ "k1": "v1", "k2": "v2""""
       val path = generateFilePath()
 
-      initGetObjectStub(path, statusCode = 200, Some(body), owner = defaultOwner)
+      initGetObjectStub(path, statusCode = 200, Some(body), owner = owner)
 
       import InMemoryReads.jsValueContentRead
 
@@ -262,7 +264,7 @@ class PlayObjectStoreClientSpec
       val body = """{ "k1": "v1", "k2": "v2" }"""
       val path = generateFilePath()
 
-      initGetObjectStub(path, statusCode = 200, Some(body), owner = defaultOwner)
+      initGetObjectStub(path, statusCode = 200, Some(body), owner = owner)
 
       import InMemoryReads._
 
@@ -274,7 +276,7 @@ class PlayObjectStoreClientSpec
       val body = """{ "k1": "v1", "k2": "v2" }"""
       val path = generateFilePath()
 
-      initGetObjectStub(path, statusCode = 200, Some(body), owner = defaultOwner)
+      initGetObjectStub(path, statusCode = 200, Some(body), owner = owner)
 
       import InMemoryReads._
 
@@ -285,7 +287,7 @@ class PlayObjectStoreClientSpec
     "return None for an object that doesn't exist" in {
       val path = generateFilePath()
 
-      initGetObjectStub(path, statusCode = 404, None, owner = defaultOwner)
+      initGetObjectStub(path, statusCode = 404, None, owner = owner)
 
       osClient.getObject(path).futureValue shouldBe None
     }
@@ -293,7 +295,7 @@ class PlayObjectStoreClientSpec
     "return an exception if object-store response is not successful" in {
       val path = generateFilePath()
 
-      initGetObjectStub(path, statusCode = 401, None, owner = defaultOwner)
+      initGetObjectStub(path, statusCode = 401, None, owner = owner)
 
       osClient.getObject(path).failed.futureValue shouldBe an[UpstreamErrorResponse]
     }
@@ -314,7 +316,7 @@ class PlayObjectStoreClientSpec
     "delete an object" in {
       val path = generateFilePath()
 
-      initDeleteObjectStub(path, owner = defaultOwner)
+      initDeleteObjectStub(path, owner = owner)
 
       osClient.deleteObject(path).futureValue shouldBe ((): Unit)
     }
@@ -322,7 +324,7 @@ class PlayObjectStoreClientSpec
     "return an exception if object-store response is not successful" in {
       val path = generateFilePath()
 
-      initDeleteObjectStub(path, statusCode = 401, owner = defaultOwner)
+      initDeleteObjectStub(path, statusCode = 401, owner = owner)
 
       osClient.deleteObject(path).failed.futureValue shouldBe an[UpstreamErrorResponse]
     }
@@ -341,15 +343,15 @@ class PlayObjectStoreClientSpec
     "return an ObjectListing with objects" in {
       val path = generateDirectoryPath()
 
-      initListObjectsStub(path, statusCode = 200, Some(objectListingJson), owner = defaultOwner)
+      initListObjectsStub(path, statusCode = 200, Some(objectListingJson), owner = owner)
 
-      osClient.listObjects(path).futureValue.objects shouldBe List(
-        ObjectListing(
+      osClient.listObjects(path).futureValue.objectSummaries shouldBe List(
+        ObjectSummary(
           location      = Path.File(Path.Directory("something"), "0993180f-8f31-41b2-905c-71f0273bb7d4"),
           contentLength = 49,
           lastModified  = Instant.parse("2020-07-21T13:16:42.859Z")
         ),
-        ObjectListing(
+        ObjectSummary(
           location      = Path.File(Path.Directory("something"), "23265eab-268e-4fcc-904f-775586b362c2"),
           contentLength = 49,
           lastModified  = Instant.parse("2020-07-21T13:16:41.226Z")
@@ -360,15 +362,15 @@ class PlayObjectStoreClientSpec
     "return an ObjectListing with objects for owner's root directory" in {
       val path = Path.Directory("")
 
-      initListObjectsStub(path, statusCode = 200, Some(objectListingJson), defaultOwner)
+      initListObjectsStub(path, statusCode = 200, Some(objectListingJson), owner)
 
-      osClient.listObjects(path).futureValue.objects shouldBe List(
-        ObjectListing(
+      osClient.listObjects(path).futureValue.objectSummaries shouldBe List(
+        ObjectSummary(
           location      = Path.File(Path.Directory("something"), "0993180f-8f31-41b2-905c-71f0273bb7d4"),
           contentLength = 49,
           lastModified  = Instant.parse("2020-07-21T13:16:42.859Z")
         ),
-        ObjectListing(
+        ObjectSummary(
           location      = Path.File(Path.Directory("something"), "23265eab-268e-4fcc-904f-775586b362c2"),
           contentLength = 49,
           lastModified  = Instant.parse("2020-07-21T13:16:41.226Z")
@@ -379,15 +381,15 @@ class PlayObjectStoreClientSpec
     "return a ObjectListing with no objects" in {
       val path = generateDirectoryPath()
 
-      initListObjectsStub(path, statusCode = 200, Some(emptyObjectListingJson), owner = defaultOwner)
+      initListObjectsStub(path, statusCode = 200, Some(emptyObjectListingJson), owner = owner)
 
-      osClient.listObjects(path).futureValue shouldBe ObjectListings(List.empty)
+      osClient.listObjects(path).futureValue shouldBe ObjectListing(List.empty)
     }
 
     "return an exception if object-store response is not successful" in {
       val path = generateDirectoryPath()
 
-      initListObjectsStub(path, statusCode = 401, None, owner = defaultOwner)
+      initListObjectsStub(path, statusCode = 401, None, owner = owner)
 
       osClient.listObjects(path).failed.futureValue shouldBe an[UpstreamErrorResponse]
     }
@@ -398,13 +400,13 @@ class PlayObjectStoreClientSpec
 
       initListObjectsStub(path, statusCode = 200, Some(objectListingJson), owner)
 
-      osClient.listObjects(path, owner).futureValue.objects shouldBe List(
-        ObjectListing(
+      osClient.listObjects(path, owner).futureValue.objectSummaries shouldBe List(
+        ObjectSummary(
           location      = Path.File(Path.Directory("something"), "0993180f-8f31-41b2-905c-71f0273bb7d4"),
           contentLength = 49,
           lastModified  = Instant.parse("2020-07-21T13:16:42.859Z")
         ),
-        ObjectListing(
+        ObjectSummary(
           location      = Path.File(Path.Directory("something"), "23265eab-268e-4fcc-904f-775586b362c2"),
           contentLength = 49,
           lastModified  = Instant.parse("2020-07-21T13:16:41.226Z")
@@ -420,14 +422,14 @@ class PlayObjectStoreClientSpec
       val retentionPeriod = RetentionPeriod.OneWeek
 
       val zipResponse =
-        ObjectSummary(
-          location      = Path.File(Path.Directory("zips"), "zip1.zip"),
+        ObjectSummaryWithMd5(
+          location      = Path.File(Path.Directory("object-store/object/zips"), "zip1.zip"),
           contentLength = 1000L,
           contentMd5    = Md5Hash("a3c2f1e38701bd2c7b54ebd7b1cd0dbc"),
           lastModified  = Instant.now
         )
 
-      initZipStub(from, to, retentionPeriod, defaultOwner, defaultOwner, statusCode = 200, Some(zipResponse))
+      initZipStub(from, to, retentionPeriod, owner, owner, statusCode = 200, Some(zipResponse))
 
       osClient.zip(from, to, retentionPeriod).futureValue shouldBe zipResponse
     }
@@ -437,9 +439,78 @@ class PlayObjectStoreClientSpec
       val to              = Path.File(Path.Directory("zips"), "zip1.zip")
       val retentionPeriod = RetentionPeriod.OneWeek
 
-      initZipStub(from, to, retentionPeriod, defaultOwner, defaultOwner, statusCode = 401, response = None)
+      initZipStub(from, to, retentionPeriod, owner, owner, statusCode = 401, response = None)
 
       osClient.zip(from, to, retentionPeriod).failed.futureValue shouldBe an[UpstreamErrorResponse]
+    }
+  }
+
+  "uploadFromUrl" must {
+    "return an ObjectListing with objectSummaries" in {
+      val from            = new URL("https://fus-outbound-8264ee52f589f4c0191aa94f87aa1aeb.s3.eu-west-2.amazonaws.com/81fb03f5-195d-422a-91ab-460939045846")
+      val to              = Path.File(Path.Directory("my-folder"), "sample.pdf")
+      val retentionPeriod = RetentionPeriod.OneWeek
+
+      val response =
+        ObjectSummaryWithMd5(
+          location      = Path.File(Path.Directory("object-store/object/my-folder"), "sample.pdf"),
+          contentLength = 1000L,
+          contentMd5    = Md5Hash("a3c2f1e38701bd2c7b54ebd7b1cd0dbc"),
+          lastModified  = Instant.now
+        )
+
+      initUploadFromUrlStub(from, to, retentionPeriod, None, None, owner, statusCode = 200, Some(response))
+
+      osClient.uploadFromUrl(from, to, retentionPeriod).futureValue shouldBe response
+    }
+
+    "return an ObjectListing with objectSummaries when contentType supplied" in {
+      val from            = new URL("https://fus-outbound-8264ee52f589f4c0191aa94f87aa1aeb.s3.eu-west-2.amazonaws.com/81fb03f5-195d-422a-91ab-460939045846")
+      val to              = Path.File(Path.Directory("my-folder"), "sample.pdf")
+      val retentionPeriod = RetentionPeriod.OneWeek
+      val contentType     = Some("text/csv")
+
+      val response =
+        ObjectSummaryWithMd5(
+          location      = Path.File(Path.Directory("object-store/object/my-folder"), "sample.pdf"),
+          contentLength = 1000L,
+          contentMd5    = Md5Hash("a3c2f1e38701bd2c7b54ebd7b1cd0dbc"),
+          lastModified  = Instant.now
+        )
+
+      initUploadFromUrlStub(from, to, retentionPeriod, contentType, None, owner, statusCode = 200, Some(response))
+
+      osClient.uploadFromUrl(from, to, retentionPeriod, contentType).futureValue shouldBe response
+    }
+
+    "return an ObjectListing with objectSummaries when contentMd5 supplied" in {
+      val from            = new URL("https://fus-outbound-8264ee52f589f4c0191aa94f87aa1aeb.s3.eu-west-2.amazonaws.com/81fb03f5-195d-422a-91ab-460939045846")
+      val to              = Path.File(Path.Directory("my-folder"), "sample.pdf")
+      val retentionPeriod = RetentionPeriod.OneWeek
+      val contentType     = Some("text/csv")
+      val contentMd5      = Some(Md5Hash("a3c2f1e38701bd2c7b54ebd7b1cd0dbc"))
+
+      val response =
+        ObjectSummaryWithMd5(
+          location      = Path.File(Path.Directory("object-store/object/my-folder"), "sample.pdf"),
+          contentLength = 1000L,
+          contentMd5    = Md5Hash("a3c2f1e38701bd2c7b54ebd7b1cd0dbc"),
+          lastModified  = Instant.now
+        )
+
+      initUploadFromUrlStub(from, to, retentionPeriod, contentType, contentMd5 , owner, statusCode = 200, Some(response))
+
+      osClient.uploadFromUrl(from, to, retentionPeriod, contentType, contentMd5).futureValue shouldBe response
+    }
+
+    "return an exception if object-store response is not successful" in {
+      val from            = new URL("https://fus-outbound-8264ee52f589f4c0191aa94f87aa1aeb.s3.eu-west-2.amazonaws.com/81fb03f5-195d-422a-91ab-460939045846")
+      val to              = Path.File(Path.Directory("my-folder"), "sample.pdf")
+      val retentionPeriod = RetentionPeriod.OneWeek
+
+      initUploadFromUrlStub(from, to, retentionPeriod, None, None, owner, statusCode = 401, None)
+
+      osClient.uploadFromUrl(from, to, retentionPeriod).failed.futureValue shouldBe an[UpstreamErrorResponse]
     }
   }
 
@@ -462,7 +533,7 @@ class PlayObjectStoreClientSpec
 
   private def objectListingJson: String =
     """{
-      |  "objects": [
+      |  "objectSummaries": [
       |    {
       |      "location": "/object-store/object/something/0993180f-8f31-41b2-905c-71f0273bb7d4",
       |      "contentLength": 49,
@@ -480,6 +551,6 @@ class PlayObjectStoreClientSpec
 
   private def emptyObjectListingJson: String =
     """{
-      |    "objects": []
+      |    "objectSummaries": []
       |}""".stripMargin
 }
