@@ -6,10 +6,12 @@ object-store-client is a Scala client to interact with the [object-store](https:
 The methods available on the client encapsulate the HTTP interaction with object-store service, making it easier for the consuming service to interact with the object-store service.
 
 The operations available via object-store-client are
-- Put a new document
-- Download a document
-- Delete a document
-- List documents under a path
+- Put a new object
+- Download a object
+- Delete a object
+- List objects under a path
+- Zip objects under a path
+- Upload a new object from a url
 
 Read more [here](https://github.com/hmrc/object-store/blob/master/README.md) about object-store.
 
@@ -89,7 +91,7 @@ client.putObject(
   contentType     = Some("plain/text"), // defaults to None
   contentMd5      = Some(Md5Hash("4033ff85a6fdc6a2f51e60d89236a244")), // defaults to None, and will be calculated
   owner           = "my-service" // defaults to 'appName' configuration
-) // returns Future[Unit]
+) // returns Future[ObjectSummaryWithMd5]
 ```
 
 The above code will put the argument of the `content` parameter in an object at the path `/my-service/accounts/2020/summary.text` with a retention period of 1 month.
@@ -146,7 +148,36 @@ client.listObjects(
 ) // returns Future[ObjectListing]
 ```
 
-The above code will list the objects at the path `/my-service/accounts/2020/`.
+#### **Zip**
+
+```scala
+osClient.zip(
+  from            = Path.Directory("envelope1"),
+  to              = Path.File(Path.Directory("zips"), "zip1.zip"),
+  retentionPeriod = RetentionPeriod.OneWeek, // defaults to 'object-store.default-retention-period' configuration
+  fromOwner       = "my-service",            // defaults to 'appName' configuration
+  toOwner         = "my-service"             // defaults to 'appName' configuration
+) // returns Future[ObjectSummaryWithMd5]
+```
+
+The above code will zip all objects in the directory `/my-service/envelope1/` to a zipped object at `/my-service/zips/zip1.zip`
+
+#### **Upload object from url**
+
+```scala
+osClient.uploadFromUrl(
+  from            = new URL("https://fus-outbound.s3.eu-west-2.amazonaws.com/81fb03f5-195d-422a-91ab-460939045846"),
+  to              = Path.File(Path.Directory("my-folder"), "sample.pdf"),
+  retentionPeriod = RetentionPeriod.OneWeek, // defaults to 'object-store.default-retention-period' configuration
+  contentType     = Some("text/csv"), // defaults to None which results in the contentType 'application/octet-stream'
+  contentMd5      = Some(Md5Hash("a3c2f1e38701bd2c7b54ebd7b1cd0dbc")), // defaults to None
+  owner           = "my-service" // defaults to 'appName' configuration
+) // returns Future[ObjectSummaryWithMd5]
+```
+
+The above code will download a file from `https://fus-outbound.s3.eu-west-2.amazonaws.com/81fb03f5-195d-422a-91ab-460939045846` to 
+`/my-service/my-folder/sample.pdf`
+````
 
 ### Error handling
 Exceptions like `uk.gov.hmrc.http.GatewayTimeoutException` or response parsing exception will be returned wrapped inside the failed Future.
