@@ -24,10 +24,11 @@ import akka.stream.scaladsl.{Broadcast, FileIO, Flow, GraphDSL, RunnableGraph, S
 import akka.util.ByteString
 import play.api.libs.Files.SingletonTemporaryFileCreator
 import play.api.libs.ws.WSRequest
+import uk.gov.hmrc.objectstore.client.Md5Hash
 import uk.gov.hmrc.objectstore.client.http.{ObjectStoreContentWrite, Payload}
 import play.api.libs.ws.BodyWritable
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
 trait PlayObjectStoreContentWrites {
   private def bodyWritable[T](contentType: Option[String])(implicit bw: BodyWritable[T]): BodyWritable[T] =
@@ -37,22 +38,29 @@ trait PlayObjectStoreContentWrites {
     F: PlayMonad[F]
   ): ObjectStoreContentWrite[F, Payload[Source[ByteString, Mat]], Request] =
     new ObjectStoreContentWrite[F, Payload[Source[ByteString, Mat]], Request] {
-      override def writeContent(payload: Payload[Source[ByteString, Mat]], contentType: Option[String]): F[Request] =
-        F.pure(
-          HttpBody(
-            length = Some(payload.length),
-            md5 = Some(payload.md5Hash),
-            writeBody = (req: WSRequest) => req.withBody(payload.content)(bodyWritable(contentType)),
-            release = () => ()
+      override def writeContent(
+        payload    : Payload[Source[ByteString, Mat]],
+        contentType: Option[String],
+        contentMd5 : Option[Md5Hash]
+      ): F[Request] =
+        if (contentMd5.exists(payload.md5Hash != _))
+          F.raiseError(new RuntimeException(s"Content Md5 did not match"))
+        else
+          F.pure(
+            HttpBody(
+              length    = Some(payload.length),
+              md5       = Some(payload.md5Hash),
+              writeBody = (req: WSRequest) => req.withBody(payload.content)(bodyWritable(contentType)),
+              release   = () => ()
+            )
           )
-        )
     }
 
   implicit def fileWrite[F[_]](implicit F: PlayMonad[F]): ObjectStoreContentWrite[F, File, Request] =
     payloadAkkaSourceContentWrite[F, NotUsed].contramap { file =>
       Payload(
         length = file.length,
-        md5Hash = Md5Hash.fromInputStream(new FileInputStream(file)),
+        md5Hash = Md5HashUtils.fromInputStream(new FileInputStream(file)),
         content = FileIO.fromPath(file.toPath).mapMaterializedValue(_ => NotUsed)
       )
     }
@@ -63,25 +71,32 @@ trait PlayObjectStoreContentWrites {
     F: PlayMonad[F]
   ): ObjectStoreContentWrite[F, Source[ByteString, Mat], Request] =
     new ObjectStoreContentWrite[F, Source[ByteString, Mat], Request] {
-      override def writeContent(content: Source[ByteString, Mat], contentType: Option[String]): F[Request] = {
+      override def writeContent(
+        content    : Source[ByteString, Mat],
+        contentType: Option[String],
+        contentMd5 : Option[Md5Hash]
+      ): F[Request] = {
         val tempFile = SingletonTemporaryFileCreator.create()
 
         val (uploadFinished, md5Finished) =
           broadcast2(
             source = content,
             sink1 = FileIO.toPath(tempFile.path),
-            sink2 = Md5Hash.md5HashSink
+            sink2 = Md5HashUtils.md5HashSink
           ).run()
 
         F.liftFuture(
           for {
             _       <- uploadFinished
             md5Hash <- md5Finished
+            _       <- if (contentMd5.exists(md5Hash != _))
+                         Future.failed(new RuntimeException(s"Content Md5 did not match"))
+                       else Future.unit
           } yield HttpBody(
-            length = Some(tempFile.path.toFile.length),
-            md5 = Some(md5Hash),
+            length    = Some(tempFile.path.toFile.length),
+            md5       = Some(md5Hash),
             writeBody = (req: WSRequest) => req.withBody(tempFile.path.toFile)(bodyWritable(contentType)),
-            release = () => SingletonTemporaryFileCreator.delete(tempFile)
+            release   = () => SingletonTemporaryFileCreator.delete(tempFile)
           )
         )
       }
@@ -105,7 +120,7 @@ trait PlayObjectStoreContentWrites {
     payloadAkkaSourceContentWrite[F, NotUsed].contramap { bytes =>
       Payload(
         length = bytes.length,
-        md5Hash = Md5Hash.fromBytes(bytes),
+        md5Hash = Md5HashUtils.fromBytes(bytes),
         content = Source.single(bytes).map(ByteString(_))
       )
     }

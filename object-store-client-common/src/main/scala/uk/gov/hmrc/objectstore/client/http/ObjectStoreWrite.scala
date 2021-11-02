@@ -14,22 +14,14 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.objectstore.client.play
+package uk.gov.hmrc.objectstore.client.http
 
-import java.io.ByteArrayInputStream
+import uk.gov.hmrc.objectstore.client.{UrlUploadRequest, ZipRequest}
 
-import org.scalatest.{Matchers, WordSpec}
+import scala.language.higherKinds
 
-class Md5HashSpec extends WordSpec with Matchers {
+trait ObjectStoreWrite[F[_], REQ_BODY] {
+  def fromZipRequest(request: ZipRequest): F[REQ_BODY]
 
-  "Md5Hash.fromInputStream" must {
-
-    "convert inputstream to md5Hash" in {
-      Md5Hash.fromInputStream(new ByteArrayInputStream("asd".getBytes)) shouldBe "eBVpbsvxyW5olLd5RW0zDg=="
-    }
-
-    "convert Bytes to md5Hash" in {
-      Md5Hash.fromBytes("asd".getBytes) shouldBe "eBVpbsvxyW5olLd5RW0zDg=="
-    }
-  }
+  def fromUrlUploadRequest(request: UrlUploadRequest): F[REQ_BODY]
 }

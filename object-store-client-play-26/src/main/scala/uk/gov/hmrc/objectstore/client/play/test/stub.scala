@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.objectstore.client.play.test
 
+import java.time.Instant
+
 import akka.NotUsed
 import akka.stream.Materializer
 import play.api.libs.ws.ahc._
@@ -27,7 +29,6 @@ import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 import uk.gov.hmrc.objectstore.client.http.{ObjectStoreContentRead, ObjectStoreContentWrite}
 import uk.gov.hmrc.objectstore.client.play._
 
-import java.time.Instant
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -69,15 +70,22 @@ object stub {
       content: CONTENT,
       retentionPeriod: RetentionPeriod = config.defaultRetentionPeriod,
       contentType: Option[String] = None,
+      contentMd5: Option[Md5Hash] = None,
       owner: String = config.owner
-    )(implicit w: ObjectStoreContentWrite[F, CONTENT, Request], hc: HeaderCarrier): F[Unit] =
-      M.map(w.writeContent(content, contentType)) { r =>
+    )(implicit w: ObjectStoreContentWrite[F, CONTENT, Request], hc: HeaderCarrier): F[ObjectSummaryWithMd5] =
+      M.map(w.writeContent(content, contentType, contentMd5)) { r =>
+        val lastModified = Instant.now()
         objectStore += s"$owner/${path.asUri}" -> InternalObject(
           r,
           contentType.getOrElse("application/octet-stream"),
-          Instant.now()
+          lastModified
         )
-        ()
+        ObjectSummaryWithMd5(
+          location      = path,
+          contentLength = r.length.getOrElse(0),
+          contentMd5    = r.md5.getOrElse(Md5Hash("")),
+          lastModified  = lastModified
+        )
       }
 
     override def getObject[CONTENT](path: Path.File, owner: String = config.owner)(implicit
@@ -93,12 +101,12 @@ object stub {
           M.map(cr.readContent(body)) { content =>
             Option(
               Object(
-                location,
+                Path.File(location),
                 content,
                 ObjectMetadata(
                   internalObject.contentType,
                   internalObject.request.length.getOrElse(0),
-                  internalObject.request.md5.getOrElse(""),
+                  internalObject.request.md5.getOrElse(Md5Hash("")),
                   Instant.now(),
                   Map.empty
                 )
@@ -126,10 +134,9 @@ object stub {
             .map {
               case (filePath, internalObject) =>
                 ObjectSummary(
-                  Path.File(filePath),
-                  internalObject.request.length.getOrElse(0),
-                  internalObject.request.md5.getOrElse(""),
-                  internalObject.lastModifiedInstant
+                  location      = Path.File(filePath),
+                  contentLength = internalObject.request.length.getOrElse(0),
+                  lastModified  = internalObject.lastModifiedInstant
                 )
             }
             .toList

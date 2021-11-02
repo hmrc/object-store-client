@@ -16,11 +16,12 @@
 
 package uk.gov.hmrc.objectstore.client.play
 
-import play.api.libs.functional.syntax._
-import play.api.libs.json.{Format, Reads, __}
-import uk.gov.hmrc.objectstore.client.{ObjectListing, ObjectSummary, Path}
-
+import java.net.URL
 import java.time.Instant
+
+import play.api.libs.functional.syntax._
+import play.api.libs.json.{Format, Reads, Writes, __}
+import uk.gov.hmrc.objectstore.client.{Md5Hash, ObjectSummary, ObjectListing, ObjectSummaryWithMd5, Path, RetentionPeriod, ZipRequest, _}
 
 object PlayFormats {
 
@@ -32,14 +33,36 @@ object PlayFormats {
     implicitly[Format[String]]
       .inmap(Path.File.apply, _.asUri)
 
-  val objectSummaryRead: Reads[ObjectSummary] =
-    ((__ \ "location").read[String].map(_.stripPrefix("/object-store/object/")).map(Path.File.apply)
-      ~ (__ \ "contentLength").read[Long]
-      ~ (__ \ "contentMD5").read[String]
-      ~ (__ \ "lastModified").read[Instant])(ObjectSummary.apply _)
+  val objectSummaryWithMd5Reads: Reads[ObjectSummaryWithMd5] =
+    ( (__ \ "location"     ).read[String].map(_.stripPrefix("/object-store/object/")).map(Path.File.apply)
+    ~ (__ \ "contentLength").read[Long]
+    ~ (__ \ "contentMD5"   ).read[String].map(Md5Hash.apply)
+    ~ (__ \ "lastModified" ).read[Instant]
+    )(ObjectSummaryWithMd5.apply _)
 
-  val objectListingRead: Reads[ObjectListing] = {
-    implicit val osf: Reads[ObjectSummary] = objectSummaryRead
-    Reads.at[List[ObjectSummary]](__ \ "objects").map(ObjectListing.apply)
+  val objectSummaryReads: Reads[ObjectSummary] =
+    ( (__ \ "location"     ).read[String].map(_.stripPrefix("/object-store/object/")).map(Path.File.apply)
+    ~ (__ \ "contentLength").read[Long]
+    ~ (__ \ "lastModified" ).read[Instant]
+    )(ObjectSummary.apply _)
+
+  val objectListingReads: Reads[ObjectListing] = {
+    implicit val osf: Reads[ObjectSummary] = objectSummaryReads
+    Reads.at[List[ObjectSummary]](__ \ "objectSummaries").map(ObjectListing.apply)
   }
+
+  val zipRequestWrites: Writes[ZipRequest] =
+    ( (__ \ "fromLocation"   ).write[Path.Directory](directoryFormat)
+    ~ (__ \ "toLocation"     ).write[Path.File](fileFormat)
+    ~ (__ \ "retentionPeriod").write[String].contramap[RetentionPeriod](_.value)
+    )(unlift(ZipRequest.unapply))
+
+  val urlUploadRequestWrites: Writes[UrlUploadRequest] =
+    ( (__ \ "fromUrl"        ).write[String].contramap[URL](_.toString)
+    ~ (__ \ "toLocation"     ).write[Path.File](fileFormat)
+    ~ (__ \ "retentionPeriod").write[String].contramap[RetentionPeriod](_.value)
+    ~ (__ \ "contentType"    ).writeNullable[String]
+    ~ (__ \ "contentMd5"     ).writeNullable[String].contramap[Option[Md5Hash]](_.map(_.value))
+    )(unlift(UrlUploadRequest.unapply))
+
 }

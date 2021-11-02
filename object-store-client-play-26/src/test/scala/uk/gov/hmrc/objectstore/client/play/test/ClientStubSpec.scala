@@ -21,8 +21,10 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
+import org.scalatest.OptionValues
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{FlatSpec, MustMatchers, OptionValues}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.objectstore.client.Path
 import uk.gov.hmrc.objectstore.client.RetentionPeriod.OneWeek
@@ -35,39 +37,43 @@ import java.util.UUID.randomUUID
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class ClientStubSpec extends FlatSpec with ScalaFutures with MustMatchers with OptionValues {
+class ClientStubSpec
+  extends AnyFlatSpec
+     with ScalaFutures
+     with Matchers
+     with OptionValues {
 
-  "StubPlayObjectStoreClient" must behave like stubObjectStoreClient(new StubPlayObjectStoreClient(config))
+  "StubPlayObjectStoreClient" should behave like stubObjectStoreClient(new StubPlayObjectStoreClient(config))
 
-  "StubPlayObjectStoreClientEither" must behave like stubObjectStoreClient(new StubPlayObjectStoreClientEither(config))
+  "StubPlayObjectStoreClientEither" should behave like stubObjectStoreClient(new StubPlayObjectStoreClientEither(config))
 
   def stubObjectStoreClient[F[_]: PlayMonad](stub: StubObjectStoreClient[F])(implicit tf: ToFuture[F]): Unit = {
 
-    it must "return None when it has no objects for the path" in new Setup {
-      tf.toFuture(stub.getObject[Source[ByteString, NotUsed]](defaultPath)).futureValue mustBe empty
+    it should "return None when it has no objects for the path" in new Setup {
+      tf.toFuture(stub.getObject[Source[ByteString, NotUsed]](defaultPath)).futureValue shouldBe empty
     }
 
-    it must "return object when it has a matching object for the path" in new Setup {
+    it should "return object when it has a matching object for the path" in new Setup {
       (for {
         _               <- stub.putObject(defaultPath, defaultContent)
         actualObject    <- stub.getObject[Source[ByteString, NotUsed]](defaultPath)
         actualContent   <- actualObject.value.content.runReduce(_ ++ _)
         expectedContent <- defaultContent.runReduce(_ ++ _)
       } yield {
-        actualObject.value.location mustBe s"$baseUrl/object-store/object/$owner/${defaultPath.asUri}"
-        actualContent mustBe expectedContent
+        actualObject.value.location.asUri shouldBe s"$baseUrl/object-store/object/$owner/${defaultPath.asUri}"
+        actualContent shouldBe expectedContent
       }).futureValue
     }
 
-    it must "delete object" in new Setup {
+    it should "delete object" in new Setup {
       (for {
         _      <- stub.putObject(defaultPath, defaultContent)
         _      <- stub.deleteObject(defaultPath)
         actual <- stub.getObject[Source[ByteString, NotUsed]](defaultPath)
-      } yield actual mustBe empty).futureValue
+      } yield actual shouldBe empty).futureValue
     }
 
-    it must "list objects" in new Setup {
+    it should "list objects" in new Setup {
       private val nodeA  = randomUUID().toString
       private val nodeB  = randomUUID().toString
       private val leafB1 = randomUUID().toString
@@ -83,17 +89,17 @@ class ClientStubSpec extends FlatSpec with ScalaFutures with MustMatchers with O
         objectsAtB <- stub.listObjects(Path.Directory(s"$nodeA/$nodeB"))
         objectsAtC <- stub.listObjects(Path.Directory(s"$nodeA/$nodeB/$nodeC"))
       } yield {
-        objectsAtA.objectSummaries.map(_.location) must contain theSameElementsAs List(
+        objectsAtA.objectSummaries.map(_.location) should contain theSameElementsAs List(
           Path.File(s"$owner/$nodeA/$nodeB/$leafB1"),
           Path.File(s"$owner/$nodeA/$nodeB/$nodeC/$leafC1"),
           Path.File(s"$owner/$nodeA/$nodeB/$nodeC/$leafC2")
         )
-        objectsAtB.objectSummaries.map(_.location) must contain theSameElementsAs List(
+        objectsAtB.objectSummaries.map(_.location) should contain theSameElementsAs List(
           Path.File(s"$owner/$nodeA/$nodeB/$leafB1"),
           Path.File(s"$owner/$nodeA/$nodeB/$nodeC/$leafC1"),
           Path.File(s"$owner/$nodeA/$nodeB/$nodeC/$leafC2")
         )
-        objectsAtC.objectSummaries.map(_.location) must contain theSameElementsAs List(
+        objectsAtC.objectSummaries.map(_.location) should contain theSameElementsAs List(
           Path.File(s"$owner/$nodeA/$nodeB/$nodeC/$leafC1"),
           Path.File(s"$owner/$nodeA/$nodeB/$nodeC/$leafC2")
         )

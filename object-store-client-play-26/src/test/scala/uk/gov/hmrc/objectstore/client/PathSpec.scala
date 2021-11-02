@@ -16,22 +16,23 @@
 
 package uk.gov.hmrc.objectstore.client
 
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class PathSpec extends WordSpec with Matchers {
+class PathSpec extends AnyWordSpec with Matchers {
   "Path asUri" must {
-    "generate a directory uri correctly without a trailing slash if present" in {
+    "generate a directory uri correctly with a trailing slash if present" in {
       val rawDirectoryPath = "directory/"
       val directory        = Path.Directory(rawDirectoryPath)
       val uri              = directory.asUri
-      assertResult("directory")(uri)
+      assertResult("directory/")(uri)
     }
 
-    "generate a directory uri correctly without a trailing slash if not present" in {
+    "generate a directory uri correctly with a trailing slash if not present" in {
       val rawDirectoryPath = "directory"
       val directory        = Path.Directory(rawDirectoryPath)
       val uri              = directory.asUri
-      assertResult("directory")(uri)
+      assertResult("directory/")(uri)
     }
 
     "generate a directory uri when raw path is empty string" in {
@@ -44,28 +45,28 @@ class PathSpec extends WordSpec with Matchers {
     "generate a file uri correctly without a trailing slash if present" in {
       val file = Path.Directory("directory").file("file/")
       val uri  = file.asUri
-      assertResult("directory")(file.directory.asUri)
+      assertResult("directory/")(file.directory.asUri)
       assertResult("directory/file")(uri)
     }
 
     "generate a file uri correctly without a trailing slash if not present" in {
       val file = Path.Directory("directory").file("file")
       val uri  = file.asUri
-      assertResult("directory")(file.directory.asUri)
+      assertResult("directory/")(file.directory.asUri)
       assertResult("directory/file")(uri)
     }
 
     "generate a file uri correctly without a trailing slash if present using apply method" in {
       val file = Path.File("directory/file/")
       val uri  = file.asUri
-      assertResult("directory")(file.directory.asUri)
+      assertResult("directory/")(file.directory.asUri)
       assertResult("directory/file")(uri)
     }
 
     "generate a file uri correctly without a trailing slash if not present using apply method" in {
       val file = Path.File("directory/file")
       val uri  = file.asUri
-      assertResult("directory")(file.directory.asUri)
+      assertResult("directory/")(file.directory.asUri)
       assertResult("directory/file")(uri)
     }
   }

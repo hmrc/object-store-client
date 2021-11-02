@@ -16,14 +16,19 @@
 
 package uk.gov.hmrc.objectstore.client
 
-import java.net.{URLDecoder, URLEncoder}
+import java.net.{URL, URLDecoder, URLEncoder}
 import java.time.Instant
 
 sealed trait Path { def asUri: String }
 
 object Path {
   case class Directory(value: String) extends Path {
-    override val asUri: String = value.stripPrefix("/").stripSuffix("/")
+    override val asUri: String = {
+      val uri = value.stripPrefix("/")
+      if (uri.nonEmpty && !uri.endsWith("/"))
+        uri + "/"
+      else uri
+    }
 
     def file(fileName: String): File = File(this, fileName)
   }
@@ -32,7 +37,7 @@ object Path {
     if (fileName.isEmpty) throw new IllegalArgumentException(s"fileName cannot be empty")
 
     override val asUri: String =
-      s"${directory.asUri}/${URLEncoder.encode(fileName.stripSuffix("/"), "UTF-8")}"
+      s"${directory.asUri}${URLEncoder.encode(fileName.stripSuffix("/"), "UTF-8")}"
   }
 
   object File {
@@ -43,28 +48,36 @@ object Path {
   }
 }
 
+case class Md5Hash(value: String) extends AnyVal
+
 case class Object[CONTENT](
-  location: String,
+  location: Path.File,
   content: CONTENT,
   metadata: ObjectMetadata
+)
+
+final case class ObjectMetadata(
+  contentType: String,
+  contentLength: Long,
+  contentMd5: Md5Hash,
+  lastModified: Instant,
+  userMetadata: Map[String, String]
 )
 
 final case class ObjectListing(
   objectSummaries: List[ObjectSummary]
 )
 
-final case class ObjectMetadata(
-  contentType: String,
+final case class ObjectSummary(
+  location     : Path.File,
   contentLength: Long,
-  contentMd5: String,
-  lastModified: Instant,
-  userMetadata: Map[String, String]
+  lastModified : Instant
 )
 
-final case class ObjectSummary(
+final case class ObjectSummaryWithMd5(
   location: Path.File,
   contentLength: Long,
-  contentMd5: String,
+  contentMd5: Md5Hash,
   lastModified: Instant
 )
 
@@ -86,3 +99,17 @@ object RetentionPeriod {
       .find(_.value == value)
       .toRight(s"Invalid object-store retention period. Valid values - [${allValues.map(_.value).mkString(", ")}]")
 }
+
+private[objectstore] final case class ZipRequest(
+  from           : Path.Directory,
+  to             : Path.File,
+  retentionPeriod: RetentionPeriod
+)
+
+private[objectstore] final case class UrlUploadRequest(
+  fromUrl        : URL,
+  toLocation     : Path.File,
+  retentionPeriod: RetentionPeriod,
+  contentType    : Option[String],
+  contentMd5     : Option[Md5Hash]
+)
