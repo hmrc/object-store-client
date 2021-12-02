@@ -9,7 +9,7 @@ object AppDependencies {
     "com.typesafe.play"      %% "play-guice"              % play26Version,
     "com.typesafe.play"      %% "play-ahc-ws"             % play26Version,
     "uk.gov.hmrc"            %% "http-verbs-play-26"      % httpVerbsVersion,
-    "uk.gov.hmrc"            %% "http-verbs-test-play-26" % httpVerbsVersion,
+    "uk.gov.hmrc"            %% "http-verbs-test-play-26" % httpVerbsVersion % Test,
     "org.scalatestplus.play" %% "scalatestplus-play"      % "3.1.3"        % Test
   ) ++ test
   lazy val objectStoreClientPlay27: Seq[ModuleID] = Seq(
@@ -17,7 +17,7 @@ object AppDependencies {
     "com.typesafe.play"      %% "play-guice"              % play27Version,
     "com.typesafe.play"      %% "play-ahc-ws"             % play27Version,
     "uk.gov.hmrc"            %% "http-verbs-play-27"      % httpVerbsVersion,
-    "uk.gov.hmrc"            %% "http-verbs-test-play-27" % httpVerbsVersion,
+    "uk.gov.hmrc"            %% "http-verbs-test-play-27" % httpVerbsVersion % Test,
     "org.scalatestplus.play" %% "scalatestplus-play"      % "4.0.3"        % Test
   ) ++ test
   lazy val objectStoreClientPlay28: Seq[ModuleID] = Seq(
@@ -25,7 +25,7 @@ object AppDependencies {
     "com.typesafe.play"      %% "play-guice"              % play28Version,
     "com.typesafe.play"      %% "play-ahc-ws"             % play28Version,
     "uk.gov.hmrc"            %% "http-verbs-play-28"      % httpVerbsVersion,
-    "uk.gov.hmrc"            %% "http-verbs-test-play-28" % httpVerbsVersion,
+    "uk.gov.hmrc"            %% "http-verbs-test-play-28" % httpVerbsVersion % Test,
     "com.typesafe.play"      %% "play-akka-http-server"   % "2.8.7"        % Test,
     "org.scalatestplus.play" %% "scalatestplus-play"      % "5.1.0"        % Test
   ) ++ test
