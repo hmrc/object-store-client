@@ -177,7 +177,6 @@ osClient.uploadFromUrl(
 
 The above code will download a file from `https://fus-outbound.s3.eu-west-2.amazonaws.com/81fb03f5-195d-422a-91ab-460939045846` to 
 `/my-service/my-folder/sample.pdf`
-````
 
 ### Error handling
 Exceptions like `uk.gov.hmrc.http.GatewayTimeoutException` or response parsing exception will be returned wrapped inside the failed Future.
