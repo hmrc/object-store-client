@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.objectstore.client.config
+package uk.gov.hmrc.objectstore.client.utils
 
-import uk.gov.hmrc.objectstore.client.RetentionPeriod
+import java.util.UUID.randomUUID
 
-final case class ObjectStoreClientConfig(
-  baseUrl: String,
-  owner: String,
-  authorizationToken: String,
-  defaultRetentionPeriod: RetentionPeriod
-)
+import uk.gov.hmrc.objectstore.client.Path
+
+object PathUtils {
+  def generateDirectoryPath(): Path.Directory = Path.Directory(randomUUID().toString)
+
+  def generateFilePath(): Path.File = generateDirectoryPath().file(randomUUID().toString)
+}
