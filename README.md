@@ -70,6 +70,7 @@ The valid values for this configuration are
 - 1-year
 - 7-years
 - 10-years
+- 20-years
 
 Any other configured value or absence of configuration will result in the failure of the service start up.
 
