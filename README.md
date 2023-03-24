@@ -175,9 +175,8 @@ osClient.uploadFromUrl(
 ) // returns Future[ObjectSummaryWithMd5]
 ```
 
-The above code will download a file from `https://fus-outbound.s3.eu-west-2.amazonaws.com/81fb03f5-195d-422a-91ab-460939045846` to 
+The above code will download a file from `https://fus-outbound.s3.eu-west-2.amazonaws.com/81fb03f5-195d-422a-91ab-460939045846` to
 `/my-service/my-folder/sample.pdf`
-````
 
 ### Error handling
 Exceptions like `uk.gov.hmrc.http.GatewayTimeoutException` or response parsing exception will be returned wrapped inside the failed Future.
@@ -193,7 +192,6 @@ For unit tests, we can inject the stub instance into the subject under test and 
 For integration tests, we can override the default binding to use the stub instance like below
 
 ```scala
-
 class HelloWorldObjectStoreIntegrationSpec extends PlaySpec with GuiceOneAppPerSuite {
 
   val baseUrl    = s"baseUrl-${randomUUID().toString}"
@@ -208,8 +206,6 @@ class HelloWorldObjectStoreIntegrationSpec extends PlaySpec with GuiceOneAppPerS
             .bindings(bind(classOf[PlayObjectStoreClient]).to(objectStoreStub))
             .build()
 }
-
-
 ```
 
 ### Stubbing object-store for acceptance tests
