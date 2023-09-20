@@ -18,7 +18,6 @@ package uk.gov.hmrc.objectstore.client.play.test
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import org.scalatest.OptionValues
@@ -128,16 +127,19 @@ class ClientStubSpec
   }
 
   trait Setup {
-    implicit val hc: HeaderCarrier                     = HeaderCarrier()
-    val defaultPath                                    = Path.File(s"${randomUUID().toString}/${randomUUID().toString}")
-    val defaultContent                                 = content()
-    def content(value: String = randomUUID().toString) = Source.single(ByteString(value))
+    implicit val hc: HeaderCarrier = HeaderCarrier()
+
+    val defaultPath    = Path.File(s"${randomUUID().toString}/${randomUUID().toString}")
+    val defaultContent = content()
+
+    def content(value: String = randomUUID().toString) =
+      Source.single(ByteString(value))
   }
 
-  private lazy val baseUrl                                  = s"baseUrl-${randomUUID().toString}"
-  private lazy val owner                                    = s"owner-${randomUUID().toString}"
-  private lazy val token                                    = s"token-${randomUUID().toString}"
-  private lazy val config                                   = ObjectStoreClientConfig(baseUrl, owner, token, OneWeek)
-  private implicit lazy val system                          = ActorSystem()
-  private implicit lazy val materializer: ActorMaterializer = ActorMaterializer()
+  private lazy val baseUrl = s"baseUrl-${randomUUID().toString}"
+  private lazy val owner   = s"owner-${randomUUID().toString}"
+  private lazy val token   = s"token-${randomUUID().toString}"
+  private lazy val config  = ObjectStoreClientConfig(baseUrl, owner, token, OneWeek)
+
+  private implicit lazy val system: ActorSystem = ActorSystem()
 }

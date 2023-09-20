@@ -20,7 +20,6 @@ import java.net.URL
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import org.scalatest.BeforeAndAfterAll
@@ -56,7 +55,6 @@ class PlayObjectStoreClientSpec
 
   implicit val ec: ExecutionContextExecutor = scala.concurrent.ExecutionContext.global
   implicit val system: ActorSystem          = ActorSystem()
-  implicit val m: ActorMaterializer         = ActorMaterializer()
 
   private val application: Application          = fakeApplication()
   protected val osClient: PlayObjectStoreClient = application.injector.instanceOf(classOf[PlayObjectStoreClient])
@@ -516,8 +514,8 @@ class PlayObjectStoreClientSpec
 
   private implicit val hc: HeaderCarrier = HeaderCarrier(authorization = Option(Authorization(randomUUID().toString)))
 
-  override def afterAll: Unit = {
-    super.afterAll
+  override def afterAll(): Unit = {
+    super.afterAll()
     application.stop()
     system.terminate()
   }
