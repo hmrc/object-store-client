@@ -99,13 +99,13 @@ Bear in mind, that this operation will overwrite the content that already exists
 
 The method `putObject` is polymorphic in its parameter `content`. At the moment, we support following types -
 
-- `akka.stream.scaladsl.Source[ByteString, _]`
+- `org.apache.pekko.stream.scaladsl.Source[ByteString, _]` (`akka.stream.scaladsl.Source[ByteString, _]` for Play < 3.0)
 - `java.io.File`
 - `String`
 - `Array[Byte]`
 - `uk.gov.hmrc.objectstore.client.http.Payload`
 
-We recommend using streamed content (`akka.stream.scaladsl.Source[ByteString, _]`), as it'll avoid loading the whole content in the memory.
+We recommend using streamed content (`org.apache.pekko.stream.scaladsl.Source[ByteString, _]`), as it'll avoid loading the whole content in the memory.
 
 #### **Get object**
 
@@ -123,7 +123,7 @@ If the path doesn't exist, the method will return `Future[None]`.
 
 The method `getObject` is polymorphic in its return type. At the moment, we support following types -
 
-- `akka.stream.scaladsl.Source[ByteString, _]`
+- `org.apache.pekko.stream.scaladsl.Source[ByteString, _]`  (`akka.stream.scaladsl.Source[ByteString, _]` for Play < 3.0)
 - `String`
 - `play.api.libs.json.JsValue`
 - Any type `A` for which an implicit instance of type `play.api.libs.Reads[A]` is also available in the scope

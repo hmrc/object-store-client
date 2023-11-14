@@ -16,15 +16,16 @@ lazy val library = Project("object-store-client", file("."))
   .aggregate(
     objectStoreClientCommon,
     objectStoreClientPlay28,
-    objectStoreClientPlay29
+    objectStoreClientPlay29,
+    objectStoreClientPlay30
   )
 
-def copySources(module: Project) = Seq(
-  Compile / scalaSource       := (module / Compile / scalaSource      ).value,
-  Compile / resourceDirectory := (module / Compile / resourceDirectory).value,
-  Test    / scalaSource       := (module / Test    / scalaSource      ).value,
-  Test    / resourceDirectory := (module / Test    / resourceDirectory).value
-)
+def copyPlay30Sources(module: Project) =
+  CopySources.copySources(
+    module,
+    transformSource   = _.replace("org.apache.pekko", "akka"),
+    transformResource = _.replace("pekko", "akka")
+  )
 
 lazy val objectStoreClientCommon = Project("object-store-client-common", file("object-store-client-common"))
   .settings(
@@ -34,6 +35,7 @@ lazy val objectStoreClientCommon = Project("object-store-client-common", file("o
 lazy val objectStoreClientPlay28 = Project("object-store-client-play-28", file("object-store-client-play-28"))
   .settings(
     crossScalaVersions := Seq(scala2_12, scala2_13),
+    copyPlay30Sources(objectStoreClientPlay30),
     libraryDependencies ++= LibDependencies.dependencies("play-28")
   )
   .dependsOn(objectStoreClientCommon)
@@ -41,7 +43,14 @@ lazy val objectStoreClientPlay28 = Project("object-store-client-play-28", file("
 lazy val objectStoreClientPlay29 = Project("object-store-client-play-29", file("object-store-client-play-29"))
   .settings(
     crossScalaVersions := Seq(scala2_13),
-    copySources(objectStoreClientPlay28),
+    copyPlay30Sources(objectStoreClientPlay30),
     libraryDependencies ++= LibDependencies.dependencies("play-29")
+  )
+  .dependsOn(objectStoreClientCommon)
+
+lazy val objectStoreClientPlay30 = Project("object-store-client-play-30", file("object-store-client-play-30"))
+  .settings(
+    crossScalaVersions := Seq(scala2_13),
+    libraryDependencies ++= LibDependencies.dependencies("play-30")
   )
   .dependsOn(objectStoreClientCommon)

@@ -20,8 +20,8 @@ import java.io.InputStream
 import java.security.{DigestInputStream, MessageDigest}
 import java.util.Base64
 
-import akka.stream.scaladsl.Sink
-import akka.util.ByteString
+import org.apache.pekko.stream.scaladsl.Sink
+import org.apache.pekko.util.ByteString
 import uk.gov.hmrc.objectstore.client.Md5Hash
 
 import scala.concurrent.{ExecutionContext, Future}

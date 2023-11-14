@@ -17,9 +17,9 @@
 package uk.gov.hmrc.objectstore.client
 
 import _root_.play.api.libs.ws.{WSRequest, WSResponse}
-import akka.NotUsed
-import akka.stream.scaladsl.Source
-import akka.util.ByteString
+import org.apache.pekko.NotUsed
+import org.apache.pekko.stream.scaladsl.Source
+import org.apache.pekko.util.ByteString
 import uk.gov.hmrc.objectstore.client.category.{Monad, MonadError}
 
 import scala.concurrent.Future
