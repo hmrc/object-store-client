@@ -18,10 +18,10 @@ package uk.gov.hmrc.objectstore.client.play
 
 import java.net.URL
 
-import akka.NotUsed
-import akka.actor.ActorSystem
-import akka.stream.scaladsl.Source
-import akka.util.ByteString
+import org.apache.pekko.NotUsed
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.stream.scaladsl.Source
+import org.apache.pekko.util.ByteString
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.matchers.should.Matchers

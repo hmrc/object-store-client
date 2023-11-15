@@ -18,10 +18,10 @@ package uk.gov.hmrc.objectstore.client.play
 
 import java.io.{File, FileInputStream}
 
-import akka.NotUsed
-import akka.stream.{ClosedShape, Materializer}
-import akka.stream.scaladsl.{Broadcast, FileIO, Flow, GraphDSL, RunnableGraph, Sink, Source}
-import akka.util.ByteString
+import org.apache.pekko.NotUsed
+import org.apache.pekko.stream.{ClosedShape, Materializer}
+import org.apache.pekko.stream.scaladsl.{Broadcast, FileIO, Flow, GraphDSL, RunnableGraph, Sink, Source}
+import org.apache.pekko.util.ByteString
 import play.api.libs.Files.SingletonTemporaryFileCreator
 import play.api.libs.ws.WSRequest
 import uk.gov.hmrc.objectstore.client.Md5Hash

@@ -16,8 +16,8 @@
 
 package uk.gov.hmrc.objectstore.client.play
 
-import akka.stream.Materializer
 import javax.inject.{Inject, Singleton}
+import org.apache.pekko.stream.Materializer
 import play.api.libs.ws.WSClient
 import uk.gov.hmrc.objectstore.client.ObjectStoreClient
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig

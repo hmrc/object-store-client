@@ -18,8 +18,8 @@ package uk.gov.hmrc.objectstore.client.play.test
 
 import java.time.Instant
 
-import akka.NotUsed
-import akka.stream.Materializer
+import org.apache.pekko.NotUsed
+import org.apache.pekko.stream.Materializer
 import play.api.libs.ws.ahc._
 import play.api.libs.ws.{SourceBody, WSClient}
 import uk.gov.hmrc.http.HeaderCarrier
