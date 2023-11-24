@@ -21,3 +21,4 @@ dist
 .metals/
 .vscode/
 project/metals.sbt
+.bsp/

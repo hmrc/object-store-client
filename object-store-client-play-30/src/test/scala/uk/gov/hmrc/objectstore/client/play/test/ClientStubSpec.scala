@@ -21,7 +21,7 @@ import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.stream.scaladsl.Source
 import org.apache.pekko.util.ByteString
 import org.scalatest.OptionValues
-import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import uk.gov.hmrc.http.HeaderCarrier
@@ -39,6 +39,7 @@ import scala.concurrent.Future
 class ClientStubSpec
   extends AnyFlatSpec
      with ScalaFutures
+     with IntegrationPatience
      with Matchers
      with OptionValues {
 
