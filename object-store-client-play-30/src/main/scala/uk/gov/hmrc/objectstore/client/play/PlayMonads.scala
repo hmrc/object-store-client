@@ -44,15 +44,19 @@ trait PlayMonads {
   implicit def futureMonad(implicit ec: ExecutionContext): PlayMonad[Future] =
     new PlayMonad[Future] {
 
-      override def pure[A](a: A): Future[A] = Future.successful(a)
+      override def pure[A](a: A): Future[A] =
+        Future.successful(a)
 
-      override def flatMap[A, B](fa: Future[A])(fn: A => Future[B]): Future[B] = fa.flatMap(fn)
+      override def flatMap[A, B](fa: Future[A])(fn: A => Future[B]): Future[B] =
+        fa.flatMap(fn)
 
       override def map[A, B](fa: Future[A])(fn: A => B): Future[B] =
         fa.map(fn)
 
-      override def liftFuture[A](future: Future[A]): Future[A] = future
+      override def liftFuture[A](future: Future[A]): Future[A] =
+        future
 
-      override def raiseError[A](e: Exception): Future[A] = Future.failed(e)
+      override def raiseError[A](e: Exception): Future[A] =
+        Future.failed(e)
     }
 }

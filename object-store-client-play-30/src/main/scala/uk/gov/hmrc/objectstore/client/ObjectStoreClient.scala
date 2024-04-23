@@ -27,8 +27,8 @@ import com.typesafe.config.ConfigFactory
 
 class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
   client: HttpClient[F, REQ_BODY, RES],
-  read: ObjectStoreRead[F, RES, RES_BODY],
-  write: ObjectStoreWrite[F, REQ_BODY],
+  read  : ObjectStoreRead[F, RES, RES_BODY],
+  write : ObjectStoreWrite[F, REQ_BODY],
   config: ObjectStoreClientConfig
 )(implicit F: Monad[F]) {
 
@@ -51,12 +51,12 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
    * @note Storing an object on an existing path will overwrite the previously stored object on that path.
    * */
   def putObject[CONTENT](
-    path: Path.File,
-    content: CONTENT,
+    path           : Path.File,
+    content        : CONTENT,
     retentionPeriod: RetentionPeriod = config.defaultRetentionPeriod,
-    contentType: Option[String] = None,
-    contentMd5: Option[Md5Hash] = None,
-    owner: String = config.owner
+    contentType    : Option[String]  = None,
+    contentMd5     : Option[Md5Hash] = None,
+    owner          : String          = config.owner
   )(implicit w: ObjectStoreContentWrite[F, CONTENT, REQ_BODY], hc: HeaderCarrier): F[ObjectSummaryWithMd5] =
     F.flatMap(w.writeContent(content, contentType, contentMd5))(c =>
       F.flatMap(client.put(s"$objectStoreUrl/object/$owner/${path.asUri}", c, headers(retentionPeriodHeader(retentionPeriod))))(
@@ -72,7 +72,7 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
    * @return optional [[Object]]`[`[[CONTENT]]`]` wrapped in the effect [[F]]
    * */
   def getObject[CONTENT](
-    path: Path.File,
+    path : Path.File,
     owner: String = config.owner
   )(implicit cr: ObjectStoreContentRead[F, RES_BODY, CONTENT], hc: HeaderCarrier): F[Option[Object[CONTENT]]] = {
     F.flatMap(client.get(s"$objectStoreUrl/object/$owner/${path.asUri}", headers()))(res =>
@@ -90,7 +90,7 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
    * @return [[Unit]] wrapped in the effect [[F]]
    * */
   def deleteObject(
-    path: Path.File,
+    path : Path.File,
     owner: String = config.owner
   )(implicit hc: HeaderCarrier): F[Unit] =
     F.flatMap(client.delete(s"$objectStoreUrl/object/$owner/${path.asUri}", headers()))(read.consume)
@@ -103,7 +103,7 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
    * @return [[ObjectSummary]] wrapped in the effect [[F]]
    * */
   def listObjects(
-    path: Path.Directory,
+    path : Path.Directory,
     owner: String = config.owner
   )(implicit hc: HeaderCarrier): F[ObjectListing] = {
     val location = s"$objectStoreUrl/list/$owner/${path.asUri}".stripSuffix("/") // strip suffix since you can list an empty path
@@ -158,12 +158,12 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
    * @note Storing an object on an existing path will overwrite the previously stored object on that path.
    * */
   def uploadFromUrl(
-    from: java.net.URL,
-    to: Path.File,
+    from           : java.net.URL,
+    to             : Path.File,
     retentionPeriod: RetentionPeriod = config.defaultRetentionPeriod,
-    contentType: Option[String] = None,
-    contentMd5: Option[Md5Hash] = None,
-    owner: String = config.owner
+    contentType    : Option[String]  = None,
+    contentMd5     : Option[Md5Hash] = None,
+    owner          : String          = config.owner
   )(implicit hc: HeaderCarrier): F[ObjectSummaryWithMd5] =
     F.flatMap(
       write.fromUrlUploadRequest(

@@ -29,10 +29,11 @@ resolvers += MavenRepository("HMRC-open-artefacts-maven2", "https://open.artefac
 libraryDependencies += "uk.gov.hmrc.objectstore" %% "object-store-client-play-xx" % "x.x.x"
 ```
 
+where `play-xx` is your version of Play (e.g. `play-30`).
+
 ### Configuration
 
 - Ensure `appName` is configured in `application.conf`
-
 
 - Enable `uk.gov.hmrc.objectstore.client.play.modules.ObjectStoreModule` in the `application.conf` by adding
 ```hocon
@@ -41,9 +42,11 @@ play.modules.enabled += "uk.gov.hmrc.objectstore.client.play.modules.ObjectStore
 
 - Configure object-store HTTP configuration under `microservice.services` block in `application.conf`
 ```hocon
-object-store {
-  host = localhost
-  port = 8464
+microservice.services {
+  object-store {
+    host = localhost
+    port = 8464
+  }
 }
 ```
 
@@ -53,7 +56,7 @@ Also, override this configuration in app-config-base so this service can interac
 ```hocon
 internal-auth.token = "<INSERT-VALUE>"
 ```
-For the deployed environments, please request Build & Deployment team to generate a token for the service and configure this property with the encrypted value of the token.
+For the deployed environments, you will need to override this configuration with an encrypted token.
 
 - Configure `object-store.default-retention-period` in `application.conf`. This property represents the default retention period of the uploaded object in object-store.
   This value can be overriden on the individual upload requests.
@@ -105,7 +108,7 @@ The method `putObject` is polymorphic in its parameter `content`. At the moment,
 - `Array[Byte]`
 - `uk.gov.hmrc.objectstore.client.http.Payload`
 
-We recommend using streamed content (`org.apache.pekko.stream.scaladsl.Source[ByteString, _]`), as it'll avoid loading the whole content in the memory.
+We recommend using streamed content (`org.apache.pekko.stream.scaladsl.Source[ByteString, _]`), as it will avoid loading the whole content in the memory.
 
 #### **Get object**
 
@@ -113,7 +116,7 @@ We recommend using streamed content (`org.apache.pekko.stream.scaladsl.Source[By
 import uk.gov.hmrc.objectstore.client.play.Implicits._
 
 client.getObject[Source[ByteString, NotUsed]](
-  path = Path.Directory("accounts/2020").file("summary.txt"),
+  path  = Path.Directory("accounts/2020").file("summary.txt"),
   owner = "my-service" // defaults to 'appName' configuration
 ) // returns Future[Option[Object[Source[ByteString, NotUsed]]]]
 ```
@@ -132,7 +135,7 @@ The method `getObject` is polymorphic in its return type. At the moment, we supp
 
 ```scala
 client.deleteObject(
-  path = Path.Directory("accounts/2020").file("summary.txt"),
+  path  = Path.Directory("accounts/2020").file("summary.txt"),
   owner = "my-service" // defaults to 'appName' configuration
 ) // returns Future[Unit]
 ```
@@ -143,7 +146,7 @@ The above code will delete the object at the path `/my-service/accounts/2020/sum
 
 ```scala
 client.listObjects(
-  path = Path.Directory("accounts/2020"),
+  path  = Path.Directory("accounts/2020"),
   owner = "my-service" // defaults to 'appName' configuration
 ) // returns Future[ObjectListing]
 ```
@@ -197,7 +200,7 @@ class HelloWorldObjectStoreIntegrationSpec extends PlaySpec with GuiceOneAppPerS
   val baseUrl    = s"baseUrl-${randomUUID().toString}"
   val owner      = s"owner-${randomUUID().toString}"
   val token      = s"token-${randomUUID().toString}"
-  val config     = ObjectStoreClientConfig(baseUrl, owner, token, OneWeek)
+  val config     = ObjectStoreClientConfig(baseUrl, owner, token, RetentionPeriod.OneWeek)
 
   lazy val objectStoreStub = new stub.StubPlayObjectStoreClient(config)
 

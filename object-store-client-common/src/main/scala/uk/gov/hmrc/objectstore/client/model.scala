@@ -52,16 +52,16 @@ case class Md5Hash(value: String) extends AnyVal
 
 case class Object[CONTENT](
   location: Path.File,
-  content: CONTENT,
+  content : CONTENT,
   metadata: ObjectMetadata
 )
 
 final case class ObjectMetadata(
-  contentType: String,
+  contentType  : String,
   contentLength: Long,
-  contentMd5: Md5Hash,
-  lastModified: Instant,
-  userMetadata: Map[String, String]
+  contentMd5   : Md5Hash,
+  lastModified : Instant,
+  userMetadata : Map[String, String]
 )
 
 final case class ObjectListing(
@@ -75,24 +75,25 @@ final case class ObjectSummary(
 )
 
 final case class ObjectSummaryWithMd5(
-  location: Path.File,
+  location     : Path.File,
   contentLength: Long,
-  contentMd5: Md5Hash,
-  lastModified: Instant
+  contentMd5   : Md5Hash,
+  lastModified : Instant
 )
 
 sealed abstract class RetentionPeriod(val value: String)
 
 object RetentionPeriod {
-  case object OneDay extends RetentionPeriod("1-day")
-  case object OneWeek extends RetentionPeriod("1-week")
-  case object OneMonth extends RetentionPeriod("1-month")
-  case object SixMonths extends RetentionPeriod("6-months")
-  case object OneYear extends RetentionPeriod("1-year")
+  case object OneDay     extends RetentionPeriod("1-day")
+  case object OneWeek    extends RetentionPeriod("1-week")
+  case object OneMonth   extends RetentionPeriod("1-month")
+  case object SixMonths  extends RetentionPeriod("6-months")
+  case object OneYear    extends RetentionPeriod("1-year")
   case object SevenYears extends RetentionPeriod("7-years")
-  case object TenYears extends RetentionPeriod("10-years")
+  case object TenYears   extends RetentionPeriod("10-years")
 
-  private val allValues: Set[RetentionPeriod] = Set(OneDay, OneWeek, OneMonth, SixMonths, OneYear, SevenYears, TenYears)
+  private val allValues: Set[RetentionPeriod] =
+    Set(OneDay, OneWeek, OneMonth, SixMonths, OneYear, SevenYears, TenYears)
 
   def parse(value: String): Either[String, RetentionPeriod] =
     allValues

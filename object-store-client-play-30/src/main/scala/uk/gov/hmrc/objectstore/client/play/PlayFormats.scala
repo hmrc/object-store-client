@@ -34,15 +34,15 @@ object PlayFormats {
       .inmap(Path.File.apply, _.asUri)
 
   val objectSummaryWithMd5Reads: Reads[ObjectSummaryWithMd5] =
-    ( (__ \ "location"     ).read[String].map(_.stripPrefix("/object-store/object/")).map(Path.File.apply)
-    ~ (__ \ "contentLength").read[Long]
-    ~ (__ \ "contentMD5"   ).read[String].map(Md5Hash.apply)
+    ( (__ \ "location"     ).read[String ].map(_.stripPrefix("/object-store/object/")).map(Path.File.apply)
+    ~ (__ \ "contentLength").read[Long   ]
+    ~ (__ \ "contentMD5"   ).read[String ].map(Md5Hash.apply)
     ~ (__ \ "lastModified" ).read[Instant]
     )(ObjectSummaryWithMd5.apply _)
 
   val objectSummaryReads: Reads[ObjectSummary] =
-    ( (__ \ "location"     ).read[String].map(_.stripPrefix("/object-store/object/")).map(Path.File.apply)
-    ~ (__ \ "contentLength").read[Long]
+    ( (__ \ "location"     ).read[String ].map(_.stripPrefix("/object-store/object/")).map(Path.File.apply)
+    ~ (__ \ "contentLength").read[Long   ]
     ~ (__ \ "lastModified" ).read[Instant]
     )(ObjectSummary.apply _)
 
@@ -53,16 +53,15 @@ object PlayFormats {
 
   val zipRequestWrites: Writes[ZipRequest] =
     ( (__ \ "fromLocation"   ).write[Path.Directory](directoryFormat)
-    ~ (__ \ "toLocation"     ).write[Path.File](fileFormat)
-    ~ (__ \ "retentionPeriod").write[String].contramap[RetentionPeriod](_.value)
+    ~ (__ \ "toLocation"     ).write[Path.File     ](fileFormat)
+    ~ (__ \ "retentionPeriod").write[String        ].contramap[RetentionPeriod](_.value)
     )(unlift(ZipRequest.unapply))
 
   val urlUploadRequestWrites: Writes[UrlUploadRequest] =
-    ( (__ \ "fromUrl"        ).write[String].contramap[URL](_.toString)
+    ( (__ \ "fromUrl"        ).write[String   ].contramap[URL](_.toString)
     ~ (__ \ "toLocation"     ).write[Path.File](fileFormat)
-    ~ (__ \ "retentionPeriod").write[String].contramap[RetentionPeriod](_.value)
+    ~ (__ \ "retentionPeriod").write[String   ].contramap[RetentionPeriod](_.value)
     ~ (__ \ "contentType"    ).writeNullable[String]
     ~ (__ \ "contentMd5"     ).writeNullable[String].contramap[Option[Md5Hash]](_.map(_.value))
     )(unlift(UrlUploadRequest.unapply))
-
 }

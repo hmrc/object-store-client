@@ -66,9 +66,9 @@ class PlayObjectStoreClientSpec
       .overrides(
         bind[ObjectStoreClientConfig].toInstance(
           ObjectStoreClientConfig(
-            baseUrl = wireMockUrl,
-            owner = owner,
-            authorizationToken = "AuthorizationToken",
+            baseUrl                = wireMockUrl,
+            owner                  = owner,
+            authorizationToken     = "AuthorizationToken",
             defaultRetentionPeriod = RetentionPeriod.OneWeek
           )
         )
@@ -87,10 +87,10 @@ class PlayObjectStoreClientSpec
       )
 
     "store an object as Source with NotUsed bound to Mat" in {
-      val body                                = s"hello world! ${randomUUID().toString}"
-      val path                                = generateFilePath()
-      val md5Base64                           = Md5HashUtils.fromBytes(body.getBytes)
-      val source: Source[ByteString, NotUsed] = toSource(body)
+      val body      = s"hello world! ${randomUUID().toString}"
+      val path      = generateFilePath()
+      val md5Base64 = Md5HashUtils.fromBytes(body.getBytes)
+      val source    = toSource(body)
 
       initPutObjectStub(path, body.getBytes, md5Base64, owner = owner, statusCode = 200, response = Some(summary))
 
@@ -98,10 +98,10 @@ class PlayObjectStoreClientSpec
     }
 
     "store an object as Source with Any bound to Mat" in {
-      val body                          = s"hello world! ${randomUUID().toString}"
-      val path                          = generateFilePath()
-      val md5Base64                     = Md5HashUtils.fromBytes(body.getBytes)
-      val source: Source[ByteString, _] = toSource(body)
+      val body      = s"hello world! ${randomUUID().toString}"
+      val path      = generateFilePath()
+      val md5Base64 = Md5HashUtils.fromBytes(body.getBytes)
+      val source    = toSource(body)
 
       initPutObjectStub(path, body.getBytes, md5Base64, owner = owner, statusCode = 200, response = Some(summary))
 
@@ -109,10 +109,10 @@ class PlayObjectStoreClientSpec
     }
 
     "store an object as Source with NotUsed bound to Mat and known md5hash and length" in {
-      val body                                = s"hello world! ${randomUUID().toString}"
-      val path                                = generateFilePath()
-      val md5Base64                           = Md5HashUtils.fromBytes(body.getBytes)
-      val source: Source[ByteString, NotUsed] = toSource(body)
+      val body      = s"hello world! ${randomUUID().toString}"
+      val path      = generateFilePath()
+      val md5Base64 = Md5HashUtils.fromBytes(body.getBytes)
+      val source    = toSource(body)
 
       initPutObjectStub(path, body.getBytes, md5Base64, owner = owner, statusCode = 200, response = Some(summary))
 
@@ -122,10 +122,10 @@ class PlayObjectStoreClientSpec
     }
 
     "store an object as Source with Any bound to Mat and known md5hash and length" in {
-      val body                          = s"hello world! ${randomUUID().toString}"
-      val path                          = generateFilePath()
-      val md5Base64                     = Md5HashUtils.fromBytes(body.getBytes)
-      val source: Source[ByteString, _] = toSource(body)
+      val body      = s"hello world! ${randomUUID().toString}"
+      val path      = generateFilePath()
+      val md5Base64 = Md5HashUtils.fromBytes(body.getBytes)
+      val source    = toSource(body)
 
       initPutObjectStub(path, body.getBytes, md5Base64, owner = owner, statusCode = 200, response = Some(summary))
 
@@ -231,8 +231,9 @@ class PlayObjectStoreClientSpec
 
     case class Obj(k1: String, k2: String)
     implicit val or: Reads[Obj] =
-      ((__ \ "k1").read[String]
-        ~ (__ \ "k2").read[String])(Obj.apply _)
+      ( (__ \ "k1").read[String]
+      ~ (__ \ "k2").read[String]
+      )(Obj.apply _)
 
     "return an object that exists as JsValue" in {
       val body = """{ "k1": "v1", "k2": "v2" }"""
@@ -531,24 +532,22 @@ class PlayObjectStoreClientSpec
 
   private def objectListingJson: String =
     """{
-      |  "objectSummaries": [
-      |    {
-      |      "location": "/object-store/object/something/0993180f-8f31-41b2-905c-71f0273bb7d4",
-      |      "contentLength": 49,
-      |      "contentMD5": "4033ff85a6fdc6a2f51e60d89236a244",
-      |      "lastModified": "2020-07-21T13:16:42.859Z"
-      |    },
-      |    {
-      |      "location": "/object-store/object/something/23265eab-268e-4fcc-904f-775586b362c2",
-      |      "contentLength": 49,
-      |      "contentMD5": "a3c2f1e38701bd2c7b54ebd7b1cd0dbc",
-      |      "lastModified": "2020-07-21T13:16:41.226Z"
-      |    }
-      |  ]
-      |}""".stripMargin
+      "objectSummaries": [
+        {
+          "location": "/object-store/object/something/0993180f-8f31-41b2-905c-71f0273bb7d4",
+          "contentLength": 49,
+          "contentMD5": "4033ff85a6fdc6a2f51e60d89236a244",
+          "lastModified": "2020-07-21T13:16:42.859Z"
+        },
+        {
+          "location": "/object-store/object/something/23265eab-268e-4fcc-904f-775586b362c2",
+          "contentLength": 49,
+          "contentMD5": "a3c2f1e38701bd2c7b54ebd7b1cd0dbc",
+          "lastModified": "2020-07-21T13:16:41.226Z"
+        }
+      ]
+    }"""
 
   private def emptyObjectListingJson: String =
-    """{
-      |    "objectSummaries": []
-      |}""".stripMargin
+    """{ "objectSummaries": [] }"""
 }

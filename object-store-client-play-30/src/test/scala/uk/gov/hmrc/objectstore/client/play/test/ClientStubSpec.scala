@@ -55,14 +55,15 @@ class ClientStubSpec
 
     it should "return object when it has a matching object for the path" in new Setup {
       (for {
-        _               <- stub.putObject(defaultPath, defaultContent)
-        actualObject    <- stub.getObject[Source[ByteString, NotUsed]](defaultPath)
-        actualContent   <- actualObject.value.content.runReduce(_ ++ _)
-        expectedContent <- defaultContent.runReduce(_ ++ _)
-      } yield {
-        actualObject.value.location.asUri shouldBe s"$baseUrl/object-store/object/$owner/${defaultPath.asUri}"
-        actualContent shouldBe expectedContent
-      }).futureValue
+         _               <- stub.putObject(defaultPath, defaultContent)
+         actualObject    <- stub.getObject[Source[ByteString, NotUsed]](defaultPath)
+         actualContent   <- actualObject.value.content.runReduce(_ ++ _)
+         expectedContent <- defaultContent.runReduce(_ ++ _)
+       } yield {
+         actualObject.value.location.asUri shouldBe s"$baseUrl/object-store/object/$owner/${defaultPath.asUri}"
+         actualContent shouldBe expectedContent
+       }
+      ).futureValue
     }
 
     it should "delete object" in new Setup {
@@ -70,7 +71,8 @@ class ClientStubSpec
         _      <- stub.putObject(defaultPath, defaultContent)
         _      <- stub.deleteObject(defaultPath)
         actual <- stub.getObject[Source[ByteString, NotUsed]](defaultPath)
-      } yield actual shouldBe empty).futureValue
+       } yield actual shouldBe empty
+      ).futureValue
     }
 
     it should "list objects" in new Setup {
@@ -82,28 +84,29 @@ class ClientStubSpec
       private val leafC2 = randomUUID().toString
 
       (for {
-        _          <- stub.putObject(Path.File(s"$nodeA/$nodeB/$leafB1"), content())
-        _          <- stub.putObject(Path.File(s"$nodeA/$nodeB/$nodeC/$leafC1"), content())
-        _          <- stub.putObject(Path.File(s"$nodeA/$nodeB/$nodeC/$leafC2"), content())
-        objectsAtA <- stub.listObjects(Path.Directory(nodeA))
-        objectsAtB <- stub.listObjects(Path.Directory(s"$nodeA/$nodeB"))
-        objectsAtC <- stub.listObjects(Path.Directory(s"$nodeA/$nodeB/$nodeC"))
-      } yield {
-        objectsAtA.objectSummaries.map(_.location) should contain theSameElementsAs List(
-          Path.File(s"$owner/$nodeA/$nodeB/$leafB1"),
-          Path.File(s"$owner/$nodeA/$nodeB/$nodeC/$leafC1"),
-          Path.File(s"$owner/$nodeA/$nodeB/$nodeC/$leafC2")
-        )
-        objectsAtB.objectSummaries.map(_.location) should contain theSameElementsAs List(
-          Path.File(s"$owner/$nodeA/$nodeB/$leafB1"),
-          Path.File(s"$owner/$nodeA/$nodeB/$nodeC/$leafC1"),
-          Path.File(s"$owner/$nodeA/$nodeB/$nodeC/$leafC2")
-        )
-        objectsAtC.objectSummaries.map(_.location) should contain theSameElementsAs List(
-          Path.File(s"$owner/$nodeA/$nodeB/$nodeC/$leafC1"),
-          Path.File(s"$owner/$nodeA/$nodeB/$nodeC/$leafC2")
-        )
-      }).futureValue
+         _          <- stub.putObject(Path.File(s"$nodeA/$nodeB/$leafB1"), content())
+         _          <- stub.putObject(Path.File(s"$nodeA/$nodeB/$nodeC/$leafC1"), content())
+         _          <- stub.putObject(Path.File(s"$nodeA/$nodeB/$nodeC/$leafC2"), content())
+         objectsAtA <- stub.listObjects(Path.Directory(nodeA))
+         objectsAtB <- stub.listObjects(Path.Directory(s"$nodeA/$nodeB"))
+         objectsAtC <- stub.listObjects(Path.Directory(s"$nodeA/$nodeB/$nodeC"))
+       } yield {
+         objectsAtA.objectSummaries.map(_.location) should contain theSameElementsAs List(
+           Path.File(s"$owner/$nodeA/$nodeB/$leafB1"),
+           Path.File(s"$owner/$nodeA/$nodeB/$nodeC/$leafC1"),
+           Path.File(s"$owner/$nodeA/$nodeB/$nodeC/$leafC2")
+         )
+         objectsAtB.objectSummaries.map(_.location) should contain theSameElementsAs List(
+           Path.File(s"$owner/$nodeA/$nodeB/$leafB1"),
+           Path.File(s"$owner/$nodeA/$nodeB/$nodeC/$leafC1"),
+           Path.File(s"$owner/$nodeA/$nodeB/$nodeC/$leafC2")
+         )
+         objectsAtC.objectSummaries.map(_.location) should contain theSameElementsAs List(
+           Path.File(s"$owner/$nodeA/$nodeB/$nodeC/$leafC1"),
+           Path.File(s"$owner/$nodeA/$nodeB/$nodeC/$leafC2")
+         )
+       }
+      ).futureValue
     }
 
     implicit def toFuture[A](fa: F[A]): Future[A] = tf.toFuture(fa)

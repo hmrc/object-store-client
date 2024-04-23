@@ -34,8 +34,10 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object stub {
 
-  class StubPlayObjectStoreClient(val config: ObjectStoreClientConfig)(implicit
-    m: Materializer,
+  class StubPlayObjectStoreClient(
+    val config: ObjectStoreClientConfig
+  )(implicit
+    m : Materializer,
     ec: ExecutionContext
   ) extends PlayObjectStoreClient(AhcWSClient(), config)
       with StubObjectStoreClient[Future] {
@@ -43,8 +45,10 @@ object stub {
     protected val wsClient = AhcWSClient()
   }
 
-  class StubPlayObjectStoreClientEither(val config: ObjectStoreClientConfig)(implicit
-    m: Materializer,
+  class StubPlayObjectStoreClientEither(
+    val config: ObjectStoreClientConfig
+  )(implicit
+    m : Materializer,
     ec: ExecutionContext
   ) extends PlayObjectStoreClientEither(AhcWSClient(), config)
       with StubObjectStoreClient[FutureEither] {
@@ -63,15 +67,19 @@ object stub {
     private val objectStore = mutable.Map.empty[FilePath, InternalObject]
     private val url         = s"${config.baseUrl}/object-store"
 
-    private case class InternalObject(request: Request, contentType: String, lastModifiedInstant: Instant)
+    private case class InternalObject(
+      request            : Request,
+      contentType        : String,
+      lastModifiedInstant: Instant
+    )
 
     override def putObject[CONTENT](
-      path: Path.File,
-      content: CONTENT,
+      path           : Path.File,
+      content        : CONTENT,
       retentionPeriod: RetentionPeriod = config.defaultRetentionPeriod,
-      contentType: Option[String] = None,
-      contentMd5: Option[Md5Hash] = None,
-      owner: String = config.owner
+      contentType    : Option[String]  = None,
+      contentMd5     : Option[Md5Hash] = None,
+      owner          : String          = config.owner
     )(implicit w: ObjectStoreContentWrite[F, CONTENT, Request], hc: HeaderCarrier): F[ObjectSummaryWithMd5] =
       M.map(w.writeContent(content, contentType, contentMd5)) { r =>
         val lastModified = Instant.now()
@@ -88,7 +96,10 @@ object stub {
         )
       }
 
-    override def getObject[CONTENT](path: Path.File, owner: String = config.owner)(implicit
+    override def getObject[CONTENT](
+      path : Path.File,
+      owner: String = config.owner
+    )(implicit
       cr: ObjectStoreContentRead[F, ResBody, CONTENT],
       hc: HeaderCarrier
     ): F[Option[Object[CONTENT]]] = {
@@ -117,14 +128,20 @@ object stub {
         .getOrElse(M.pure(None))
     }
 
-    override def deleteObject(path: Path.File, owner: String = config.owner)(implicit
+    override def deleteObject(
+      path : Path.File,
+      owner: String = config.owner
+    )(implicit
       hc: HeaderCarrier
     ): F[Unit] = {
       objectStore -= s"$owner/${path.asUri}"
       M.pure(())
     }
 
-    override def listObjects(path: Path.Directory, owner: String = config.owner)(implicit
+    override def listObjects(
+      path : Path.Directory,
+      owner: String = config.owner
+    )(implicit
       hc: HeaderCarrier
     ): F[ObjectListing] =
       M.pure(

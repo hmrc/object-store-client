@@ -36,9 +36,9 @@ private[modules] class ObjectStoreClientConfigProvider @Inject() (configuration:
 
   override def get(): ObjectStoreClientConfig =
     ObjectStoreClientConfig(
-      baseUrl = getBaseUrl(configuration.underlying),
-      owner = getOwner(configuration.underlying),
-      authorizationToken = getAuthorizationHeader(configuration.underlying),
+      baseUrl                = getBaseUrl(configuration.underlying),
+      owner                  = getOwner(configuration.underlying),
+      authorizationToken     = getAuthorizationHeader(configuration.underlying),
       defaultRetentionPeriod = getDefaultRetentionPeriod(configuration.underlying)
     )
 
