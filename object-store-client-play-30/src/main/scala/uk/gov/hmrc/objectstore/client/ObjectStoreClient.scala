@@ -169,7 +169,7 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
       write.fromUrlUploadRequest(
         UrlUploadRequest(
           fromUrl         = from,
-          toLocation      = Path.File(s"object-store/object/$owner/${to.asUri}"),
+          toLocation      = Path.File(s"object-store/object/$owner/${to.asNonEncodedFileNameUri}", decodeFileName = false),
           retentionPeriod = retentionPeriod,
           contentType     = contentType,
           contentMd5      = contentMd5

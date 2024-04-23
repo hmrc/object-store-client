@@ -38,12 +38,18 @@ object Path {
 
     override val asUri: String =
       s"${directory.asUri}${URLEncoder.encode(fileName.stripSuffix("/"), "UTF-8")}"
+
+    val asNonEncodedFileNameUri: String =
+      s"${directory.asUri}${fileName.stripSuffix("/")}"
   }
 
   object File {
-    def apply(uri: String): Path.File = {
+    def apply(uri: String, decodeFileName: Boolean = true): Path.File = {
       val (directory, fileName) = uri.splitAt(uri.stripSuffix("/").lastIndexOf("/"))
-      Path.File(Path.Directory(directory), URLDecoder.decode(fileName.stripPrefix("/"), "UTF-8"))
+      if (decodeFileName)
+        Path.File(Path.Directory(directory), URLDecoder.decode(fileName.stripPrefix("/"), "UTF-8"))
+      else
+        Path.File(Path.Directory(directory), fileName.stripPrefix("/"))
     }
   }
 }

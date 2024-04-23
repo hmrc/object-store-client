@@ -31,17 +31,17 @@ object PlayFormats {
 
   val fileFormat: Format[Path.File] =
     implicitly[Format[String]]
-      .inmap(Path.File.apply, _.asUri)
+      .inmap(Path.File.apply(_), _.asUri)
 
   val objectSummaryWithMd5Reads: Reads[ObjectSummaryWithMd5] =
-    ( (__ \ "location"     ).read[String].map(_.stripPrefix("/object-store/object/")).map(Path.File.apply)
+    ( (__ \ "location"     ).read[String].map(_.stripPrefix("/object-store/object/")).map(Path.File.apply(_))
     ~ (__ \ "contentLength").read[Long]
     ~ (__ \ "contentMD5"   ).read[String].map(Md5Hash.apply)
     ~ (__ \ "lastModified" ).read[Instant]
     )(ObjectSummaryWithMd5.apply _)
 
   val objectSummaryReads: Reads[ObjectSummary] =
-    ( (__ \ "location"     ).read[String].map(_.stripPrefix("/object-store/object/")).map(Path.File.apply)
+    ( (__ \ "location"     ).read[String].map(_.stripPrefix("/object-store/object/")).map(Path.File.apply(_))
     ~ (__ \ "contentLength").read[Long]
     ~ (__ \ "lastModified" ).read[Instant]
     )(ObjectSummary.apply _)
