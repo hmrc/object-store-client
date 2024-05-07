@@ -34,48 +34,48 @@ class PlayWSHttpClient[F[_]](wsClient: WSClient)(implicit ec: ExecutionContext, 
 
   override def put(url: String, body: Request, headers: List[(String, String)]): F[Response] =
     invoke(
-      url = url,
-      method = "PUT",
-      body = body,
+      url     = url,
+      method  = "PUT",
+      body    = body,
       headers = headers
     )
 
   override def post(url: String, body: Request, headers: List[(String, String)]): F[Response] =
     invoke(
-      url = url,
-      method = "POST",
-      body = body,
+      url     = url,
+      method  = "POST",
+      body    = body,
       headers = headers
     )
 
   override def get(url: String, headers: List[(String, String)]): F[Response] =
     invoke(
-      url = url,
-      method = "GET",
+      url     = url,
+      method  = "GET",
       headers = headers
     )
 
   override def delete(url: String, headers: List[(String, String)]): F[Response] =
     invoke(
-      url = url,
-      method = "DELETE",
+      url     = url,
+      method  = "DELETE",
       headers = headers
     )
 
   private val empty =
     HttpBody[WSRequest => WSRequest](
-      length = None,
-      md5 = None,
+      length    = None,
+      md5       = None,
       writeBody = identity,
-      release = () => ()
+      release   = () => ()
     )
 
   private def invoke(
-    url: String,
-    method: String,
-    headers: List[(String, String)],
+    url            : String,
+    method         : String,
+    headers        : List[(String, String)],
     queryParameters: List[(String, String)] = List.empty,
-    body: Request = empty
+    body           : Request = empty
   ): F[WSResponse] = {
 
     logger.info(s"Request: Url: $url")

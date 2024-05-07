@@ -22,7 +22,7 @@ import uk.gov.hmrc.objectstore.client.category.Monad
 import scala.annotation.implicitNotFound
 
 case class Payload[CONTENT](
-  length: Long,
+  length : Long,
   md5Hash: Md5Hash,
   content: CONTENT
 )

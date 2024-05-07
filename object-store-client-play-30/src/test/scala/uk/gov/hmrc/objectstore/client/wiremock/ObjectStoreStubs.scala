@@ -36,10 +36,10 @@ object ObjectStoreStubs {
     response       : Option[ObjectSummaryWithMd5]
   ): Unit = {
     val request = put(urlEqualTo(s"/object-store/object/$owner/${path.asUri}"))
-      .withHeader("Authorization", equalTo("AuthorizationToken"))
-      .withHeader("Content-Length", equalTo("49"))
-      .withHeader("Content-Type", equalTo(contentType))
-      .withHeader("Content-MD5", equalTo(md5Base64.value))
+      .withHeader("Authorization"     , equalTo("AuthorizationToken"))
+      .withHeader("Content-Length"    , equalTo("49"))
+      .withHeader("Content-Type"      , equalTo(contentType))
+      .withHeader("Content-MD5"       , equalTo(md5Base64.value))
       .withHeader("X-Retention-Period", equalTo(retentionPeriod.value))
       .withRequestBody(binaryEqualTo(reqBody))
 
@@ -64,10 +64,10 @@ object ObjectStoreStubs {
   }
 
   def initListObjectsStub(
-    path: Path.Directory,
-    statusCode: Int,
+    path       : Path.Directory,
+    statusCode : Int,
     resBodyJson: Option[String],
-    owner: String
+    owner      : String
   ): Unit = {
     val request = get(urlEqualTo(s"/object-store/list/$owner/${path.asUri}".stripSuffix("/")))
       .withHeader("Authorization", equalTo("AuthorizationToken"))
@@ -85,9 +85,9 @@ object ObjectStoreStubs {
   }
 
   def initDeleteObjectStub(
-    path: Path.File,
-    statusCode: Int = 200,
-    owner: String
+    path      : Path.File,
+    statusCode: Int       = 200,
+    owner     : String
   ): Unit = {
     val request = delete(urlEqualTo(s"/object-store/object/$owner/${path.asUri}"))
       .withHeader("Authorization", equalTo("AuthorizationToken"))
@@ -109,10 +109,10 @@ object ObjectStoreStubs {
       responseBuilder
         .withBody(body)
         .withHeader("Content-Length", body.getBytes.length.toString)
-        .withHeader("Content-Type", "application/octet-stream")
-        .withHeader("Content-MD5", Md5HashUtils.fromBytes(body.getBytes).value)
-        .withHeader("Last-Modified", "Tue, 18 Aug 2020 10:15:30 GMT")
-        .withHeader("Location", s"/object-store/object/${path.asUri}")
+        .withHeader("Content-Type"  , "application/octet-stream")
+        .withHeader("Content-MD5"   , Md5HashUtils.fromBytes(body.getBytes).value)
+        .withHeader("Last-Modified" , "Tue, 18 Aug 2020 10:15:30 GMT")
+        .withHeader("Location"      , s"/object-store/object/${path.asUri}")
     }
 
     stubFor(
@@ -133,7 +133,7 @@ object ObjectStoreStubs {
     val request =
       post(urlEqualTo("/object-store/ops/zip"))
         .withHeader("Authorization", equalTo("AuthorizationToken"))
-        .withHeader("Content-Type", equalTo("application/json"))
+        .withHeader("Content-Type" , equalTo("application/json"))
         .withRequestBody(equalToJson(s"""{
           "fromLocation": "object-store/object/$fromOwner/${from.asUri}",
           "toLocation": "object-store/object/$toOwner/${to.asUri}",
@@ -174,7 +174,7 @@ object ObjectStoreStubs {
     val request =
       post(urlEqualTo("/object-store/ops/upload-from-url"))
         .withHeader("Authorization", equalTo("AuthorizationToken"))
-        .withHeader("Content-Type", equalTo("application/json"))
+        .withHeader("Content-Type" , equalTo("application/json"))
         .withRequestBody(equalToJson(s"""{
           "fromUrl": "${from.toString}",
           "toLocation": "object-store/object/$owner/${to.asUri}",

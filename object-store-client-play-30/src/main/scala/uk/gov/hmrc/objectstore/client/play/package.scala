@@ -42,10 +42,10 @@ package play {
   // TODO move this into common (and empty implementation) ?
   // relationship with Payload?
   case class HttpBody[BODY](
-    length: Option[Long],
-    md5: Option[Md5Hash],
+    length   : Option[Long],
+    md5      : Option[Md5Hash],
     writeBody: BODY,
-    release: () => Unit
+    release  : () => Unit
   )
 
   // the play implementation operates over Future - this allows us to embed any Future into the operating F

@@ -21,7 +21,9 @@ import java.util.UUID.randomUUID
 import uk.gov.hmrc.objectstore.client.Path
 
 object PathUtils {
-  def generateDirectoryPath(): Path.Directory = Path.Directory(randomUUID().toString)
+  def generateDirectoryPath(): Path.Directory =
+    Path.Directory(randomUUID().toString)
 
-  def generateFilePath(): Path.File = generateDirectoryPath().file(randomUUID().toString)
+  def generateFilePath(): Path.File =
+    generateDirectoryPath().file(randomUUID().toString)
 }

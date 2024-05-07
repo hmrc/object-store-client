@@ -59,7 +59,7 @@ trait PlayObjectStoreContentWrites {
   implicit def fileWrite[F[_]](implicit F: PlayMonad[F]): ObjectStoreContentWrite[F, File, Request] =
     payloadAkkaSourceContentWrite[F, NotUsed].contramap { file =>
       Payload(
-        length = file.length,
+        length  = file.length,
         md5Hash = Md5HashUtils.fromInputStream(new FileInputStream(file)),
         content = FileIO.fromPath(file.toPath).mapMaterializedValue(_ => NotUsed)
       )
@@ -81,8 +81,8 @@ trait PlayObjectStoreContentWrites {
         val (uploadFinished, md5Finished) =
           broadcast2(
             source = content,
-            sink1 = FileIO.toPath(tempFile.path),
-            sink2 = Md5HashUtils.md5HashSink
+            sink1  = FileIO.toPath(tempFile.path),
+            sink2  = Md5HashUtils.md5HashSink
           ).run()
 
         F.liftFuture(
@@ -104,8 +104,8 @@ trait PlayObjectStoreContentWrites {
 
   private def broadcast2[T, Mat1, Mat2](
     source: Source[T, Any],
-    sink1: Sink[T, Mat1],
-    sink2: Sink[T, Mat2]
+    sink1 : Sink[T, Mat1],
+    sink2 : Sink[T, Mat2]
   ): RunnableGraph[(Mat1, Mat2)] =
     RunnableGraph.fromGraph(GraphDSL.create(sink1, sink2)(Tuple2.apply) { implicit builder => (s1, s2) =>
       import GraphDSL.Implicits._

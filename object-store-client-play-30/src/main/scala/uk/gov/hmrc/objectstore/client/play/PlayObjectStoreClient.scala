@@ -29,25 +29,29 @@ import scala.concurrent.{ExecutionContext, Future}
 @Singleton
 class PlayObjectStoreClientEither @Inject() (
   wsClient: WSClient,
-  config: ObjectStoreClientConfig
-)(implicit m: Materializer, ec: ExecutionContext)
-    extends ObjectStoreClient[FutureEither, Request, Response, ResBody](
-      new PlayWSHttpClient[FutureEither](wsClient),
-      PlayObjectStoreReads.futureEitherReads,
-      PlayObjectStoreWrites.write,
-      config
-    )
+  config  : ObjectStoreClientConfig
+)(implicit
+  m : Materializer,
+  ec: ExecutionContext
+) extends ObjectStoreClient[FutureEither, Request, Response, ResBody](
+  new PlayWSHttpClient[FutureEither](wsClient),
+  PlayObjectStoreReads.futureEitherReads,
+  PlayObjectStoreWrites.write,
+  config
+)
 
 /** Client which returns responses within Future.
   */
 @Singleton
 class PlayObjectStoreClient @Inject() (
   wsClient: WSClient,
-  config: ObjectStoreClientConfig
-)(implicit m: Materializer, ec: ExecutionContext)
-    extends ObjectStoreClient[Future, Request, Response, ResBody](
-      new PlayWSHttpClient[Future](wsClient),
-      PlayObjectStoreReads.futureReads,
-      PlayObjectStoreWrites.write,
-      config
-    )
+  config  : ObjectStoreClientConfig
+)(implicit
+  m: Materializer,
+  ec: ExecutionContext
+) extends ObjectStoreClient[Future, Request, Response, ResBody](
+  new PlayWSHttpClient[Future](wsClient),
+  PlayObjectStoreReads.futureReads,
+  PlayObjectStoreWrites.write,
+  config
+)

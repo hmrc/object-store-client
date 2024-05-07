@@ -1,18 +1,19 @@
 import sbt._
 
 object LibDependencies {
-  private val httpVerbsVersion = "14.12.0"
+  private val httpVerbsVersion = "14.13.0"
 
   def dependencies(playSuffix: String): Seq[ModuleID] = Seq(
     playOrg(playSuffix)      %% "play-guice"                   % playVersion(playSuffix),
     playOrg(playSuffix)      %% "play-ahc-ws"                  % playVersion(playSuffix),
     "uk.gov.hmrc"            %% s"http-verbs-$playSuffix"      % httpVerbsVersion,
-    playOrg(playSuffix)      %% playHttpServer(playSuffix)     % playVersion(playSuffix)                                % Test,
-    "uk.gov.hmrc"            %% s"http-verbs-test-$playSuffix" % httpVerbsVersion                                       % Test,
-    "org.scalatestplus.play" %% "scalatestplus-play"           % scalaTestPlusPlayVersion(playSuffix)                   % Test,
-    "org.scalatest"          %% "scalatest"                    % "3.2.15"                                               % Test,
-    "com.vladsch.flexmark"   %  "flexmark-all"                 % "0.64.8"                                               % Test,
-    "ch.qos.logback"         %  "logback-classic"              % logbackClassicVersion(playSuffix)                      % Test
+
+    playOrg(playSuffix)      %% playHttpServer(playSuffix)     % playVersion(playSuffix)              % Test,
+    "uk.gov.hmrc"            %% s"http-verbs-test-$playSuffix" % httpVerbsVersion                     % Test,
+    "org.scalatestplus.play" %% "scalatestplus-play"           % scalaTestPlusPlayVersion(playSuffix) % Test,
+    "org.scalatest"          %% "scalatest"                    % "3.2.15"                             % Test,
+    "com.vladsch.flexmark"   %  "flexmark-all"                 % "0.64.8"                             % Test,
+    "ch.qos.logback"         %  "logback-classic"              % logbackClassicVersion(playSuffix)    % Test
   )
 
   private def playVersion(playSuffix: String) =
