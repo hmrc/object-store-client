@@ -1,7 +1,7 @@
 import sbt._
 
 object LibDependencies {
-  private val httpVerbsVersion = "14.13.0"
+  private val httpVerbsVersion = "15.0.0"
 
   def dependencies(playSuffix: String): Seq[ModuleID] = Seq(
     playOrg(playSuffix)      %% "play-guice"                   % playVersion(playSuffix),
@@ -11,16 +11,16 @@ object LibDependencies {
     playOrg(playSuffix)      %% playHttpServer(playSuffix)     % playVersion(playSuffix)              % Test,
     "uk.gov.hmrc"            %% s"http-verbs-test-$playSuffix" % httpVerbsVersion                     % Test,
     "org.scalatestplus.play" %% "scalatestplus-play"           % scalaTestPlusPlayVersion(playSuffix) % Test,
-    "org.scalatest"          %% "scalatest"                    % "3.2.15"                             % Test,
+    "org.scalatest"          %% "scalatest"                    % "3.2.18"                             % Test,
     "com.vladsch.flexmark"   %  "flexmark-all"                 % "0.64.8"                             % Test,
     "ch.qos.logback"         %  "logback-classic"              % logbackClassicVersion(playSuffix)    % Test
   )
 
   private def playVersion(playSuffix: String) =
     playSuffix match {
-      case "play-28" => "2.8.20"
-      case "play-29" => "2.9.0"
-      case "play-30" => "3.0.0"
+      case "play-28" => "2.8.21"
+      case "play-29" => "2.9.3"
+      case "play-30" => "3.0.3"
     }
 
   private def playOrg(playSuffix: String) =
@@ -40,8 +40,8 @@ object LibDependencies {
   private def scalaTestPlusPlayVersion(playSuffix: String): String =
     playSuffix match {
       case "play-28" => "5.1.0"
-      case "play-29" => "6.0.0"
-      case "play-30" => "7.0.0"
+      case "play-29" => "6.0.1"
+      case "play-30" => "7.0.1"
     }
 
   private def logbackClassicVersion(playSuffix: String): String =

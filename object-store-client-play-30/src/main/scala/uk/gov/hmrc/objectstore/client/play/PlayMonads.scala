@@ -32,13 +32,13 @@ trait PlayMonads {
         }
 
       override def map[A, B](fa: FutureEither[A])(fn: A => B): FutureEither[B] =
-        fa.map(_.right.map(fn))
+        fa.map(_.map(fn))
 
       def raiseError[A](e: Exception): FutureEither[A] =
         Future.successful(Left(e))
 
       def liftFuture[A](future: Future[A]): FutureEither[A] =
-        future.map(Right(_))
+        future.map(Right.apply)
     }
 
   implicit def futureMonad(implicit ec: ExecutionContext): PlayMonad[Future] =

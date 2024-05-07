@@ -16,11 +16,9 @@
 
 package uk.gov.hmrc.objectstore.client.play
 
-import play.api.libs.ws.WSRequest
-import uk.gov.hmrc.objectstore.client.http.ObjectStoreWrite
+import play.api.libs.ws.{WSRequest, writeableOf_JsValue}
 import uk.gov.hmrc.objectstore.client.{UrlUploadRequest, ZipRequest}
-
-import scala.language.higherKinds
+import uk.gov.hmrc.objectstore.client.http.ObjectStoreWrite
 
 object PlayObjectStoreWrites {
   implicit def write[F[_]](implicit F: PlayMonad[F]): ObjectStoreWrite[F, Request] =

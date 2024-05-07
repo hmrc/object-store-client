@@ -55,7 +55,7 @@ object PlayFormats {
     ( (__ \ "fromLocation"   ).write[Path.Directory](directoryFormat)
     ~ (__ \ "toLocation"     ).write[Path.File     ](fileFormat)
     ~ (__ \ "retentionPeriod").write[String        ].contramap[RetentionPeriod](_.value)
-    )(unlift(ZipRequest.unapply))
+    )(zr => (zr.from, zr.to, zr.retentionPeriod))
 
   val urlUploadRequestWrites: Writes[UrlUploadRequest] =
     ( (__ \ "fromUrl"        ).write[String   ].contramap[URL](_.toString)
@@ -63,5 +63,5 @@ object PlayFormats {
     ~ (__ \ "retentionPeriod").write[String   ].contramap[RetentionPeriod](_.value)
     ~ (__ \ "contentType"    ).writeNullable[String]
     ~ (__ \ "contentMd5"     ).writeNullable[String].contramap[Option[Md5Hash]](_.map(_.value))
-    )(unlift(UrlUploadRequest.unapply))
+    )(uur => (uur.fromUrl, uur.toLocation, uur.retentionPeriod, uur.contentType, uur.contentMd5))
 }

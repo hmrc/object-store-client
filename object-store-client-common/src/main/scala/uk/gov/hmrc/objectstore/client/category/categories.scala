@@ -17,7 +17,6 @@
 package uk.gov.hmrc.objectstore.client.category
 
 import scala.annotation.implicitNotFound
-import scala.language.higherKinds
 
 @implicitNotFound("""Cannot find an implicit Functor[${F}].
 If you are using Future, you may be missing an implicit ExecutionContext.""")

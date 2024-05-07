@@ -18,8 +18,6 @@ package uk.gov.hmrc.objectstore.client.http
 
 import uk.gov.hmrc.objectstore.client.category.{Functor, Monad}
 
-import scala.language.higherKinds
-
 trait ObjectStoreContentRead[F[_], RES_BODY, CONTENT] { outer =>
 
   def readContent(response: RES_BODY): F[CONTENT]
