@@ -37,13 +37,13 @@ object Path {
     if (fileName.isEmpty) throw new IllegalArgumentException(s"fileName cannot be empty")
 
     override val asUri: String =
-      s"${directory.asUri}${URLEncoder.encode(fileName.stripSuffix("/"), "UTF-8")}"
+      s"${directory.asUri}${URLEncoder.encode(fileName.stripSuffix("/"), "UTF-8").replace("+","%20")}"
   }
 
   object File {
     def apply(uri: String): Path.File = {
       val (directory, fileName) = uri.splitAt(uri.stripSuffix("/").lastIndexOf("/"))
-      Path.File(Path.Directory(directory), URLDecoder.decode(fileName.stripPrefix("/"), "UTF-8"))
+      Path.File(Path.Directory(directory), URLDecoder.decode(fileName.stripPrefix("/").replace("+", "%2B"), "UTF-8"))
     }
   }
 }
