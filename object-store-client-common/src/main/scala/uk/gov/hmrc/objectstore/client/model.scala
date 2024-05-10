@@ -36,6 +36,7 @@ object Path {
   case class File(directory: Directory, fileName: String) extends Path {
     if (fileName.isEmpty) throw new IllegalArgumentException(s"fileName cannot be empty")
 
+    // URLEncoder is only suitable for query parameters. For path parameters we have to ensure correct treatment of `+`
     override val asUri: String =
       s"${directory.asUri}${URLEncoder.encode(fileName.stripSuffix("/"), "UTF-8").replace("+","%20")}"
   }
