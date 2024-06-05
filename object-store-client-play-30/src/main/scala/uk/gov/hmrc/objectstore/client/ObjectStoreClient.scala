@@ -16,14 +16,12 @@
 
 package uk.gov.hmrc.objectstore.client
 
+import com.typesafe.config.ConfigFactory
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.Authorization
 import uk.gov.hmrc.objectstore.client.category.Monad
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 import uk.gov.hmrc.objectstore.client.http.{HttpClient, ObjectStoreContentRead, ObjectStoreContentWrite, ObjectStoreRead, ObjectStoreWrite}
-
-import scala.language.higherKinds
-import com.typesafe.config.ConfigFactory
 
 class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
   client: HttpClient[F, REQ_BODY, RES],

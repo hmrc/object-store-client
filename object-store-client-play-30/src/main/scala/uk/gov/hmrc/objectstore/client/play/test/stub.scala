@@ -147,7 +147,7 @@ object stub {
       M.pure(
         ObjectListing(
           objectStore
-            .filterKeys(_.startsWith(s"$owner/${path.asUri}"))
+            .view.filterKeys(_.startsWith(s"$owner/${path.asUri}"))
             .map {
               case (filePath, internalObject) =>
                 ObjectSummary(

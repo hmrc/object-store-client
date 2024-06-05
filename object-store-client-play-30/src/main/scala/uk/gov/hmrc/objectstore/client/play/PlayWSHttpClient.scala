@@ -20,12 +20,11 @@ import play.api.Logger
 import play.api.libs.ws.{WSClient, WSRequest, WSResponse}
 import uk.gov.hmrc.http.{BadGatewayException, GatewayTimeoutException, HttpException}
 import uk.gov.hmrc.objectstore.client.http.HttpClient
+
 import java.net.ConnectException
 import java.util.concurrent.TimeoutException
-
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.Duration
-import scala.language.higherKinds
 
 class PlayWSHttpClient[F[_]](wsClient: WSClient)(implicit ec: ExecutionContext, F: PlayMonad[F])
     extends HttpClient[F, Request, Response] {

@@ -35,6 +35,7 @@ import uk.gov.hmrc.objectstore.client.play.test.stub.{StubObjectStoreClient, Stu
 import java.util.UUID.randomUUID
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.language.implicitConversions
 
 class ClientStubSpec
   extends AnyFlatSpec

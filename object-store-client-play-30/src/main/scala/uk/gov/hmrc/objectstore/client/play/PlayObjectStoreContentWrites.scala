@@ -23,10 +23,10 @@ import org.apache.pekko.stream.{ClosedShape, Materializer}
 import org.apache.pekko.stream.scaladsl.{Broadcast, FileIO, Flow, GraphDSL, RunnableGraph, Sink, Source}
 import org.apache.pekko.util.ByteString
 import play.api.libs.Files.SingletonTemporaryFileCreator
-import play.api.libs.ws.WSRequest
+import play.api.libs.ws.{WSRequest, writableOf_File, writableOf_Source}
 import uk.gov.hmrc.objectstore.client.Md5Hash
 import uk.gov.hmrc.objectstore.client.http.{ObjectStoreContentWrite, Payload}
-import play.api.libs.ws.BodyWritable
+import play.api.libs.ws.{BodyWritable, writableOf_Source, writableOf_File}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -107,7 +107,7 @@ trait PlayObjectStoreContentWrites {
     sink1 : Sink[T, Mat1],
     sink2 : Sink[T, Mat2]
   ): RunnableGraph[(Mat1, Mat2)] =
-    RunnableGraph.fromGraph(GraphDSL.create(sink1, sink2)(Tuple2.apply) { implicit builder => (s1, s2) =>
+    RunnableGraph.fromGraph(GraphDSL.createGraph(sink1, sink2)(Tuple2.apply) { implicit builder => (s1, s2) =>
       import GraphDSL.Implicits._
       val broadcast = builder.add(Broadcast[T](outputPorts = 2))
       source ~> broadcast
@@ -119,7 +119,7 @@ trait PlayObjectStoreContentWrites {
   implicit def bytesWrite[F[_]](implicit F: PlayMonad[F]): ObjectStoreContentWrite[F, Array[Byte], Request] =
     payloadAkkaSourceContentWrite[F, NotUsed].contramap { bytes =>
       Payload(
-        length = bytes.length,
+        length  = bytes.length,
         md5Hash = Md5HashUtils.fromBytes(bytes),
         content = Source.single(bytes).map(ByteString(_))
       )

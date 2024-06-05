@@ -13,7 +13,7 @@ The operations available via object-store-client are
 - Zip objects under a path
 - Upload a new object from a url
 
-Read more [here](https://github.com/hmrc/object-store/blob/master/README.md) about object-store.
+Read more [here](https://github.com/hmrc/object-store/blob/main/README.md) about object-store.
 
 We also have a working example [hello-world-object-store](https://github.com/hmrc/hello-world-object-store) which demonstrates using object-store-client.
 
@@ -29,7 +29,7 @@ resolvers += MavenRepository("HMRC-open-artefacts-maven2", "https://open.artefac
 libraryDependencies += "uk.gov.hmrc.objectstore" %% "object-store-client-play-xx" % "x.x.x"
 ```
 
-where `play-xx` is your version of Play (e.g. `play-30`).
+where `play-xx` is your version of Play, e.g. `play-30`
 
 ### Configuration
 
@@ -206,13 +206,31 @@ class HelloWorldObjectStoreIntegrationSpec extends PlaySpec with GuiceOneAppPerS
 
   override def fakeApplication(): Application =
     GuiceApplicationBuilder()
-            .bindings(bind(classOf[PlayObjectStoreClient]).to(objectStoreStub))
-            .build()
+      .bindings(bind(classOf[PlayObjectStoreClient]).to(objectStoreStub))
+      .build()
 }
 ```
 
 ### Stubbing object-store for acceptance tests
 Please see [object-store stubs](https://github.com/hmrc/object-store#object-store-stubs)
+
+## Changes
+
+### Version 2.0.0
+
+Cross compiled for Scala 3 and 2.13. Scala 2.12 has been dropped.
+
+### Version 1.4.0
+
+Fix encoding/decoding of spaces in filenames. Filenames are provided as path parameters but were encoded as query params.
+
+### Version 1.3.0
+
+Built for Play 2.8, 2.9 and 3.0.
+
+### Version 1.1.0
+
+Cross compiled for Scala 2.12 and 2.13
 
 ### License
 
