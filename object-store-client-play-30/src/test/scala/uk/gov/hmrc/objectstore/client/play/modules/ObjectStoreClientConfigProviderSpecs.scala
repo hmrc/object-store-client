@@ -68,7 +68,7 @@ class ObjectStoreClientConfigProviderSpecs extends AnyWordSpec with Matchers {
       Configuration.from(
         Map(
           "appName" -> appName,
-          "microservice.services.object-store" -> Map(
+          "microservice.services.object-store" -> Map[String, Any](
             "protocol" -> "https",
             "host"     -> "service",
             "port"     -> 8000

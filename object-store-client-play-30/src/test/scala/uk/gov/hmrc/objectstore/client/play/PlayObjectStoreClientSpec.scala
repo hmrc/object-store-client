@@ -77,7 +77,7 @@ class PlayObjectStoreClientSpec
 
   import Implicits._
 
-  "putObject" must {
+  "putObject" should {
     val summary =
       ObjectSummaryWithMd5(
         location      = Path.File(Path.Directory("zips"), "zip1.zip"),
@@ -206,7 +206,7 @@ class PlayObjectStoreClientSpec
     }
   }
 
-  "getObject" must {
+  "getObject" should {
     "return an object that exists" in {
       val body = "hello world! e36cb887-58ae-4422-9894-215faaf0aa35"
       val path = generateFilePath()
@@ -311,7 +311,7 @@ class PlayObjectStoreClientSpec
     }
   }
 
-  "deleteObject" must {
+  "deleteObject" should {
     "delete an object" in {
       val path = generateFilePath()
 
@@ -338,7 +338,7 @@ class PlayObjectStoreClientSpec
     }
   }
 
-  "listObject" must {
+  "listObject" should {
     "return an ObjectListing with objects" in {
       val path = generateDirectoryPath()
 
@@ -414,7 +414,7 @@ class PlayObjectStoreClientSpec
     }
   }
 
-  "zip" must {
+  "zip" should {
     "return an ObjectSummary" in {
       val from            = Path.Directory("envelope1")
       val to              = Path.File(Path.Directory("zips"), "zip1.zip")
@@ -444,7 +444,7 @@ class PlayObjectStoreClientSpec
     }
   }
 
-  "uploadFromUrl" must {
+  "uploadFromUrl" should {
     "return an ObjectListing with objectSummaries" in {
       val from            = new URL("https://fus-outbound-8264ee52f589f4c0191aa94f87aa1aeb.s3.eu-west-2.amazonaws.com/81fb03f5-195d-422a-91ab-460939045846")
       val to              = Path.File(Path.Directory("my-folder"), "sample.pdf")
