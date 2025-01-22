@@ -1,7 +1,7 @@
 import sbt._
 
 object LibDependencies {
-  private val httpVerbsVersion = "15.0.0"
+  private val httpVerbsVersion = "15.1.0"
 
   def dependencies(playSuffix: String): Seq[ModuleID] = Seq(
     playOrg(playSuffix)      %% "play-guice"                   % playVersion(playSuffix),
@@ -19,8 +19,8 @@ object LibDependencies {
   private def playVersion(playSuffix: String) =
     playSuffix match {
       case "play-28" => "2.8.22"
-      case "play-29" => "2.9.3"
-      case "play-30" => "3.0.3"
+      case "play-29" => "2.9.6"
+      case "play-30" => "3.0.6"
     }
 
   private def playOrg(playSuffix: String) =

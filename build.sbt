@@ -1,5 +1,5 @@
 val scala2_13 = "2.13.12"
-val scala3    = "3.3.3"
+val scala3    = "3.3.4"
 
 // Disable multiple project tests running at the same time
 // https://www.scala-sbt.org/1.x/docs/Parallel-Execution.html
