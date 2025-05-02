@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.objectstore.client.http
 
-import uk.gov.hmrc.objectstore.client.{Object, ObjectListing, ObjectSummaryWithMd5}
+import uk.gov.hmrc.objectstore.client.{Object, ObjectListing, ObjectSummaryWithMd5, PresignedDownloadUrl}
 
 trait ObjectStoreRead[F[_], RES, RES_BODY] { self =>
 
@@ -27,4 +27,6 @@ trait ObjectStoreRead[F[_], RES, RES_BODY] { self =>
   def toObject(location: String, response: RES): F[Option[Object[RES_BODY]]]
 
   def consume(response: RES): F[Unit]
+
+  def toPresignedDownloadUrl(response: RES): F[PresignedDownloadUrl]
 }

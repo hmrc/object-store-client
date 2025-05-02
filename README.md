@@ -97,7 +97,7 @@ client.putObject(
 ) // returns Future[ObjectSummaryWithMd5]
 ```
 
-The above code will put the argument of the `content` parameter in an object at the path `/my-service/accounts/2020/summary.text` with a retention period of 1 month.
+The above code will put the argument of the `content` parameter in an object at the path `/my-service/accounts/2020/summary.txt` with a retention period of 1 month.
 Bear in mind, that this operation will overwrite the content that already exists at that path.
 
 The method `putObject` is polymorphic in its parameter `content`. At the moment, we support following types -
@@ -121,7 +121,7 @@ client.getObject[Source[ByteString, NotUsed]](
 ) // returns Future[Option[Object[Source[ByteString, NotUsed]]]]
 ```
 
-The above code will try to download the content of the object at the path `/my-service/accounts/2020/summary.text`.
+The above code will try to download the content of the object at the path `/my-service/accounts/2020/summary.txt`.
 If the path doesn't exist, the method will return `Future[None]`.
 
 The method `getObject` is polymorphic in its return type. At the moment, we support following types -
@@ -140,7 +140,7 @@ client.deleteObject(
 ) // returns Future[Unit]
 ```
 
-The above code will delete the object at the path `/my-service/accounts/2020/summary.text`.
+The above code will delete the object at the path `/my-service/accounts/2020/summary.txt`.
 
 #### **List objects**
 
@@ -181,6 +181,23 @@ osClient.uploadFromUrl(
 The above code will download a file from `https://fus-outbound.s3.eu-west-2.amazonaws.com/81fb03f5-195d-422a-91ab-460939045846` to
 `/my-service/my-folder/sample.pdf`
 
+#### **Get presigned download URL**
+
+```scala
+osClient.presignedDownloadUrl(
+  path  = Path.Directory("accounts/2020").file("summary.txt"),
+  owner = "my-service" // defaults to 'appName' configuration
+) // returns Future[PresignedDownloadUrl]
+```
+
+The above code will generate a presigned download URL for the object at the path `/my-service/accounts/2020/summary.txt`.
+
+The returned PresignedDownloadUrl contains:
+
+ - downloadUrl: A temporary URL lasting 15 minutes that can be used to download the object directly
+ - contentLength: The size of the object in bytes
+ - contentMd5: The MD5 hash of the object
+
 ### Error handling
 Exceptions like `uk.gov.hmrc.http.GatewayTimeoutException` or response parsing exception will be returned wrapped inside the failed Future.
 If you prefer explicit error encoded in the return type of object-store methods, then use `uk.gov.hmrc.objectstore.client.play.PlayObjectStoreClientEither` instead of `uk.gov.hmrc.objectstore.client.play.PlayObjectStoreClient`.
@@ -215,6 +232,10 @@ class HelloWorldObjectStoreIntegrationSpec extends PlaySpec with GuiceOneAppPerS
 Please see [object-store stubs](https://github.com/hmrc/object-store#object-store-stubs)
 
 ## Changes
+
+### Version 2.2.0
+
+Add presignedDownloadUrl feature and removed support for Play 2.8
 
 ### Version 2.0.0
 

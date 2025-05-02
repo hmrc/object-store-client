@@ -64,4 +64,13 @@ object PlayFormats {
     ~ (__ \ "contentType"    ).writeNullable[String]
     ~ (__ \ "contentMd5"     ).writeNullable[String].contramap[Option[Md5Hash]](_.map(_.value))
     )(uur => (uur.fromUrl, uur.toLocation, uur.retentionPeriod, uur.contentType, uur.contentMd5))
+
+  val presignedUrlRequestWrites: Writes[PresignedUrlRequest] =
+    (__ \ "location").write[Path.File](fileFormat).contramap[PresignedUrlRequest](_.location)
+
+  val presignedDownloadUrlReads: Reads[PresignedDownloadUrl] =
+    ( (__ \ "downloadUrl"   ).read[String].map(new URL(_))
+    ~ (__ \ "contentLength" ).read[Long]
+    ~ (__ \ "contentMD5"    ).read[String].map(Md5Hash.apply)
+    )(PresignedDownloadUrl.apply _)
 }

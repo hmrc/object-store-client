@@ -17,7 +17,7 @@
 package uk.gov.hmrc.objectstore.client.play
 
 import play.api.libs.ws.{WSRequest, writeableOf_JsValue}
-import uk.gov.hmrc.objectstore.client.{UrlUploadRequest, ZipRequest}
+import uk.gov.hmrc.objectstore.client.{PresignedUrlRequest, UrlUploadRequest, ZipRequest}
 import uk.gov.hmrc.objectstore.client.http.ObjectStoreWrite
 
 object PlayObjectStoreWrites {
@@ -39,6 +39,16 @@ object PlayObjectStoreWrites {
             length    = None,
             md5       = None,
             writeBody = (req: WSRequest) => req.withBody(PlayFormats.urlUploadRequestWrites.writes(request)),
+            release   = () => ()
+          )
+        )
+
+      override def fromPresignedUrlRequest(request: PresignedUrlRequest): F[Request] =
+        F.pure(
+          HttpBody(
+            length    = None,
+            md5       = None,
+            writeBody = (req: WSRequest) => req.withBody(PlayFormats.presignedUrlRequestWrites.writes(request)),
             release   = () => ()
           )
         )

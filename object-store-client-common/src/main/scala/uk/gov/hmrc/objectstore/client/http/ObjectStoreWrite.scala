@@ -16,10 +16,12 @@
 
 package uk.gov.hmrc.objectstore.client.http
 
-import uk.gov.hmrc.objectstore.client.{UrlUploadRequest, ZipRequest}
+import uk.gov.hmrc.objectstore.client.{PresignedUrlRequest, UrlUploadRequest, ZipRequest}
 
 trait ObjectStoreWrite[F[_], REQ_BODY] {
   private[objectstore] def fromZipRequest(request: ZipRequest): F[REQ_BODY]
 
   private[objectstore] def fromUrlUploadRequest(request: UrlUploadRequest): F[REQ_BODY]
+
+  private[objectstore] def fromPresignedUrlRequest(req: PresignedUrlRequest): F[REQ_BODY]
 }

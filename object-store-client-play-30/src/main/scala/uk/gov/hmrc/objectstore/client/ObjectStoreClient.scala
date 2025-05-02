@@ -183,6 +183,35 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
       )(read.toObjectSummaryWithMd5)
     )
 
+  /**
+   * Get a presigned download URL for an object
+   * 
+   * @param path Path of the object in object-store under [[owner]]
+   * @param owner Owner service of this object
+   * @return [[PresignedDownloadUrl]] wrapped in the effect [[F]]
+   * @note The downloadUrl has an expiration of 15 minutes.
+   * */
+  def presignedDownloadUrl(
+    path : Path.File,
+    owner: String = config.owner
+  )(implicit hc: HeaderCarrier): F[PresignedDownloadUrl] = {
+    F.flatMap(
+      write.fromPresignedUrlRequest(
+        PresignedUrlRequest(
+          location = Path.File(s"object-store/object/$owner/${path.asUri}")
+        )
+      )
+    )(reqBody =>
+      F.flatMap(
+        client.post(
+          s"$objectStoreUrl/ops/presigned-url",
+          reqBody,
+          headers()
+        )
+      )(read.toPresignedDownloadUrl)
+    )
+  }
+
   private val hcConfig = HeaderCarrier.Config.fromConfig(ConfigFactory.load())
 
   private def headers(additionalHeaders: (String, String)*)(implicit hc: HeaderCarrier): List[(String, String)] =
