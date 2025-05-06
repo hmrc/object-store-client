@@ -24,7 +24,7 @@ import play.api.http.Status
 import play.api.libs.json.{Json, JsError, JsSuccess, Reads}
 import uk.gov.hmrc.http.UpstreamErrorResponse
 import uk.gov.hmrc.objectstore.client.http.ObjectStoreRead
-import uk.gov.hmrc.objectstore.client.{Md5Hash, Object, ObjectListing, ObjectMetadata, ObjectSummaryWithMd5, Path}
+import uk.gov.hmrc.objectstore.client.{Md5Hash, Object, ObjectListing, ObjectMetadata, ObjectSummaryWithMd5, Path, PresignedDownloadUrl}
 
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME
@@ -96,6 +96,11 @@ object PlayObjectStoreReads {
             }
         }
 
+      override def toPresignedDownloadUrl(response: Response): FutureEither[PresignedDownloadUrl] = {
+        implicit val pusr = PlayFormats.presignedDownloadUrlReads
+        toDomain[PresignedDownloadUrl](response)
+      }
+
       private def toDomain[A](response: Response)(implicit reads: Reads[A], ct: ClassTag[A]): FutureEither[A] =
         response.status match {
           case SuccessStatus(_) =>
@@ -137,6 +142,9 @@ object PlayObjectStoreReads {
 
       override def consume(response: Response): Future[Unit] =
         transform(futureEitherReads.consume(response))
+
+      override def toPresignedDownloadUrl(response: Response): Future[PresignedDownloadUrl] =
+        transform(futureEitherReads.toPresignedDownloadUrl(response))
     }
 
   private def readBody(response: Response)(implicit m: Materializer): Future[String] =

@@ -82,6 +82,12 @@ final case class ObjectSummaryWithMd5(
   lastModified : Instant
 )
 
+final case class PresignedDownloadUrl(
+  downloadUrl  : URL,
+  contentLength: Long,
+  contentMd5   : Md5Hash
+)
+
 sealed abstract class RetentionPeriod(val value: String)
 
 object RetentionPeriod {
@@ -114,4 +120,8 @@ private[objectstore] final case class UrlUploadRequest(
   retentionPeriod: RetentionPeriod,
   contentType    : Option[String],
   contentMd5     : Option[Md5Hash]
+)
+
+private[objectstore] final case class PresignedUrlRequest(
+  location: Path.File
 )

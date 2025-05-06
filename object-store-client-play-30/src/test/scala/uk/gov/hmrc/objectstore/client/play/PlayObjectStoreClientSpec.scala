@@ -34,7 +34,7 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import uk.gov.hmrc.http.{Authorization, HeaderCarrier, UpstreamErrorResponse}
 import uk.gov.hmrc.http.test.WireMockSupport
-import uk.gov.hmrc.objectstore.client.{Md5Hash, ObjectSummary, ObjectListing, ObjectSummaryWithMd5, Path, RetentionPeriod}
+import uk.gov.hmrc.objectstore.client.{Md5Hash, ObjectSummary, ObjectListing, ObjectSummaryWithMd5, Path, PresignedDownloadUrl, RetentionPeriod}
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 import uk.gov.hmrc.objectstore.client.http.Payload
 import uk.gov.hmrc.objectstore.client.utils.PathUtils._
@@ -510,6 +510,61 @@ class PlayObjectStoreClientSpec
       initUploadFromUrlStub(from, to, retentionPeriod, None, None, owner, statusCode = 401, None)
 
       osClient.uploadFromUrl(from, to, retentionPeriod).failed.futureValue shouldBe an[UpstreamErrorResponse]
+    }
+  }
+
+  "presignedDownloadUrl" should {
+    "return a PresignedDownloadUrl for an object that exists" in {
+      val path = generateFilePath()
+
+      val downloadUrl = new URL("https://s3.com/presigned-download-url")
+      val contentLength = 1000L
+      val contentMd5 = Md5Hash("a3c2f1e38701bd2c7b54ebd7b1cd0dbc")
+
+      val response = PresignedDownloadUrl(
+        downloadUrl = downloadUrl,
+        contentLength = contentLength,
+        contentMd5 = contentMd5
+      )
+
+      initPresignedDownloadUrlStub(path, owner = owner, statusCode = 200, Some(response))
+
+      osClient.presignedDownloadUrl(path).futureValue shouldBe response
+    }
+
+    "return an exception if the object doesn't exist" in {
+      val path = generateFilePath()
+
+      initPresignedDownloadUrlStub(path, owner = owner, statusCode = 404, None)
+
+      osClient.presignedDownloadUrl(path).failed.futureValue shouldBe an[UpstreamErrorResponse]
+    }
+
+    "return an exception if object-store response is not successful" in {
+      val path = generateFilePath()
+
+      initPresignedDownloadUrlStub(path, owner = owner, statusCode = 401, None)
+
+      osClient.presignedDownloadUrl(path).failed.futureValue shouldBe an[UpstreamErrorResponse]
+    }
+
+    "return a PresignedDownloadUrl with different owner" in {
+      val path = generateFilePath()
+      val owner = "my-owner"
+
+      val downloadUrl = new URL("https://s3.com/presigned-download-url")
+      val contentLength = 1000L
+      val contentMd5 = Md5Hash("a3c2f1e38701bd2c7b54ebd7b1cd0dbc")
+
+      val response = PresignedDownloadUrl(
+        downloadUrl = downloadUrl,
+        contentLength = contentLength,
+        contentMd5 = contentMd5
+      )
+
+      initPresignedDownloadUrlStub(path, owner = owner, statusCode = 200, Some(response))
+
+      osClient.presignedDownloadUrl(path, owner).futureValue shouldBe response
     }
   }
 

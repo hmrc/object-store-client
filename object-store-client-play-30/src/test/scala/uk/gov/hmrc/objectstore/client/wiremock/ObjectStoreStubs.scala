@@ -21,7 +21,7 @@ import java.net.URL
 import com.github.tomakehurst.wiremock.client.WireMock._
 import play.api.libs.json.Json
 import uk.gov.hmrc.objectstore.client.play.Md5HashUtils
-import uk.gov.hmrc.objectstore.client.{Md5Hash, ObjectSummaryWithMd5, Path, RetentionPeriod}
+import uk.gov.hmrc.objectstore.client.{Md5Hash, ObjectSummaryWithMd5, Path, PresignedDownloadUrl, RetentionPeriod}
 
 object ObjectStoreStubs {
 
@@ -193,6 +193,39 @@ object ObjectStoreStubs {
               "contentLength" -> response.contentLength,
               "contentMD5"    -> response.contentMd5.value,
               "lastModified"  -> response.lastModified
+            ).toString
+          )
+      }
+
+    stubFor(
+      request
+        .willReturn(responseBuilder)
+    )
+  }
+
+  def initPresignedDownloadUrlStub(
+    path      : Path.File,
+    owner     : String,
+    statusCode: Int = 200,
+    response  : Option[PresignedDownloadUrl]
+  ): Unit = {
+    val request =
+      post(urlEqualTo("/object-store/ops/presigned-url"))
+        .withHeader("Authorization", equalTo("AuthorizationToken"))
+        .withHeader("Content-Type" , equalTo("application/json"))
+        .withRequestBody(equalToJson(s"""{
+          "location": "object-store/object/$owner/${path.asUri}"
+        }"""))
+
+    val responseBuilder =
+      response.foldLeft(aResponse.withStatus(statusCode)){ case (builder, response) =>
+        builder
+          .withHeader("Content-Type", "application/json")
+          .withBody(
+            Json.obj(
+              "downloadUrl"   -> response.downloadUrl.toString,
+              "contentLength" -> response.contentLength,
+              "contentMD5"    -> response.contentMd5.value
             ).toString
           )
       }
