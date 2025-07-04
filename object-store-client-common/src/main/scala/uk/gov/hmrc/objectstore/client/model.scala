@@ -50,6 +50,7 @@ object Path {
 }
 
 case class Md5Hash(value: String) extends AnyVal
+case class Sha256Checksum(value: String) extends AnyVal
 
 case class Object[CONTENT](
   location: Path.File,
@@ -119,7 +120,8 @@ private[objectstore] final case class UrlUploadRequest(
   toLocation     : Path.File,
   retentionPeriod: RetentionPeriod,
   contentType    : Option[String],
-  contentMd5     : Option[Md5Hash]
+  contentMd5     : Option[Md5Hash],
+  contentSha256  : Option[Sha256Checksum]
 )
 
 private[objectstore] final case class PresignedUrlRequest(

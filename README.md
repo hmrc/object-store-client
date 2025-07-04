@@ -173,10 +173,14 @@ osClient.uploadFromUrl(
   to              = Path.File(Path.Directory("my-folder"), "sample.pdf"),
   retentionPeriod = RetentionPeriod.OneWeek, // defaults to 'object-store.default-retention-period' configuration
   contentType     = Some("text/csv"), // defaults to None which results in the contentType 'application/octet-stream'
-  contentMd5      = Some(Md5Hash("a3c2f1e38701bd2c7b54ebd7b1cd0dbc")), // defaults to None
+  contentSha256   = Some(Sha256Checksum("n4bQgYhMfWWaL+qgxVrQFaO/TxsrC4Is0V1sFbDwCgg=")), // defaults to None
   owner           = "my-service" // defaults to 'appName' configuration
 ) // returns Future[ObjectSummaryWithMd5]
 ```
+
+**NOTE**
+
+`contentSha256` value must be Base64 encoded. The `checksum` field in the upscan-notify callback payload is SHA-256, however it is NOT Base64 encoded. An example can be found [here](//TODO link to hello-world-upscan)
 
 The above code will download a file from `https://fus-outbound.s3.eu-west-2.amazonaws.com/81fb03f5-195d-422a-91ab-460939045846` to
 `/my-service/my-folder/sample.pdf`

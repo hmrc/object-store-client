@@ -21,7 +21,7 @@ import java.net.URL
 import com.github.tomakehurst.wiremock.client.WireMock._
 import play.api.libs.json.Json
 import uk.gov.hmrc.objectstore.client.play.Md5HashUtils
-import uk.gov.hmrc.objectstore.client.{Md5Hash, ObjectSummaryWithMd5, Path, PresignedDownloadUrl, RetentionPeriod}
+import uk.gov.hmrc.objectstore.client.{Md5Hash, ObjectSummaryWithMd5, Path, PresignedDownloadUrl, RetentionPeriod, Sha256Checksum}
 
 object ObjectStoreStubs {
 
@@ -166,6 +166,7 @@ object ObjectStoreStubs {
     retentionPeriod: RetentionPeriod,
     contentType    : Option[String],
     contentMd5     : Option[Md5Hash],
+    contentSha256  : Option[Sha256Checksum],
     owner          : String,
     statusCode     : Int,
     response       : Option[ObjectSummaryWithMd5]
@@ -180,7 +181,8 @@ object ObjectStoreStubs {
           "toLocation": "object-store/object/$owner/${to.asUri}",
           "retentionPeriod": "${retentionPeriod.value}"${contentType.fold(""){contentType => s""",
           "contentType": "$contentType""""}}${contentMd5.fold(""){contentMd5 => s""",
-          "contentMd5": "${contentMd5.value}""""}}
+          "contentMD5": "${contentMd5.value}""""}}${contentSha256.fold(""){contentSha256 => s""",
+          "contentSHA256": "${contentSha256.value}""""}}
         }"""))
 
     val responseBuilder =

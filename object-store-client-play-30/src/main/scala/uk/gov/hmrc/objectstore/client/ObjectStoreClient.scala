@@ -151,17 +151,19 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
    * @param retentionPeriod Retention period of the object in object-store
    * @param contentType Optional Content-Type
    * @param owner Owner service of this object
-   * @param contentMd5 Optional MD5 hash of content
+   * @param contentMd5 Optional Base64 encoded MD5 hash of content
+   * @param contentSha256 Optional Base64 encoded SHA-256 checksum of content
    * @return [[ObjectSummaryWithMd5]] wrapped in the effect [[F]]
    * @note Storing an object on an existing path will overwrite the previously stored object on that path.
    * */
   def uploadFromUrl(
     from           : java.net.URL,
     to             : Path.File,
-    retentionPeriod: RetentionPeriod = config.defaultRetentionPeriod,
-    contentType    : Option[String]  = None,
-    contentMd5     : Option[Md5Hash] = None,
-    owner          : String          = config.owner
+    retentionPeriod: RetentionPeriod        = config.defaultRetentionPeriod,
+    contentType    : Option[String]         = None,
+    contentMd5     : Option[Md5Hash]        = None,
+    contentSha256  : Option[Sha256Checksum] = None,
+    owner          : String                 = config.owner
   )(implicit hc: HeaderCarrier): F[ObjectSummaryWithMd5] =
     F.flatMap(
       write.fromUrlUploadRequest(
@@ -170,7 +172,8 @@ class ObjectStoreClient[F[_], REQ_BODY, RES, RES_BODY](
           toLocation      = Path.File(s"object-store/object/$owner/${to.asUri}"),
           retentionPeriod = retentionPeriod,
           contentType     = contentType,
-          contentMd5      = contentMd5
+          contentMd5      = contentMd5,
+          contentSha256   = contentSha256
         )
       )
     )(reqBody =>
