@@ -34,7 +34,7 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import uk.gov.hmrc.http.{Authorization, HeaderCarrier, UpstreamErrorResponse}
 import uk.gov.hmrc.http.test.WireMockSupport
-import uk.gov.hmrc.objectstore.client.{Md5Hash, ObjectSummary, ObjectListing, ObjectSummaryWithMd5, Path, PresignedDownloadUrl, RetentionPeriod}
+import uk.gov.hmrc.objectstore.client.{Md5Hash, ObjectSummary, ObjectListing, ObjectSummaryWithMd5, Path, PresignedDownloadUrl, RetentionPeriod, Sha256Checksum}
 import uk.gov.hmrc.objectstore.client.config.ObjectStoreClientConfig
 import uk.gov.hmrc.objectstore.client.http.Payload
 import uk.gov.hmrc.objectstore.client.utils.PathUtils._
@@ -458,7 +458,7 @@ class PlayObjectStoreClientSpec
           lastModified  = Instant.now
         )
 
-      initUploadFromUrlStub(from, to, retentionPeriod, None, None, owner, statusCode = 200, Some(response))
+      initUploadFromUrlStub(from, to, retentionPeriod, None, None, None, owner, statusCode = 200, Some(response))
 
       osClient.uploadFromUrl(from, to, retentionPeriod).futureValue shouldBe response
     }
@@ -477,7 +477,7 @@ class PlayObjectStoreClientSpec
           lastModified  = Instant.now
         )
 
-      initUploadFromUrlStub(from, to, retentionPeriod, contentType, None, owner, statusCode = 200, Some(response))
+      initUploadFromUrlStub(from, to, retentionPeriod, contentType, None, None, owner, statusCode = 200, Some(response))
 
       osClient.uploadFromUrl(from, to, retentionPeriod, contentType).futureValue shouldBe response
     }
@@ -497,9 +497,29 @@ class PlayObjectStoreClientSpec
           lastModified  = Instant.now
         )
 
-      initUploadFromUrlStub(from, to, retentionPeriod, contentType, contentMd5 , owner, statusCode = 200, Some(response))
+      initUploadFromUrlStub(from, to, retentionPeriod, contentType, contentMd5, None, owner, statusCode = 200, Some(response))
 
       osClient.uploadFromUrl(from, to, retentionPeriod, contentType, contentMd5).futureValue shouldBe response
+    }
+
+    "return an ObjectListing with objectSummaries when contentSha256 supplied" in {
+      val from            = new URL("https://fus-outbound-8264ee52f589f4c0191aa94f87aa1aeb.s3.eu-west-2.amazonaws.com/81fb03f5-195d-422a-91ab-460939045846")
+      val to              = Path.File(Path.Directory("my-folder"), "sample.pdf")
+      val retentionPeriod = RetentionPeriod.OneWeek
+      val contentType     = Some("text/csv")
+      val contentSha256   = Some(Sha256Checksum("n4bQgYhMfWWaL+qgxVrQFaO/TxsrC4Is0V1sFbDwCgg="))
+
+      val response =
+        ObjectSummaryWithMd5(
+          location      = Path.File(Path.Directory("object-store/object/my-folder"), "sample.pdf"),
+          contentLength = 1000L,
+          contentMd5    = Md5Hash("a3c2f1e38701bd2c7b54ebd7b1cd0dbc"),
+          lastModified  = Instant.now
+        )
+
+      initUploadFromUrlStub(from, to, retentionPeriod, contentType, None, contentSha256, owner, statusCode = 200, Some(response))
+
+      osClient.uploadFromUrl(from, to, retentionPeriod, contentType, None, contentSha256).futureValue shouldBe response
     }
 
     "return an exception if object-store response is not successful" in {
@@ -507,7 +527,7 @@ class PlayObjectStoreClientSpec
       val to              = Path.File(Path.Directory("my-folder"), "sample.pdf")
       val retentionPeriod = RetentionPeriod.OneWeek
 
-      initUploadFromUrlStub(from, to, retentionPeriod, None, None, owner, statusCode = 401, None)
+      initUploadFromUrlStub(from, to, retentionPeriod, None, None, None, owner, statusCode = 401, None)
 
       osClient.uploadFromUrl(from, to, retentionPeriod).failed.futureValue shouldBe an[UpstreamErrorResponse]
     }

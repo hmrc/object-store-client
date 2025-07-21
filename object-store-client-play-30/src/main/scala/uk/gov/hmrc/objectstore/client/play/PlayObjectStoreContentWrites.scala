@@ -23,10 +23,9 @@ import org.apache.pekko.stream.{ClosedShape, Materializer}
 import org.apache.pekko.stream.scaladsl.{Broadcast, FileIO, Flow, GraphDSL, RunnableGraph, Sink, Source}
 import org.apache.pekko.util.ByteString
 import play.api.libs.Files.SingletonTemporaryFileCreator
-import play.api.libs.ws.{WSRequest, writableOf_File, writableOf_Source}
+import play.api.libs.ws.{BodyWritable, WSRequest, writableOf_File, writableOf_Source}
 import uk.gov.hmrc.objectstore.client.Md5Hash
 import uk.gov.hmrc.objectstore.client.http.{ObjectStoreContentWrite, Payload}
-import play.api.libs.ws.{BodyWritable, writableOf_Source, writableOf_File}
 
 import scala.concurrent.{ExecutionContext, Future}
 

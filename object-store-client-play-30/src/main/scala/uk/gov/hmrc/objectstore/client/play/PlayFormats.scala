@@ -62,8 +62,9 @@ object PlayFormats {
     ~ (__ \ "toLocation"     ).write[Path.File](fileFormat)
     ~ (__ \ "retentionPeriod").write[String   ].contramap[RetentionPeriod](_.value)
     ~ (__ \ "contentType"    ).writeNullable[String]
-    ~ (__ \ "contentMd5"     ).writeNullable[String].contramap[Option[Md5Hash]](_.map(_.value))
-    )(uur => (uur.fromUrl, uur.toLocation, uur.retentionPeriod, uur.contentType, uur.contentMd5))
+    ~ (__ \ "contentMD5"     ).writeNullable[String].contramap[Option[Md5Hash]](_.map(_.value))
+    ~ (__ \ "contentSHA256"  ).writeNullable[String].contramap[Option[Sha256Checksum]](_.map(_.value))
+    )(uur => (uur.fromUrl, uur.toLocation, uur.retentionPeriod, uur.contentType, uur.contentMd5, uur.contentSha256))
 
   val presignedUrlRequestWrites: Writes[PresignedUrlRequest] =
     (__ \ "location").write[Path.File](fileFormat).contramap[PresignedUrlRequest](_.location)
