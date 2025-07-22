@@ -18,6 +18,7 @@ package uk.gov.hmrc.objectstore.client
 
 import java.net.{URL, URLDecoder, URLEncoder}
 import java.time.Instant
+import java.util.Base64
 
 sealed trait Path { def asUri: String }
 
@@ -51,6 +52,31 @@ object Path {
 
 case class Md5Hash(value: String) extends AnyVal
 case class Sha256Checksum(value: String) extends AnyVal
+
+object Sha256Checksum {
+  def fromBase64(base64: String): Sha256Checksum = {
+    require(isBase64Encoded(base64), s"Invalid Base64 format: $base64")
+    Sha256Checksum(base64)
+  }
+
+  def fromHex(hex: String): Sha256Checksum = {
+    require(isHexEncoded(hex), s"Invalid hex format: $hex")
+    Sha256Checksum(hexToBase64(hex))
+  }
+
+  private def hexToBase64(hex: String): String = {
+    val bytes = hex.grouped(2).map(Integer.parseInt(_, 16).toByte).toArray
+    Base64.getEncoder.encodeToString(bytes)
+  }
+
+  private def isHexEncoded(in: String): Boolean =
+    // SHA-256 hex is always 64 hexadecimal characters
+    in.matches("^[0-9a-fA-F]{64}$")
+
+  private def isBase64Encoded(in: String): Boolean =
+    // SHA-256 Base64 is always 44 characters (43 + 1 padding '=')
+    in.matches("^[A-Za-z0-9+/]{43}=$")
+}
 
 case class Object[CONTENT](
   location: Path.File,

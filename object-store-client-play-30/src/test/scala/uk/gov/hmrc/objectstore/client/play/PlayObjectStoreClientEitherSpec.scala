@@ -449,7 +449,7 @@ class PlayObjectStoreClientEitherSpec
       val to              = Path.File(Path.Directory("my-folder"), "sample.pdf")
       val retentionPeriod = RetentionPeriod.OneWeek
       val contentType     = Some("text/csv")
-      val contentSha256   = Some(Sha256Checksum("n4bQgYhMfWWaL+qgxVrQFaO/TxsrC4Is0V1sFbDwCgg="))
+      val contentSha256   = Some(Sha256Checksum.fromBase64("n4bQgYhMfWWaL+qgxVrQFaO/TxsrC4Is0V1sFbDwCgg="))
 
       val response =
         ObjectSummaryWithMd5(
@@ -462,6 +462,29 @@ class PlayObjectStoreClientEitherSpec
       initUploadFromUrlStub(from, to, retentionPeriod, contentType, None, contentSha256, owner, statusCode = 200, Some(response))
 
       osClient.uploadFromUrl(from, to, retentionPeriod, contentType, None, contentSha256).futureValue.value shouldBe response
+    }
+
+    "return an ObjectListing with objectSummaries when contentSha256 supplied as hex" in {
+      val from            = new URL("https://fus-outbound-8264ee52f589f4c0191aa94f87aa1aeb.s3.eu-west-2.amazonaws.com/81fb03f5-195d-422a-91ab-460939045846")
+      val to              = Path.File(Path.Directory("my-folder"), "sample.pdf")
+      val retentionPeriod = RetentionPeriod.OneWeek
+      val contentType     = Some("text/csv")
+      val checksumBase64  = Some(Sha256Checksum.fromBase64("n4bQgYhMfWWaL+qgxVrQFaO/TxsrC4Is0V1sFbDwCgg="))
+      val checksumHex     = Some(Sha256Checksum.fromHex("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"))
+
+      val response =
+        ObjectSummaryWithMd5(
+          location      = Path.File(Path.Directory("object-store/object/my-folder"), "sample.pdf"),
+          contentLength = 1000L,
+          contentMd5    = Md5Hash("a3c2f1e38701bd2c7b54ebd7b1cd0dbc"),
+          lastModified  = Instant.now
+        )
+
+      // we stub expecting the base64 encoded checksum
+      initUploadFromUrlStub(from, to, retentionPeriod, contentType, None, checksumBase64, owner, statusCode = 200, Some(response))
+
+      // we send in the hex encoded checksum
+      osClient.uploadFromUrl(from, to, retentionPeriod, contentType, None, checksumHex).futureValue.value shouldBe response
     }
 
     "return an exception if object-store response is not successful" in {

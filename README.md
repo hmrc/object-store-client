@@ -173,14 +173,16 @@ osClient.uploadFromUrl(
   to              = Path.File(Path.Directory("my-folder"), "sample.pdf"),
   retentionPeriod = RetentionPeriod.OneWeek, // defaults to 'object-store.default-retention-period' configuration
   contentType     = Some("text/csv"), // defaults to None which results in the contentType 'application/octet-stream'
-  contentSha256   = Some(Sha256Checksum("n4bQgYhMfWWaL+qgxVrQFaO/TxsrC4Is0V1sFbDwCgg=")), // defaults to None
+  contentSha256   = Some(Sha256Checksum.fromBase64("n4bQgYhMfWWaL+qgxVrQFaO/TxsrC4Is0V1sFbDwCgg=")), // defaults to None
   owner           = "my-service" // defaults to 'appName' configuration
 ) // returns Future[ObjectSummaryWithMd5]
 ```
 
 **NOTE**
 
-`contentSha256` value must be Base64 encoded. The `checksum` field in the upscan-notify callback payload is SHA-256, however it is NOT Base64 encoded. An example can be found [here](//TODO link to hello-world-upscan)
+`contentSha256` value must be Base64 encoded. The `checksum` field in the upscan-notify callback payload is SHA-256, but it is a hex encoded representation.
+
+When integrating with UpScan, use `Sha256Checksum.fromHex`. An example can be found [here](https://github.com/hmrc/hello-world-upscan/blob/main/app/uk/gov/hmrc/helloworldupscan/services/UploadProgressTracker.scala#L61).
 
 The above code will download a file from `https://fus-outbound.s3.eu-west-2.amazonaws.com/81fb03f5-195d-422a-91ab-460939045846` to
 `/my-service/my-folder/sample.pdf`
