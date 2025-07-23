@@ -180,9 +180,9 @@ osClient.uploadFromUrl(
 
 **NOTE**
 
-`contentSha256` value must be Base64 encoded. The `checksum` field in the upscan-notify callback payload is SHA-256, but it is a hex encoded representation.
+`contentSha256` value, when provided, must be Base64 encoded. The `checksum` field in the upscan-notify callback payload is SHA-256, but it is a hex encoded representation.
 
-When integrating with UpScan, use `Sha256Checksum.fromHex`. An example can be found [here](https://github.com/hmrc/hello-world-upscan/blob/main/app/uk/gov/hmrc/helloworldupscan/services/UploadProgressTracker.scala#L61).
+When integrating with UpScan, use `Sha256Checksum.fromHex`. An example can be found [here](https://github.com/hmrc/hello-world-upscan/blob/main/app/uk/gov/hmrc/helloworldupscan/services/UploadProgressTracker.scala#L59).
 
 The above code will download a file from `https://fus-outbound.s3.eu-west-2.amazonaws.com/81fb03f5-195d-422a-91ab-460939045846` to
 `/my-service/my-folder/sample.pdf`
@@ -238,6 +238,12 @@ class HelloWorldObjectStoreIntegrationSpec extends PlaySpec with GuiceOneAppPerS
 Please see [object-store stubs](https://github.com/hmrc/object-store#object-store-stubs)
 
 ## Changes
+
+### Version 2.4.0
+
+uploadFromUrl now accepts an optional base64 encoded SHA-256 checksum which, when provided, will be used to verify the integrity of the file.
+
+Hex encoded SHA-256 checksums can be converted to base64 with `Sha256Checksum.fromHex()`
 
 ### Version 2.2.0
 
