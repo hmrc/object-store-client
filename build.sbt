@@ -15,28 +15,13 @@ lazy val library = Project("object-store-client", file("."))
   .settings(publish / skip := true)
   .aggregate(
     objectStoreClientCommon,
-    objectStoreClientPlay29,
     objectStoreClientPlay30
-  )
-
-def copyPlay30Sources(module: Project) =
-  CopySources.copySources(
-    module,
-    transformSource   = _.replace("org.apache.pekko", "akka"),
-    transformResource = _.replace("pekko", "akka")
   )
 
 lazy val objectStoreClientCommon = Project("object-store-client-common", file("object-store-client-common"))
   .settings(
     crossScalaVersions := Seq(scala2_13, scala3),
   )
-
-lazy val objectStoreClientPlay29 = Project("object-store-client-play-29", file("object-store-client-play-29"))
-  .settings(
-    copyPlay30Sources(objectStoreClientPlay30),
-    libraryDependencies ++= LibDependencies.dependencies("play-29")
-  )
-  .dependsOn(objectStoreClientCommon)
 
 lazy val objectStoreClientPlay30 = Project("object-store-client-play-30", file("object-store-client-play-30"))
   .settings(

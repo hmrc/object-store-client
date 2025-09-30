@@ -239,6 +239,10 @@ Please see [object-store stubs](https://github.com/hmrc/object-store#object-stor
 
 ## Changes
 
+### Version 2.5.0
+
+Removes support for Play 2.9
+ 
 ### Version 2.4.0
 
 uploadFromUrl now accepts an optional base64 encoded SHA-256 checksum which, when provided, will be used to verify the integrity of the file.

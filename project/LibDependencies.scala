@@ -1,7 +1,7 @@
 import sbt._
 
 object LibDependencies {
-  private val httpVerbsVersion = "15.2.0"
+  private val httpVerbsVersion = "15.6.0"
 
   def dependencies(playSuffix: String): Seq[ModuleID] = Seq(
     playOrg(playSuffix)      %% "play-guice"                   % playVersion(playSuffix),
@@ -18,25 +18,21 @@ object LibDependencies {
 
   private def playVersion(playSuffix: String) =
     playSuffix match {
-      case "play-29" => "2.9.6"
-      case "play-30" => "3.0.6"
+      case "play-30" => "3.0.9"
     }
 
   private def playOrg(playSuffix: String) =
     playSuffix match {
-      case "play-29" => "com.typesafe.play"
       case "play-30" => "org.playframework"
     }
 
   private def playHttpServer(playSuffix: String) =
     playSuffix match {
-      case "play-29" => "play-akka-http-server"
       case "play-30" => "play-pekko-http-server"
     }
 
   private def scalaTestPlusPlayVersion(playSuffix: String): String =
     playSuffix match {
-      case "play-29" => "6.0.1"
       case "play-30" => "7.0.1"
     }
 }
