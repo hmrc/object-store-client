@@ -4,11 +4,11 @@ object LibDependencies {
   private val httpVerbsVersion = "15.6.0"
 
   def dependencies(playSuffix: String): Seq[ModuleID] = Seq(
-    playOrg(playSuffix)      %% "play-guice"                   % playVersion(playSuffix),
-    playOrg(playSuffix)      %% "play-ahc-ws"                  % playVersion(playSuffix),
+    "org.playframework"      %% "play-guice"                   % playVersion(playSuffix),
+    "org.playframework"      %% "play-ahc-ws"                  % playVersion(playSuffix),
     "uk.gov.hmrc"            %% s"http-verbs-$playSuffix"      % httpVerbsVersion,
 
-    playOrg(playSuffix)      %% playHttpServer(playSuffix)     % playVersion(playSuffix)              % Test,
+    "org.playframework"      %% "play-pekko-http-server"       % playVersion(playSuffix)              % Test,
     "uk.gov.hmrc"            %% s"http-verbs-test-$playSuffix" % httpVerbsVersion                     % Test,
     "org.scalatestplus.play" %% "scalatestplus-play"           % scalaTestPlusPlayVersion(playSuffix) % Test,
     "org.scalatest"          %% "scalatest"                    % "3.2.18"                             % Test,
@@ -19,16 +19,6 @@ object LibDependencies {
   private def playVersion(playSuffix: String) =
     playSuffix match {
       case "play-30" => "3.0.9"
-    }
-
-  private def playOrg(playSuffix: String) =
-    playSuffix match {
-      case "play-30" => "org.playframework"
-    }
-
-  private def playHttpServer(playSuffix: String) =
-    playSuffix match {
-      case "play-30" => "play-pekko-http-server"
     }
 
   private def scalaTestPlusPlayVersion(playSuffix: String): String =
