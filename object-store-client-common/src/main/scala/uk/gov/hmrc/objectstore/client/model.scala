@@ -118,16 +118,17 @@ final case class PresignedDownloadUrl(
 sealed abstract class RetentionPeriod(val value: String)
 
 object RetentionPeriod {
-  case object OneDay     extends RetentionPeriod("1-day")
-  case object OneWeek    extends RetentionPeriod("1-week")
-  case object OneMonth   extends RetentionPeriod("1-month")
-  case object SixMonths  extends RetentionPeriod("6-months")
-  case object OneYear    extends RetentionPeriod("1-year")
-  case object SevenYears extends RetentionPeriod("7-years")
-  case object TenYears   extends RetentionPeriod("10-years")
+  case object OneDay      extends RetentionPeriod("1-day")
+  case object OneWeek     extends RetentionPeriod("1-week")
+  case object OneMonth    extends RetentionPeriod("1-month")
+  case object SixMonths   extends RetentionPeriod("6-months")
+  case object OneYear     extends RetentionPeriod("1-year")
+  case object SevenYears  extends RetentionPeriod("7-years")
+  case object TenYears    extends RetentionPeriod("10-years")
+  case object TwentyYears extends RetentionPeriod("20-years")
 
   private val allValues: Set[RetentionPeriod] =
-    Set(OneDay, OneWeek, OneMonth, SixMonths, OneYear, SevenYears, TenYears)
+    Set(OneDay, OneWeek, OneMonth, SixMonths, OneYear, SevenYears, TenYears, TwentyYears)
 
   def parse(value: String): Either[String, RetentionPeriod] =
     allValues
